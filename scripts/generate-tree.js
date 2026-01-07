@@ -1,9 +1,9 @@
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 const rootDir = process.cwd();
 const notesDir = path.join(rootDir, 'notes');
-// Write files.json to the root so it can be fetched as ./files.json in both Dev and Prod (GitHub Pages)
+// Write files.json to the root so it can be fetched as ./files.json
 const outputFile = path.join(rootDir, 'files.json'); 
 
 console.log("🌸 Scanning notes directory:", notesDir);
@@ -25,7 +25,6 @@ function scanDirectory(dirPath, relativePath) {
 
     if (stat.isDirectory()) {
       const children = scanDirectory(fullPath, itemRelativePath);
-      // Only add directories if they are not empty (optional, but cleaner)
       result.push({
         name: item,
         path: itemRelativePath,
@@ -53,8 +52,6 @@ try {
     fs.mkdirSync(notesDir);
   }
 
-  // We start the tree directly from the content of 'notes', but wrap it in a root if needed.
-  // The App expects an array of nodes.
   const fileTree = [{
     name: 'notes',
     path: 'notes',
