@@ -1,5 +1,5 @@
 {
-  "name": "Sakura Notes & AI Studio",
-  "description": "A static, anime-styled personal blog with markdown rendering, directory navigation, and a Gemini-powered AI image editing studio.",
+  "name": "Sakura Notes",
+  "description": "A static, anime-style personal blog and markdown notebook.",
   "requestFramePermissions": []
 }
