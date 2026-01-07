@@ -3,13 +3,13 @@ import type { FileNode } from './types';
 
 export const MOCK_FILE_SYSTEM: FileNode[] = [
   {
-    name: "notes",
-    path: "notes",
+    name: "VUE学习笔记",
+    path: "VUE学习笔记",
     type: NodeType.DIRECTORY,
     children: [
       {
         name: "Welcome.md",
-        path: "notes/Welcome.md",
+        path: "VUE学习笔记/Welcome.md",
         type: NodeType.FILE,
         lastModified: "2023-11-01T10:00:00Z",
         content: "# Welcome to Sakura Notes 🌸\n\nThis is a mock file used when `files.json` cannot be loaded.\n\n## Features\n- Markdown support\n- Live preview\n- Aesthetic design"
@@ -26,13 +26,15 @@ export const I18N = {
     tab_files: "Files",
     tab_lab: "Lab",
     lab_tools: "Interactive Tools",
-    lab_course: "Vue Courseware",
+    lab_course: "Vue Ninja Training",
     lab_reactivity: "Reactivity",
     lab_reactivity_desc: "Data binding visualizer",
     lab_lifecycle: "Lifecycle",
     lab_lifecycle_desc: "Hook execution flow",
+    lab_quiz: "Vue Ninja Quiz",
+    lab_quiz_desc: "Test your knowledge!",
     no_notes: "No personal notes found.",
-    no_vue_notes: "No 'VUE学习笔记' folder found in notes/.",
+    no_vue_notes: "No 'VUE学习笔记' folder found.",
     reading_notes: "Reading notes...",
     welcome_title: "Welcome Home",
     welcome_desc: "Explore your personal knowledge base.",
@@ -58,7 +60,8 @@ export const I18N = {
     copy_link: "Copy Link",
     download: "Download",
     search_placeholder: "Search notes...",
-    back_home: "Home"
+    back_home: "Home",
+    toast_copied: "Copied to clipboard!"
   },
   zh: {
     loading: "正在加载樱花笔记...",
@@ -67,13 +70,15 @@ export const I18N = {
     tab_files: "归档",
     tab_lab: "实验室",
     lab_tools: "交互式工具",
-    lab_course: "Vue 学习课件",
+    lab_course: "Vue 忍者试炼",
     lab_reactivity: "响应式原理",
     lab_reactivity_desc: "数据绑定可视化",
     lab_lifecycle: "生命周期",
     lab_lifecycle_desc: "钩子执行流程",
+    lab_quiz: "Vue 忍者挑战",
+    lab_quiz_desc: "测测你的 Vue 水平！",
     no_notes: "暂无笔记",
-    no_vue_notes: "在 notes/ 下未找到 'VUE学习笔记' 文件夹",
+    no_vue_notes: "未找到 'VUE学习笔记' 文件夹",
     reading_notes: "读取笔记中...",
     welcome_title: "欢迎回家",
     welcome_desc: "探索你的个人知识花园",
@@ -99,6 +104,7 @@ export const I18N = {
     copy_link: "复制链接",
     download: "下载",
     search_placeholder: "搜索笔记...",
-    back_home: "首页"
+    back_home: "首页",
+    toast_copied: "已复制到剪贴板！"
   }
 };

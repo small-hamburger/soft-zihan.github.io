@@ -4,13 +4,12 @@ import path from 'path';
 const rootDir = process.cwd();
 const publicDir = path.join(rootDir, 'public');
 const outputFile = path.join(publicDir, 'files.json'); 
+const notesDir = path.join(rootDir, 'notes');
 
-// Directories to scan at the project root
-const SCAN_ROOTS = ['notes', 'VUE学习笔记'];
+// We now treat 'notes' as the single source of truth.
+// Users should put all categories inside 'notes/'.
+console.log("🌸 Scanning content root:", notesDir);
 
-console.log("🌸 Scanning directories:", SCAN_ROOTS);
-
-// Ensure public directory exists
 if (!fs.existsSync(publicDir)) {
   fs.mkdirSync(publicDir);
 }
@@ -28,17 +27,20 @@ function scanDirectory(dirPath, relativePath) {
     const fullPath = path.join(dirPath, item);
     const stat = fs.statSync(fullPath);
     // Ensure forward slashes for web compatibility
-    const itemRelativePath = path.join(relativePath, item).replace(/\\/g, '/');
+    // relativePath is empty for root items, so we just use item
+    const itemRelativePath = relativePath ? path.join(relativePath, item).replace(/\\/g, '/') : item;
 
     if (stat.isDirectory()) {
       const children = scanDirectory(fullPath, itemRelativePath);
-      // Only add directories if they have content or are specific folders
-      result.push({
-        name: item,
-        path: itemRelativePath,
-        type: 'directory',
-        children: children
-      });
+      // Only add directories if they have content
+      if (children.length > 0) {
+        result.push({
+          name: item,
+          path: itemRelativePath,
+          type: 'directory',
+          children: children
+        });
+      }
     } else if (item.endsWith('.md')) {
       result.push({
         name: item,
@@ -51,27 +53,14 @@ function scanDirectory(dirPath, relativePath) {
   return result;
 }
 
-// Generate structure
 try {
-  const fileTree = [];
-
-  SCAN_ROOTS.forEach(folderName => {
-    const folderPath = path.join(rootDir, folderName);
-    if (fs.existsSync(folderPath)) {
-      fileTree.push({
-        name: folderName,
-        path: folderName,
-        type: 'directory',
-        children: scanDirectory(folderPath, folderName)
-      });
-    } else {
-      console.warn(`⚠️ Warning: Folder '${folderName}' not found at root.`);
-    }
-  });
-
+  // Directly scan the notes folder and use its children as the root of our tree
+  const fileTree = scanDirectory(notesDir, '');
+  
   fs.writeFileSync(outputFile, JSON.stringify(fileTree, null, 2));
-  console.log('✅ Successfully generated public/files.json (Metadata only)');
+  console.log(`✅ Successfully generated public/files.json (${fileTree.length} root items)`);
 } catch (error) {
   console.error('❌ Error generating tree:', error);
+  // Do not fail hard, just log, so CI can proceed if needed, but usually we want to know.
   process.exit(1);
 }

@@ -67,6 +67,20 @@
         <div v-else-if="viewMode === 'lab'" class="animate-fade-in pb-20">
            <div class="px-2 mb-4">
              <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">{{ t.lab_tools }}</h3>
+             
+             <!-- Lab Tools Links -->
+             <div 
+               @click="currentTool = 'quiz'; currentFile = null; currentFolder = null;"
+               class="p-3 rounded-xl border border-orange-100 dark:border-orange-900/30 cursor-pointer hover:bg-white dark:hover:bg-gray-800 hover:shadow-md transition-all mb-2 flex items-center gap-3 bg-orange-50/50 dark:bg-gray-800/30"
+               :class="{'ring-2 ring-orange-300 dark:ring-orange-700 bg-white dark:bg-gray-800': currentTool === 'quiz'}"
+             >
+               <span class="text-xl">🥷</span>
+               <div class="flex-1">
+                 <div class="text-sm font-bold text-orange-900 dark:text-orange-300">{{ t.lab_quiz }}</div>
+                 <div class="text-[10px] text-orange-500 dark:text-orange-400">{{ t.lab_quiz_desc }}</div>
+               </div>
+             </div>
+
              <div 
                @click="currentTool = 'reactivity'; currentFile = null; currentFolder = null;"
                class="p-3 rounded-xl border border-purple-100 dark:border-purple-900/30 cursor-pointer hover:bg-white dark:hover:bg-gray-800 hover:shadow-md transition-all mb-2 flex items-center gap-3 bg-purple-50/50 dark:bg-gray-800/30"
@@ -116,15 +130,16 @@
             class="group p-4 bg-white/40 dark:bg-gray-800/40 border border-white/60 dark:border-gray-700 rounded-2xl hover:bg-white dark:hover:bg-gray-800 hover:shadow-lg hover:shadow-sakura-100/20 dark:hover:shadow-black/20 cursor-pointer transition-all duration-300 animate-fade-in relative overflow-hidden backdrop-blur-sm"
             :class="{'ring-2 ring-sakura-300 dark:ring-sakura-600 bg-white dark:bg-gray-800 shadow-md': currentFile?.path === file.path}"
           >
-            <div class="flex justify-between items-start mb-2 relative z-10">
+            <div class="flex justify-between items-center relative z-10 mb-2">
               <span class="font-bold text-gray-700 dark:text-gray-200 group-hover:text-sakura-600 dark:group-hover:text-sakura-400 truncate pr-2 flex-1 text-sm">{{ file.name.replace('.md', '') }}</span>
             </div>
-             <div class="flex justify-between items-center relative z-10">
-               <span class="text-[10px] bg-sakura-50 dark:bg-sakura-900/30 text-sakura-600 dark:text-sakura-300 px-2 py-1 rounded-md whitespace-nowrap font-medium">
+             <div class="flex items-center gap-2 relative z-10">
+               <span class="text-[10px] bg-sakura-50 dark:bg-sakura-900/30 text-sakura-600 dark:text-sakura-300 px-2 py-0.5 rounded-md whitespace-nowrap font-medium">
                   {{ formatDate(file.lastModified) }}
                </span>
-               <div class="text-[10px] text-gray-400 dark:text-gray-500 truncate flex items-center gap-1 max-w-[50%]">
-                 <span class="opacity-50">📂</span> {{ getCleanParentPath(file.path) }}
+               <!-- Path is often redundant in Latest view if it just repeats filename or is root, only show parent dir if meaningful -->
+               <div v-if="getCleanParentPath(file.path) !== 'Root'" class="text-[10px] text-gray-400 dark:text-gray-500 truncate flex items-center gap-1">
+                 <span class="opacity-50">/</span> {{ getCleanParentPath(file.path) }}
                </div>
              </div>
           </div>
@@ -145,22 +160,20 @@
       
       <!-- Footer Info -->
       <div class="p-4 border-t border-sakura-100/50 dark:border-gray-700/50 flex justify-between items-center bg-white/50 dark:bg-gray-800/50 backdrop-blur-md">
-         <a href="https://github.com/soft-zihan" target="_blank" class="text-xs text-sakura-400 hover:text-sakura-600 dark:text-gray-500 dark:hover:text-sakura-400 flex items-center gap-1 transition-colors">
-            <span>© soft-zihan</span>
+         <a href="https://github.com/soft-zihan" target="_blank" class="text-xs text-sakura-400 hover:text-sakura-600 dark:text-gray-500 dark:hover:text-sakura-400 flex items-center gap-2 transition-colors group">
+            <svg class="w-4 h-4 opacity-70 group-hover:opacity-100" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            <span>soft-zihan</span>
          </a>
-         <span class="text-[10px] text-sakura-300 dark:text-gray-600 font-mono">v1.0</span>
+         <span class="text-[10px] text-sakura-300 dark:text-gray-600 font-mono">v1.1</span>
       </div>
     </aside>
 
     <!-- Main Content Wrapper -->
     <main class="flex-1 flex flex-col h-full overflow-hidden relative isolate">
-      <!-- Decorative Background Elements for Widescreen Interest -->
+      <!-- Decorative Background Elements -->
       <div class="absolute inset-0 z-[-1] overflow-hidden pointer-events-none">
-        <!-- Top Right Blob -->
         <div class="absolute -top-[20%] -right-[10%] w-[800px] h-[800px] rounded-full bg-gradient-to-br from-sakura-100/40 to-purple-100/30 dark:from-sakura-900/10 dark:to-purple-900/10 blur-3xl animate-float opacity-60"></div>
-        <!-- Bottom Left Blob -->
         <div class="absolute top-[30%] -left-[10%] w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-sakura-200/30 to-sakura-50/20 dark:from-sakura-800/10 dark:to-sakura-900/5 blur-3xl animate-pulse-fast opacity-50" style="animation-duration: 8s;"></div>
-        <!-- Pattern Overlay -->
         <div class="absolute inset-0 opacity-[0.03] dark:opacity-[0.05]" style="background-image: radial-gradient(#9f123f 1px, transparent 1px); background-size: 32px 32px;"></div>
       </div>
 
@@ -173,7 +186,9 @@
              <span class="mx-2 text-sakura-300 dark:text-gray-600">›</span>
              <span class="text-purple-600 dark:text-purple-400 font-bold bg-purple-50 dark:bg-purple-900/30 px-2 py-1 rounded-md">{{ t.tab_lab }}</span>
              <span class="mx-2 text-sakura-300 dark:text-gray-600">›</span>
-             <span class="text-gray-500 dark:text-gray-400">{{ currentTool === 'reactivity' ? t.lab_reactivity : t.lab_lifecycle }}</span>
+             <span class="text-gray-500 dark:text-gray-400">
+                {{ currentTool === 'reactivity' ? t.lab_reactivity : (currentTool === 'quiz' ? t.lab_quiz : t.lab_lifecycle) }}
+             </span>
           </template>
           <template v-else v-for="(item, index) in breadcrumbs" :key="item.path">
             <span v-if="index > 0" class="mx-2 text-sakura-300 dark:text-gray-600">›</span>
@@ -188,7 +203,16 @@
         </div>
 
         <div class="flex gap-2 shrink-0 items-center">
-          <!-- Action Buttons (Only show when file is open) -->
+          <!-- Particles Toggle -->
+           <button @click="toggleParticles" class="p-2 text-sakura-400 hover:bg-white dark:hover:bg-gray-700 hover:text-sakura-600 rounded-lg transition-colors flex items-center justify-center relative" :title="showParticles ? 'Hide petals' : 'Show petals'">
+             <span :class="{'opacity-100': showParticles, 'opacity-40 grayscale': !showParticles}">🌸</span>
+             <div v-if="!showParticles" class="absolute inset-0 flex items-center justify-center pointer-events-none">
+               <div class="w-full h-0.5 bg-red-400 rotate-45"></div>
+             </div>
+           </button>
+           <div class="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>
+
+          <!-- Action Buttons -->
           <template v-if="currentFile">
             <button @click="copyLink" class="p-2 text-sakura-400 hover:bg-white dark:hover:bg-gray-700 hover:text-sakura-600 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold" :title="t.copy_link">
               <span class="text-lg">🔗</span>
@@ -200,9 +224,9 @@
             <div class="w-px h-6 bg-gray-200 dark:bg-gray-700 mx-1"></div>
           </template>
 
-          <!-- Settings Trigger -->
+          <!-- Settings -->
           <button @click="showSettings = true" class="p-2 text-gray-400 hover:text-sakura-600 dark:hover:text-sakura-400 hover:rotate-90 transition-all duration-500" :title="t.settings_title">
-             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
           </button>
         </div>
       </header>
@@ -210,7 +234,7 @@
       <!-- Content Area -->
       <div class="flex-1 flex overflow-hidden z-10 relative">
         
-        <!-- Center Stage: The Note -->
+        <!-- Center Stage -->
         <div 
           v-if="currentFile || (viewMode === 'lab' && currentTool) || currentFolder" 
           id="scroll-container" 
@@ -222,6 +246,7 @@
           <div v-if="viewMode === 'lab' && currentTool" class="w-full max-w-5xl mx-auto animate-fade-in">
              <LabReactivity v-if="currentTool === 'reactivity'" />
              <LabLifecycle v-if="currentTool === 'lifecycle'" />
+             <LabQuizGame v-if="currentTool === 'quiz'" />
           </div>
 
           <!-- Folder View -->
@@ -264,19 +289,17 @@
                <div class="animate-spin text-4xl">🌸</div>
              </div>
 
-             <div class="mb-8 flex items-center gap-3 border-b border-gray-100 dark:border-gray-700 pb-6">
-                <!-- Removed duplicate Icon as requested -->
-                <div>
-                  <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 tracking-tight leading-tight">{{ currentFile.name.replace('.md', '') }}</h1>
-                  <div class="flex items-center gap-2 text-xs text-gray-400 mt-1">
-                     <span>{{ getCleanParentPath(currentFile.path) }}</span>
-                     <span>•</span>
-                     <span>{{ formatDate(currentFile.lastModified) }}</span>
-                  </div>
-                </div>
+             <!-- Simplified Header (Title Only) -->
+             <div class="mb-8 border-b border-gray-100 dark:border-gray-700 pb-6">
+                 <h1 class="text-3xl md:text-4xl font-bold text-gray-800 dark:text-gray-100 tracking-tight leading-tight">{{ currentFile.name.replace('.md', '') }}</h1>
              </div>
 
-            <div v-html="renderedContent" class="markdown-body dark:text-gray-300"></div>
+            <!-- Markdown Content with Click Listener for Lightbox -->
+            <div 
+              v-html="renderedContent" 
+              class="markdown-body dark:text-gray-300"
+              @click="handleContentClick"
+            ></div>
             
             <div class="mt-12 pt-8 border-t border-sakura-100 dark:border-gray-700 flex justify-between text-xs text-sakura-300 dark:text-gray-500">
               <span class="italic">Sakura Notes</span>
@@ -298,7 +321,7 @@
             </p>
         </div>
 
-        <!-- Right Sidebar (TOC) - Visible on XL screens -->
+        <!-- Right Sidebar (TOC) -->
         <aside v-if="currentFile && !currentTool" class="hidden xl:flex w-72 2xl:w-80 flex-col gap-6 p-6 border-l border-white/30 dark:border-gray-700/30 bg-white/20 dark:bg-gray-900/20 backdrop-blur-md overflow-y-auto custom-scrollbar z-20">
           
           <!-- Table of Contents -->
@@ -307,6 +330,7 @@
               <span>📑</span> {{ t.on_this_page }}
             </h3>
             <nav class="space-y-1 relative border-l-2 border-sakura-100 dark:border-gray-700 pl-4">
+               <!-- Active Indicator -->
               <div 
                 class="absolute left-[-2px] w-[2px] bg-sakura-500 transition-all duration-300 shadow-[0_0_8px_rgba(244,63,114,0.6)]"
                 :style="{ top: activeIndicatorTop + 'px', height: '24px' }"
@@ -338,7 +362,6 @@
                <div class="flex justify-between"><span>{{ t.format }}:</span> <span class="font-mono text-gray-700 dark:text-gray-300">Markdown</span></div>
              </div>
           </div>
-
         </aside>
 
         <!-- Selection Tooltip -->
@@ -350,11 +373,28 @@
         >
           <button @click="highlightSelection" class="p-2 hover:bg-gray-700 dark:hover:bg-gray-200 rounded transition-colors" title="Highlight (Temporary)">🖊️</button>
           <button @click="underlineSelection" class="p-2 hover:bg-gray-700 dark:hover:bg-gray-200 rounded transition-colors" title="Underline"><u>U</u></button>
-          <button @click="shareSelection" class="p-2 hover:bg-gray-700 dark:hover:bg-gray-200 rounded transition-colors" title="Copy Quote">📋</button>
+          <button @click="copyQuoteToClipboard" class="p-2 hover:bg-gray-700 dark:hover:bg-gray-200 rounded transition-colors" title="Copy as Markdown">📋</button>
         </div>
 
       </div>
     </main>
+    
+    <!-- Lightbox (New) -->
+    <div 
+      v-if="lightboxImage" 
+      class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center cursor-zoom-out animate-fade-in p-4"
+      @click="lightboxImage = null"
+    >
+       <img :src="lightboxImage" class="max-w-full max-h-full rounded-lg shadow-2xl scale-100 object-contain transition-transform duration-300" alt="Fullscreen preview" />
+       <div class="absolute bottom-10 text-white/50 text-sm bg-black/50 px-4 py-2 rounded-full">Click anywhere to close</div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div v-if="toastMessage" class="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-[100] animate-fade-in">
+       <div class="bg-gray-800/90 dark:bg-white/90 text-white dark:text-gray-900 px-6 py-3 rounded-full shadow-2xl backdrop-blur font-medium text-sm flex items-center gap-2">
+         <span>✅</span> {{ toastMessage }}
+       </div>
+    </div>
 
     <!-- Modals -->
     <div v-if="showSettings" class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm" @click.self="showSettings = false">
@@ -388,30 +428,14 @@
            <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{{ t.font_size }}</label>
            <div class="flex gap-2">
              <button @click="userSettings.fontSize = 'small'" class="flex-1 py-3 border rounded-xl text-xs transition-colors" :class="userSettings.fontSize === 'small' ? 'border-sakura-500 bg-sakura-50 dark:bg-sakura-900/20 text-sakura-600 dark:text-sakura-400' : 'border-gray-200 dark:border-gray-700 text-gray-500'">A</button>
-             <button @click="userSettings.fontSize = 'normal'" class="flex-1 py-3 border rounded-xl text-sm transition-colors" :class="userSettings.fontSize === 'normal' ? 'border-sakura-500 bg-sakura-50 dark:bg-sakura-900/20 text-sakura-600 dark:text-sakura-400' : 'border-gray-200 dark:border-gray-700 text-gray-500'">A+</button>
-             <button @click="userSettings.fontSize = 'large'" class="flex-1 py-3 border rounded-xl text-lg transition-colors" :class="userSettings.fontSize === 'large' ? 'border-sakura-500 bg-sakura-50 dark:bg-sakura-900/20 text-sakura-600 dark:text-sakura-400' : 'border-gray-200 dark:border-gray-700 text-gray-500'">A++</button>
+             <button @click="userSettings.fontSize = 'normal'" class="flex-1 py-3 border rounded-xl text-base transition-colors" :class="userSettings.fontSize === 'normal' ? 'border-sakura-500 bg-sakura-50 dark:bg-sakura-900/20 text-sakura-600 dark:text-sakura-400' : 'border-gray-200 dark:border-gray-700 text-gray-500'">A+</button>
+             <button @click="userSettings.fontSize = 'large'" class="flex-1 py-3 border rounded-xl text-xl transition-colors" :class="userSettings.fontSize === 'large' ? 'border-sakura-500 bg-sakura-50 dark:bg-sakura-900/20 text-sakura-600 dark:text-sakura-400' : 'border-gray-200 dark:border-gray-700 text-gray-500'">A++</button>
            </div>
         </div>
         <button @click="showSettings = false" class="w-full py-3 bg-sakura-500 hover:bg-sakura-600 text-white rounded-xl font-bold shadow-lg transition-colors">{{ t.done }}</button>
       </div>
     </div>
 
-    <!-- Share Modal (Replaced QR with Copy Quote) -->
-    <div v-if="showShareModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" @click.self="showShareModal = false">
-      <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-2xl max-w-sm w-full animate-fade-in text-center relative overflow-hidden border border-white/50 dark:border-gray-700">
-        <div class="absolute -top-10 -right-10 w-32 h-32 bg-sakura-100 dark:bg-sakura-900 rounded-full opacity-50"></div>
-        <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-2 relative z-10">{{ t.share_title }}</h3>
-        <div v-if="shareQuote" class="mb-4 text-left bg-gray-50 dark:bg-gray-900 p-4 rounded-xl text-gray-600 dark:text-gray-300 italic border-l-4 border-sakura-300 text-sm relative z-10 max-h-40 overflow-y-auto custom-scrollbar">
-           "{{ shareQuote }}"
-        </div>
-        
-        <button @click="copyQuoteToClipboard" class="w-full py-3 bg-sakura-50 text-sakura-600 font-bold rounded-xl mb-4 hover:bg-sakura-100 transition-colors flex items-center justify-center gap-2">
-           <span>📋</span> {{ t.quote_copied ? t.quote_copied : t.scan_text }}
-        </button>
-
-        <button @click="showShareModal = false" class="text-sm text-gray-500 hover:text-gray-800 dark:hover:text-gray-300 underline">{{ t.close }}</button>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -423,6 +447,7 @@ import type { FileNode, BreadcrumbItem, TocItem } from './types';
 import FileTree from './components/FileTree.vue';
 import LabReactivity from './components/LabReactivity.vue';
 import LabLifecycle from './components/LabLifecycle.vue';
+import LabQuizGame from './components/LabQuizGame.vue';
 
 // i18n
 const lang = ref<'en' | 'zh'>('zh');
@@ -448,7 +473,10 @@ const toc = ref<TocItem[]>([]);
 const activeHeaderId = ref<string>('');
 const loading = ref(true);
 const contentLoading = ref(false);
-const currentTool = ref<'reactivity' | 'lifecycle' | null>(null);
+const currentTool = ref<'reactivity' | 'lifecycle' | 'quiz' | null>(null);
+const showParticles = ref(true);
+const toastMessage = ref('');
+const lightboxImage = ref<string | null>(null);
 
 const showSettings = ref(false);
 const userSettings = reactive({
@@ -457,7 +485,6 @@ const userSettings = reactive({
 });
 
 const selectionRect = ref<{top: number, left: number} | null>(null);
-const showShareModal = ref(false);
 const shareQuote = ref('');
 
 watch(() => userSettings.fontSize, (v) => localStorage.setItem('sakura_fontsize', v));
@@ -467,19 +494,14 @@ watch(() => userSettings.fontFamily, (v) => localStorage.setItem('sakura_fontfam
 const fontSizeClass = computed(() => {
   switch(userSettings.fontSize) {
     case 'small': return 'text-sm lg:text-base leading-relaxed';
-    case 'large': return 'text-lg lg:text-xl leading-relaxed';
-    default: return 'lg:prose-xl leading-loose';
+    case 'large': return 'text-xl lg:text-2xl leading-loose';
+    default: return 'text-base lg:text-lg leading-loose';
   }
 });
 
 const currentPath = computed(() => currentFile.value?.path || currentFolder.value?.path || '');
 
-// Flattened list for "Latest" view
-// We filter out "VUE学习笔记" from latest stream to keep it clean, if desired.
-// Or we can include it. Let's include everything but maybe prioritize 'notes'.
-const filteredFileSystem = computed(() => {
-  return fileSystem.value; 
-});
+const filteredFileSystem = computed(() => fileSystem.value);
 
 const filteredFlatFiles = computed(() => {
   const flatten = (nodes: FileNode[]): FileNode[] => {
@@ -494,7 +516,6 @@ const filteredFlatFiles = computed(() => {
 });
 
 const labFolder = computed(() => {
-  // Look for VUE学习笔记 at the root level now
   return fileSystem.value.find(node => node.name === 'VUE学习笔记');
 });
 
@@ -523,26 +544,37 @@ const renderedContent = computed(() => {
   
   let rawContent = currentFile.value.content;
 
-  // --- IMAGE PATH REWRITING ---
-  // Fix relative image paths in Markdown (e.g. ![alt](./assets/img.png))
-  // to absolute paths based on the current file's location.
-  // Example: File is 'VUE学习笔记/01.md', Image is './assets/img.png'
-  // Result should be 'VUE学习笔记/assets/img.png'
+  // Image path rewriting logic
   if (currentFile.value.path) {
     const parentDir = currentFile.value.path.substring(0, currentFile.value.path.lastIndexOf('/'));
     
-    // Replace ./ with parentDir/
-    // Regex matches: ![alt]( ./xxx )
-    rawContent = rawContent.replace(/!\[(.*?)\]\(\.\/(.*?)\)/g, (match, alt, relPath) => {
-      const newPath = `${parentDir}/${relPath}`;
+    // We prepend 'notes/' because raw content urls need to point to server path
+    const serverPrefix = 'notes/'; 
+
+    // 1. Handle Markdown Images: ![alt](./path) or ![alt](../path) or ![alt](path)
+    // Supports ../ for assets folder
+    rawContent = rawContent.replace(/!\[(.*?)\]\((?!http)(.*?)\)/g, (match, alt, relPath) => {
+      // Remove leading ./ if present
+      let cleanPath = relPath.startsWith('./') ? relPath.slice(2) : relPath;
+      
+      let newPath = '';
+      if (cleanPath.startsWith('../')) {
+         // Handle parent dir traversal: notes/Folder/Sub/../assets/img.png -> notes/Folder/assets/img.png
+         // Browser resolves double dots in fetch URL automatically, we just need to prepend server prefix
+         newPath = `${serverPrefix}${parentDir}/${cleanPath}`;
+      } else {
+         newPath = `${serverPrefix}${parentDir}/${cleanPath}`;
+      }
       return `![${alt}](${newPath})`;
     });
 
-    // Also handle just strict filename references ![alt](image.png) if they are siblings
-    // But be careful not to break http links
-    rawContent = rawContent.replace(/!\[(.*?)\]\((?!http)(?!\/)(?!\.)(.*?)\)/g, (match, alt, relPath) => {
-       const newPath = `${parentDir}/${relPath}`;
-       return `![${alt}](${newPath})`;
+    // 2. Handle HTML Img Tags: <img src="./path"> or <img src="path">
+    // Useful for sizing: <img src="img.png" width="50%">
+    rawContent = rawContent.replace(/src="(\.\/)?([^"]+\.(png|jpg|jpeg|gif|webp|svg))"/g, (match, prefix, filename) => {
+        if (filename.startsWith('http')) return match;
+        // Same logic: prepend path
+        const newPath = `${serverPrefix}${parentDir}/${filename}`;
+        return `src="${newPath}"`;
     });
   }
 
@@ -584,18 +616,26 @@ const openFile = async (file: FileNode) => {
   if (!file.content) {
     contentLoading.value = true;
     try {
-      const res = await fetch(file.path);
+      // Fetch from "notes/" prefix because we copied `notes/*` into `dist/notes/`
+      // But the file.path in JSON is relative to `notes/`
+      const fetchPath = `notes/${file.path}`;
+      const res = await fetch(fetchPath);
       if (res.ok) {
         file.content = await res.text();
+        // Since content loaded late, we must trigger TOC generation manually
+        nextTick(() => generateToc());
       } else {
-        file.content = "# Error\nCould not load file.";
+        file.content = "# Error\nCould not load file. " + res.statusText;
       }
     } catch (e) {
       file.content = "# Error\nFailed to fetch content.";
     } finally {
       contentLoading.value = false;
+      // Force reactivity update
       currentFile.value = { ...file }; 
     }
+  } else {
+    nextTick(() => generateToc());
   }
 };
 
@@ -624,8 +664,7 @@ const toggleFolder = (path: string) => {
 const switchViewMode = (mode: 'latest' | 'files' | 'lab') => {
   viewMode.value = mode;
   if (mode === 'lab' && !currentFile.value) {
-    // Keep lab folder navigation if already there, else reset
-    if (!currentTool.value) currentTool.value = 'reactivity';
+    if (!currentTool.value) currentTool.value = 'quiz';
   }
 };
 
@@ -642,7 +681,12 @@ const resetToHome = () => {
   updateUrl(null);
 };
 
-const copyLink = () => navigator.clipboard.writeText(window.location.href).then(() => alert(t.value.link_copied));
+const showToast = (msg: string) => {
+  toastMessage.value = msg;
+  setTimeout(() => toastMessage.value = '', 2000);
+}
+
+const copyLink = () => navigator.clipboard.writeText(window.location.href).then(() => showToast(t.value.link_copied));
 
 const downloadSource = () => {
   if (currentFile.value) {
@@ -656,13 +700,19 @@ const downloadSource = () => {
   }
 };
 
+// Particle Toggle
+const toggleParticles = () => {
+  showParticles.value = !showParticles.value;
+  const el = document.getElementById('petals');
+  if (el) el.style.display = showParticles.value ? 'block' : 'none';
+}
+
 // Selection Handling
 const handleTextSelection = () => {
   const selection = window.getSelection();
   if (selection && selection.toString().trim().length > 0) {
     const range = selection.getRangeAt(0);
     const rect = range.getBoundingClientRect();
-    // Offset relative to viewport is enough for fixed position tooltip
     selectionRect.value = { top: rect.top - 10, left: rect.left + rect.width / 2 };
     shareQuote.value = selection.toString();
   } else {
@@ -671,37 +721,37 @@ const handleTextSelection = () => {
 };
 
 const highlightSelection = () => {
-  const selection = window.getSelection();
-  if (selection && selection.rangeCount) {
-    document.designMode = "on";
-    document.execCommand("BackColor", false, "rgba(255, 228, 100, 0.5)");
-    document.designMode = "off";
-    selectionRect.value = null;
-    selection.removeAllRanges();
-  }
+  // execCommand is deprecated but widely supported for simple contenteditable-like actions
+  document.designMode = "on";
+  document.execCommand("BackColor", false, "rgba(255, 228, 100, 0.5)");
+  document.designMode = "off";
+  selectionRect.value = null;
+  window.getSelection()?.removeAllRanges();
 };
 
 const underlineSelection = () => {
-  const selection = window.getSelection();
-  if (selection && selection.rangeCount) {
-    document.designMode = "on";
-    document.execCommand("Underline", false, "");
-    document.designMode = "off";
-    selectionRect.value = null;
-    selection.removeAllRanges();
-  }
-};
-
-const shareSelection = () => {
-  showShareModal.value = true;
+  document.designMode = "on";
+  document.execCommand("Underline", false, "");
+  document.designMode = "off";
   selectionRect.value = null;
+  window.getSelection()?.removeAllRanges();
 };
 
 const copyQuoteToClipboard = () => {
-  navigator.clipboard.writeText(`> ${shareQuote.value}\n\nVia Sakura Notes`).then(() => {
-     alert(t.value.quote_copied);
-     showShareModal.value = false;
+  const text = `> ${shareQuote.value}\n\nVia Sakura Notes`;
+  navigator.clipboard.writeText(text).then(() => {
+     showToast(t.value.toast_copied);
+     selectionRect.value = null;
+     window.getSelection()?.removeAllRanges();
   });
+};
+
+// Lightbox logic
+const handleContentClick = (e: MouseEvent) => {
+  const target = e.target as HTMLElement;
+  if (target.tagName === 'IMG') {
+    lightboxImage.value = (target as HTMLImageElement).src;
+  }
 };
 
 const generateToc = () => {
@@ -709,34 +759,64 @@ const generateToc = () => {
   const headers: TocItem[] = [];
   const lines = currentFile.value.content.split('\n');
   let inCodeBlock = false;
+  
   lines.forEach(line => {
     if (line.trim().startsWith('```')) inCodeBlock = !inCodeBlock;
     if (inCodeBlock) return;
-    const match = line.match(/^(#{1,3})\s+(.*)$/);
+    
+    // Improved Regex to be more robust
+    const match = line.match(/^(#{1,3})\s+(.+)$/);
     if (match) {
-      const text = match[2];
-      const id = text.toLowerCase().replace(/[^\w\u4e00-\u9fa5]+/g, '-'); 
+      const text = match[2].trim();
+      // Generate safer ID
+      const id = text.toLowerCase()
+        .replace(/\s+/g, '-')
+        .replace(/[^\w\-\u4e00-\u9fa5]+/g, ''); 
       headers.push({ id, text, level: match[1].length });
     }
   });
   toc.value = headers;
+  
+  // Re-attach scroll listener after DOM update
+  nextTick(() => {
+     const el = document.getElementById('scroll-container');
+     if (el) {
+       el.removeEventListener('scroll', updateActiveHeader);
+       el.addEventListener('scroll', updateActiveHeader);
+     }
+  });
 };
 
 const updateActiveHeader = () => {
   const container = document.getElementById('scroll-container');
   if (!container) return;
   const scrollPosition = container.scrollTop;
+  
   let active = '';
+  // Simple scroll spying
   for (const item of toc.value) {
     const el = document.getElementById(item.id);
-    if (el && el.offsetTop - 150 <= scrollPosition) active = item.id;
+    if (el) {
+       // 150px offset looks good for sticky headers
+       if (el.offsetTop - 150 <= scrollPosition) {
+         active = item.id;
+       }
+    }
   }
   if (active) activeHeaderId.value = active;
 };
 
 const scrollToHeader = (id: string) => {
   const el = document.getElementById(id);
-  if (el) el.scrollIntoView({ behavior: 'smooth' });
+  const container = document.getElementById('scroll-container');
+  if (el && container) {
+     // Scroll container to element
+     container.scrollTo({
+       top: el.offsetTop - 80, // Offset for navbar
+       behavior: 'smooth'
+     });
+     activeHeaderId.value = id;
+  }
 };
 
 watch(currentFile, () => generateToc());
@@ -763,13 +843,5 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
-
-  const container = document.getElementById('scroll-container');
-  watch(currentFile, () => {
-    setTimeout(() => {
-      const el = document.getElementById('scroll-container');
-      if (el) el.addEventListener('scroll', updateActiveHeader);
-    }, 100);
-  });
 });
 </script>
