@@ -1,62 +1,121 @@
 <template>
-  <div class="flex flex-col md:flex-row w-full h-full max-w-[1920px] mx-auto overflow-hidden bg-sakura-50/30 backdrop-blur-sm">
+  <div class="flex flex-col md:flex-row w-full h-full max-w-[2560px] mx-auto overflow-hidden bg-white/30 backdrop-blur-[2px] font-sans" :class="userSettings.fontFamily === 'serif' ? 'font-serif' : 'font-sans'">
     
     <!-- Left Sidebar: Navigation -->
-    <aside class="w-full md:w-80 flex-shrink-0 flex flex-col bg-white/70 backdrop-blur-md shadow-xl border-r border-sakura-200 h-full z-20 transition-all duration-300">
-      <!-- Header -->
-      <div class="p-6 bg-white/60 border-b border-sakura-100 flex-shrink-0">
-        <h1 class="text-2xl font-bold text-sakura-600 flex items-center gap-2 cursor-pointer" @click="resetToHome">
-          <span class="animate-spin-slow text-3xl">🌸</span> 
-          <span class="tracking-tight">Sakura Notes</span>
-        </h1>
-        <p class="text-xs text-sakura-400 mt-1 ml-10">Personal Space</p>
+    <aside class="w-full md:w-80 flex-shrink-0 flex flex-col bg-white/80 backdrop-blur-xl shadow-[4px_0_24px_rgba(0,0,0,0.02)] border-r border-white/60 h-full z-20 transition-all duration-300">
+      <!-- Profile Header -->
+      <div class="p-8 pb-4 flex flex-col items-center border-b border-sakura-100/50 flex-shrink-0 relative overflow-hidden">
+        <!-- Decor background inside header -->
+        <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-sakura-50/50 to-transparent pointer-events-none"></div>
+        
+        <div class="relative group cursor-pointer z-10" title="Change avatar in App.vue">
+          <div class="w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-sakura-300 to-sakura-100 shadow-xl mb-4 group-hover:scale-105 transition-transform duration-300">
+            <!-- AVATAR IMAGE: Change the src URL below -->
+            <img 
+              src="https://api.dicebear.com/7.x/notionists/svg?seed=Sakura&backgroundColor=ffd7e6" 
+              class="w-full h-full rounded-full object-cover border-4 border-white bg-white"
+              alt="Avatar"
+            />
+          </div>
+          <div class="absolute bottom-4 right-0 bg-white rounded-full p-1 shadow-md border border-sakura-100 text-xs">🌸</div>
+        </div>
+        
+        <h1 class="text-xl font-bold text-sakura-800 tracking-tight z-10" @click="resetToHome">Sakura Notes</h1>
+        <p class="text-xs text-sakura-400 mt-1 font-medium bg-sakura-50 px-3 py-1 rounded-full z-10">Frontend & Vue Learner</p>
       </div>
 
       <!-- View Toggles -->
-      <div class="p-3 bg-white/40 border-b border-sakura-100 flex-shrink-0">
-        <div class="flex p-1 bg-sakura-100/50 rounded-xl">
+      <div class="px-6 py-4 flex-shrink-0">
+        <div class="flex p-1.5 bg-sakura-50/80 rounded-2xl border border-sakura-100 relative">
           <button 
             @click="switchViewMode('latest')"
-            class="flex-1 py-2 text-sm font-bold rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
-            :class="viewMode === 'latest' ? 'bg-white text-sakura-600 shadow-sm ring-1 ring-sakura-200' : 'text-sakura-400 hover:text-sakura-600 hover:bg-white/50'"
+            class="flex-1 py-2 text-xs font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-1 z-10"
+            :class="viewMode === 'latest' ? 'bg-white text-sakura-600 shadow-sm ring-1 ring-sakura-100' : 'text-sakura-400 hover:text-sakura-600 hover:bg-white/50'"
           >
-            <span>⏰</span> Latest
+            ⏰ Latest
           </button>
           <button 
             @click="switchViewMode('files')"
-            class="flex-1 py-2 text-sm font-bold rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
-            :class="viewMode === 'files' ? 'bg-white text-sakura-600 shadow-sm ring-1 ring-sakura-200' : 'text-sakura-400 hover:text-sakura-600 hover:bg-white/50'"
+            class="flex-1 py-2 text-xs font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-1 z-10"
+            :class="viewMode === 'files' ? 'bg-white text-sakura-600 shadow-sm ring-1 ring-sakura-100' : 'text-sakura-400 hover:text-sakura-600 hover:bg-white/50'"
           >
-            <span>📁</span> Files
+            📁 Files
+          </button>
+          <button 
+            @click="switchViewMode('lab')"
+            class="flex-1 py-2 text-xs font-bold rounded-xl transition-all duration-300 flex items-center justify-center gap-1 z-10"
+            :class="viewMode === 'lab' ? 'bg-white text-purple-600 shadow-sm ring-1 ring-purple-100' : 'text-sakura-400 hover:text-purple-600 hover:bg-white/50'"
+          >
+            🧪 Lab
           </button>
         </div>
       </div>
 
       <!-- File List / Tree -->
-      <div class="flex-1 overflow-y-auto custom-scrollbar p-3">
+      <div class="flex-1 overflow-y-auto custom-scrollbar px-4 pb-4">
         <div v-if="loading" class="flex flex-col items-center justify-center py-10 text-sakura-400">
           <div class="animate-bounce text-2xl mb-2">🌸</div>
           <span class="text-xs font-medium">Reading notes...</span>
         </div>
 
+        <!-- LAB MODE SIDEBAR -->
+        <div v-else-if="viewMode === 'lab'" class="animate-fade-in pb-20">
+           <div class="px-2 mb-4">
+             <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Interactive Tools</h3>
+             <div 
+               @click="currentTool = 'reactivity'; currentFile = null; currentFolder = null;"
+               class="p-3 rounded-xl border border-purple-100 cursor-pointer hover:bg-white hover:shadow-md transition-all mb-2 flex items-center gap-3 bg-purple-50/50"
+               :class="{'ring-2 ring-purple-300 bg-white': currentTool === 'reactivity'}"
+             >
+               <span class="text-xl">🧪</span>
+               <div class="flex-1">
+                 <div class="text-sm font-bold text-purple-900">Reactivity</div>
+                 <div class="text-[10px] text-purple-500">Data binding visualizer</div>
+               </div>
+             </div>
+             <div 
+               @click="currentTool = 'lifecycle'; currentFile = null; currentFolder = null;"
+               class="p-3 rounded-xl border border-blue-100 cursor-pointer hover:bg-white hover:shadow-md transition-all mb-4 flex items-center gap-3 bg-blue-50/50"
+               :class="{'ring-2 ring-blue-300 bg-white': currentTool === 'lifecycle'}"
+             >
+               <span class="text-xl">🎢</span>
+               <div class="flex-1">
+                 <div class="text-sm font-bold text-blue-900">Lifecycle</div>
+                 <div class="text-[10px] text-blue-500">Hook execution flow</div>
+               </div>
+             </div>
+
+             <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Vue Courseware</h3>
+             <FileTree 
+                v-if="labFolder"
+                :nodes="[labFolder]" 
+                :expanded-paths="expandedFolders"
+                :current-path="currentPath"
+                @toggle-folder="toggleFolder"
+                @select-file="openFile"
+                @select-folder="openFolder"
+              />
+              <div v-else class="text-xs text-gray-400 italic px-2">No 'VUE学习笔记' folder found.</div>
+           </div>
+        </div>
+
         <!-- Latest View -->
-        <div v-else-if="viewMode === 'latest'" class="space-y-2 pb-20">
-           <div v-if="flatFiles.length === 0" class="text-center text-gray-400 py-10 text-sm italic">
-            No markdown files found.<br>Push some to your repo!
+        <div v-else-if="viewMode === 'latest'" class="space-y-3 pb-20">
+           <div v-if="filteredFlatFiles.length === 0" class="text-center text-gray-400 py-10 text-sm italic">
+            No personal notes found.
           </div>
           <div 
-            v-for="file in flatFiles" 
+            v-for="file in filteredFlatFiles" 
             :key="file.path"
             @click="openFile(file)"
-            class="group p-3 bg-white/80 border border-sakura-100 rounded-xl hover:border-sakura-300 hover:shadow-md cursor-pointer transition-all duration-200 animate-fade-in relative overflow-hidden"
-            :class="{'ring-2 ring-sakura-300 bg-sakura-50': currentFile?.path === file.path}"
+            class="group p-4 bg-white/40 border border-white/60 rounded-2xl hover:bg-white hover:shadow-lg hover:shadow-sakura-100/20 cursor-pointer transition-all duration-300 animate-fade-in relative overflow-hidden backdrop-blur-sm"
+            :class="{'ring-2 ring-sakura-300 bg-white shadow-md': currentFile?.path === file.path}"
           >
-             <div class="absolute -right-2 -top-2 text-sakura-100 text-4xl opacity-20 transform rotate-12 group-hover:rotate-45 transition-transform">✿</div>
-            <div class="flex justify-between items-start mb-1 relative z-10">
-              <span class="font-bold text-gray-700 group-hover:text-sakura-600 truncate pr-2 flex-1">{{ file.name }}</span>
+            <div class="flex justify-between items-start mb-2 relative z-10">
+              <span class="font-bold text-gray-700 group-hover:text-sakura-600 truncate pr-2 flex-1 text-sm">{{ file.name }}</span>
             </div>
              <div class="flex justify-between items-center relative z-10">
-               <span class="text-[10px] bg-sakura-100 text-sakura-600 px-2 py-0.5 rounded-full whitespace-nowrap">
+               <span class="text-[10px] bg-sakura-50 text-sakura-600 px-2 py-1 rounded-md whitespace-nowrap font-medium">
                   {{ formatDate(file.lastModified) }}
                </span>
                <div class="text-[10px] text-gray-400 truncate flex items-center gap-1 max-w-[50%]">
@@ -67,9 +126,9 @@
         </div>
 
         <!-- Tree View -->
-        <div v-else class="animate-fade-in pb-20">
+        <div v-else class="animate-fade-in pb-20 pt-2">
           <FileTree 
-            :nodes="fileSystem" 
+            :nodes="filteredFileSystem" 
             :expanded-paths="expandedFolders"
             :current-path="currentPath"
             @toggle-folder="toggleFolder"
@@ -78,22 +137,49 @@
           />
         </div>
       </div>
+      
+      <!-- User Settings Trigger -->
+      <div class="p-4 border-t border-sakura-100/50 flex justify-between items-center bg-white/50 backdrop-blur-md">
+         <button @click="showSettings = true" class="text-sakura-400 hover:text-sakura-600 hover:rotate-90 transition-all duration-500">
+           <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.38a2 2 0 0 0-.73-2.73l-.15-.1a2 2 0 0 1-1-1.72v-.51a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+         </button>
+         <span class="text-[10px] text-sakura-300 font-mono">v1.2.0</span>
+      </div>
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 flex flex-col h-full overflow-hidden relative bg-white/60">
+    <main class="flex-1 flex flex-col h-full overflow-hidden relative">
       
+      <!-- Decorative Background Flower -->
+      <div class="absolute bottom-0 right-0 pointer-events-none opacity-20 z-0 select-none">
+        <svg width="600" height="600" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M250 250C250 250 300 150 400 180C400 180 320 250 250 250Z" fill="#fda4b8"/>
+          <path d="M250 250C250 250 350 300 380 400C380 400 280 320 250 250Z" fill="#fecdd7"/>
+          <path d="M250 250C250 250 200 350 100 320C100 320 180 250 250 250Z" fill="#ffe4e9"/>
+          <path d="M250 250C250 250 150 200 120 100C120 100 220 180 250 250Z" fill="#fff0f5"/>
+          <circle cx="250" cy="250" r="30" fill="#f43f72" fill-opacity="0.3"/>
+        </svg>
+      </div>
+
       <!-- Navbar / Breadcrumbs -->
-      <header class="h-16 bg-white/80 backdrop-blur-md border-b border-sakura-100 flex items-center justify-between px-6 shrink-0 shadow-sm z-10">
+      <header class="h-16 bg-white/40 backdrop-blur-md border-b border-white/40 flex items-center justify-between px-6 shrink-0 z-20">
         <div class="flex items-center text-sm overflow-x-auto no-scrollbar whitespace-nowrap mask-linear flex-1 mr-4 py-2">
           <span class="text-sakura-300 mr-2 shrink-0 text-lg cursor-pointer hover:scale-110 transition-transform" @click="resetToHome">🏠</span>
           <span class="text-sakura-200 mx-1">/</span>
-          <template v-for="(item, index) in breadcrumbs" :key="item.path">
+          <!-- Custom breadcrumb for Lab Tools -->
+          <template v-if="viewMode === 'lab' && currentTool">
+             <span class="mx-2 text-sakura-300">›</span>
+             <span class="text-purple-600 font-bold bg-purple-50 px-2 py-1 rounded-md">Sakura Lab</span>
+             <span class="mx-2 text-sakura-300">›</span>
+             <span class="text-gray-500">{{ currentTool === 'reactivity' ? 'Reactivity Playground' : 'Lifecycle Coaster' }}</span>
+          </template>
+          <!-- Regular Breadcrumbs -->
+          <template v-else v-for="(item, index) in breadcrumbs" :key="item.path">
             <span v-if="index > 0" class="mx-2 text-sakura-300">›</span>
             <span 
               @click="navigateToBreadcrumb(item.path)"
               class="cursor-pointer transition-colors px-2 py-1 rounded-md"
-              :class="index === breadcrumbs.length - 1 ? 'font-bold text-sakura-600 bg-sakura-50' : 'text-gray-500 hover:text-sakura-500 hover:bg-sakura-50'"
+              :class="index === breadcrumbs.length - 1 ? 'font-bold text-sakura-600 bg-sakura-50/50' : 'text-gray-500 hover:text-sakura-500 hover:bg-sakura-50/50'"
             >
               {{ item.name }}
             </span>
@@ -101,63 +187,87 @@
         </div>
 
         <div class="flex gap-2 shrink-0">
-          <button @click="copySource" class="p-2 text-sakura-400 hover:bg-sakura-100 hover:text-sakura-600 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold" title="Copy Markdown Source">
-             <span>Copy MD</span>
+          <button @click="copyLink" class="p-2 text-sakura-400 hover:bg-white hover:text-sakura-600 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold" title="Share Link">
+             <span class="text-lg">🔗</span>
           </button>
-          <button @click="downloadSource" class="p-2 text-sakura-400 hover:bg-sakura-100 hover:text-sakura-600 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold" title="Download">
-            <span>Download</span>
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
+          <button @click="downloadSource" class="p-2 text-sakura-400 hover:bg-white hover:text-sakura-600 rounded-lg transition-colors flex items-center gap-2 text-xs font-bold" title="Download">
+            <span>DL</span>
+            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg>
           </button>
         </div>
       </header>
 
       <!-- Content Body -->
-      <div class="flex-1 flex overflow-hidden">
+      <div class="flex-1 flex overflow-hidden z-10">
         
-        <!-- Case 1: Displaying a Markdown File -->
-        <div v-if="currentFile" id="scroll-container" class="flex-1 overflow-y-auto custom-scrollbar scroll-smooth p-6 md:p-12 relative w-full">
-          <div class="max-w-4xl mx-auto w-full bg-white/90 p-8 md:p-12 rounded-2xl shadow-sm border border-sakura-100 min-h-[calc(100%-2rem)] animate-fade-in">
+        <!-- Case 1: Lab Tools -->
+        <div v-if="viewMode === 'lab' && currentTool" class="flex-1 overflow-y-auto custom-scrollbar p-8">
+           <div class="w-[95%] max-w-[1200px] mx-auto animate-fade-in">
+             <LabReactivity v-if="currentTool === 'reactivity'" />
+             <LabLifecycle v-if="currentTool === 'lifecycle'" />
+           </div>
+        </div>
+
+        <!-- Case 2: Displaying a Markdown File -->
+        <div v-else-if="currentFile" id="scroll-container" class="flex-1 overflow-y-auto custom-scrollbar scroll-smooth p-4 md:p-8 relative w-full" @mouseup="handleTextSelection">
+          <div 
+             class="w-[95%] max-w-[1800px] mx-auto bg-white/70 p-8 md:p-16 rounded-[2rem] shadow-sm border border-white/80 min-h-[calc(100%-2rem)] animate-fade-in backdrop-blur-2xl transition-all duration-300"
+             :class="userSettings.fontSize === 'large' ? 'text-lg' : ''"
+          >
              <!-- Path Badge -->
-             <div class="mb-6 text-xs text-sakura-400 bg-sakura-50 inline-block px-3 py-1 rounded-full border border-sakura-100">
-                {{ currentFile.path.replace(/\//g, ' > ') }}
+             <div class="mb-8 flex items-center gap-3 border-b border-gray-100 pb-6">
+                <span class="text-3xl bg-sakura-50 p-2 rounded-xl">{{ viewMode === 'lab' ? '🧪' : '📄' }}</span>
+                <div>
+                  <h1 class="text-3xl font-bold text-gray-800 tracking-tight">{{ currentFile.name.replace('.md', '') }}</h1>
+                  <div class="flex items-center gap-2 text-xs text-gray-400 mt-1">
+                     <span>{{ getParentPath(currentFile.path) }}</span>
+                     <span>•</span>
+                     <span>{{ formatDate(currentFile.lastModified) }}</span>
+                  </div>
+                </div>
              </div>
 
             <div v-html="renderedContent" class="markdown-body"></div>
             
             <div class="mt-12 pt-8 border-t border-sakura-100 flex justify-between text-xs text-sakura-300">
               <span class="italic">Sakura Notes</span>
-              <span>Last updated: {{ formatDate(currentFile.lastModified) }}</span>
+              <span>Updated: {{ formatDate(currentFile.lastModified) }}</span>
             </div>
           </div>
         </div>
 
-        <!-- Case 2: Displaying a Directory Listing -->
+        <!-- Case 3: Displaying a Directory Listing -->
         <div v-else-if="currentFolder" class="flex-1 overflow-y-auto custom-scrollbar p-8">
-           <div class="max-w-6xl mx-auto">
-             <div class="flex items-center gap-4 mb-8">
-               <span class="text-6xl">📁</span>
+           <div class="w-[95%] max-w-[1800px] mx-auto">
+             <div class="flex items-center gap-4 mb-8 p-8 bg-white/60 rounded-[2rem] border border-white shadow-sm backdrop-blur-md">
+               <span class="text-5xl bg-sakura-100 p-4 rounded-2xl shadow-inner text-sakura-500">📁</span>
                <div>
-                 <h2 class="text-3xl font-bold text-sakura-800">{{ currentFolder.name }}</h2>
-                 <p class="text-sakura-400 mt-1">Contains {{ currentFolder.children?.length || 0 }} items</p>
+                 <h2 class="text-3xl font-bold text-sakura-900">{{ currentFolder.name }}</h2>
+                 <p class="text-sakura-500 mt-1 font-medium">{{ currentFolder.children?.length || 0 }} items inside</p>
                </div>
              </div>
 
-             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 gap-6">
                <!-- Directories first -->
                <div 
                   v-for="child in sortedFolderChildren" 
                   :key="child.path"
                   @click="child.type === 'directory' ? openFolder(child) : openFile(child)"
-                  class="folder-card bg-white p-4 rounded-xl shadow-sm border border-sakura-100 hover:shadow-md hover:border-sakura-300 cursor-pointer transition-all duration-200 flex flex-col h-32"
+                  class="folder-card bg-white/60 p-6 rounded-2xl shadow-sm border border-white/70 hover:shadow-xl hover:shadow-sakura-100/30 hover:bg-white hover:border-sakura-200 cursor-pointer transition-all duration-300 flex flex-col h-48 backdrop-blur-sm group relative overflow-hidden"
                >
-                 <div class="flex items-start justify-between mb-2">
-                   <span class="text-3xl">{{ child.type === 'directory' ? '📂' : '📄' }}</span>
-                   <span v-if="child.type === 'file'" class="text-[10px] text-gray-400">{{ formatDate(child.lastModified) }}</span>
+                 <div class="absolute -right-4 -top-4 w-20 h-20 bg-gradient-to-br from-sakura-50 to-transparent rounded-full opacity-50 group-hover:scale-150 transition-transform duration-500"></div>
+                 
+                 <div class="flex items-start justify-between mb-4 relative z-10">
+                   <span class="text-5xl group-hover:scale-110 transition-transform drop-shadow-sm">{{ child.type === 'directory' ? '📂' : '📝' }}</span>
+                   <span v-if="child.type === 'file'" class="text-[10px] text-sakura-500 bg-sakura-50 px-2 py-1 rounded-full font-bold">{{ formatDate(child.lastModified) }}</span>
                  </div>
-                 <h3 class="font-bold text-gray-700 truncate" :title="child.name">{{ child.name }}</h3>
-                 <p class="text-xs text-sakura-400 mt-auto truncate">
-                   {{ child.type === 'directory' ? `${child.children?.length || 0} items` : 'Markdown' }}
-                 </p>
+                 
+                 <div class="mt-auto relative z-10">
+                   <h3 class="font-bold text-gray-700 truncate text-lg group-hover:text-sakura-600 transition-colors" :title="child.name">{{ child.name }}</h3>
+                   <p class="text-xs text-gray-400 mt-1 truncate font-medium">
+                     {{ child.type === 'directory' ? `${child.children?.length || 0} items` : 'Markdown Note' }}
+                   </p>
+                 </div>
                </div>
              </div>
              
@@ -169,28 +279,28 @@
            </div>
         </div>
 
-        <!-- Case 3: Home / Welcome State -->
+        <!-- Case 4: Home / Welcome State -->
         <div v-else class="flex-1 flex flex-col items-center justify-center text-sakura-300 animate-fade-in p-6 text-center">
-            <div class="relative">
-               <div class="text-9xl mb-6 opacity-80 animate-float">🌸</div>
-               <div class="absolute -bottom-4 left-1/2 transform -translate-x-1/2 w-24 h-4 bg-black/5 blur-xl rounded-full"></div>
+            <div class="relative group cursor-default">
+               <div class="text-[12rem] mb-6 opacity-90 animate-float drop-shadow-2xl filter saturate-150">🌸</div>
+               <div class="absolute -bottom-10 left-1/2 transform -translate-x-1/2 w-48 h-8 bg-sakura-800/20 blur-2xl rounded-full group-hover:w-64 transition-all duration-500"></div>
             </div>
-            <h2 class="text-3xl font-bold text-sakura-500 mb-2">Welcome to Sakura Notes</h2>
-            <p class="text-sakura-400 max-w-md mx-auto">
-              Select a note from the "Latest" tab or explore the "Files" tree to start reading.
+            <h2 class="text-5xl font-bold text-sakura-600 mb-4 tracking-tight drop-shadow-sm">Welcome Home</h2>
+            <p class="text-sakura-400 max-w-lg mx-auto leading-relaxed text-lg">
+              Explore your personal knowledge base.<br>
+              <span class="text-sm opacity-70 bg-white/50 px-4 py-1 rounded-full mt-2 inline-block">Frontend Notes · Vue Docs · Life</span>
             </p>
         </div>
 
         <!-- TOC Sidebar (Right) -->
-        <aside v-if="currentFile && toc.length > 0" class="hidden xl:block w-72 bg-white/40 border-l border-sakura-100 overflow-y-auto custom-scrollbar p-6 backdrop-blur-sm z-10">
+        <aside v-if="currentFile && toc.length > 0 && !currentTool" class="hidden xl:block w-80 bg-white/20 border-l border-white/40 overflow-y-auto custom-scrollbar p-8 backdrop-blur-md z-10">
           <div class="sticky top-6">
-            <h3 class="text-xs font-bold text-sakura-500 uppercase tracking-wider mb-4 flex items-center gap-2">
-              <span>📑</span> Content Navigation
+            <h3 class="text-xs font-bold text-sakura-500 uppercase tracking-widest mb-6 flex items-center gap-2 opacity-80">
+              <span>📑</span> On this page
             </h3>
             <nav class="space-y-1 relative border-l-2 border-sakura-100 pl-4">
-               <!-- Active Indicator -->
               <div 
-                class="absolute left-[-2px] w-[2px] bg-sakura-500 transition-all duration-300"
+                class="absolute left-[-2px] w-[2px] bg-sakura-500 transition-all duration-300 shadow-[0_0_10px_rgba(244,63,114,0.8)]"
                 :style="{ top: activeIndicatorTop + 'px', height: '24px' }"
                 v-if="activeHeaderId"
               ></div>
@@ -200,12 +310,12 @@
                 :key="item.id"
                 :href="`#${item.id}`"
                 :id="`toc-${item.id}`"
-                class="block text-sm py-1 transition-all duration-200 leading-tight"
+                class="block text-sm py-1.5 transition-all duration-200 leading-tight"
                 :class="[
-                  item.level === 1 ? 'font-bold mb-2 mt-2' : 'font-normal',
-                  item.level > 1 ? `ml-${(item.level-1)*2}` : '',
+                  item.level === 1 ? 'font-bold mb-2 mt-4 text-sakura-800' : 'font-normal',
+                  item.level > 1 ? `ml-${(item.level-1)*3} text-xs` : '',
                   activeHeaderId === item.id 
-                    ? 'text-sakura-600 translate-x-1' 
+                    ? 'text-sakura-600 translate-x-1 font-medium scale-105 origin-left' 
                     : 'text-gray-500 hover:text-sakura-400'
                 ]"
                 @click.prevent="scrollToHeader(item.id)"
@@ -215,26 +325,125 @@
             </nav>
           </div>
         </aside>
+
+        <!-- Selection Popup Toolbar -->
+        <div 
+          v-if="selectionRect" 
+          class="fixed z-50 flex gap-1 p-1 bg-gray-800 rounded-lg shadow-xl text-white transform -translate-x-1/2 -translate-y-full animate-fade-in"
+          :style="{ top: selectionRect.top + 'px', left: selectionRect.left + 'px' }"
+          @mousedown.stop
+        >
+          <button @click="highlightSelection" class="p-2 hover:bg-gray-700 rounded transition-colors" title="Highlight">
+            🖊️
+          </button>
+          <button @click="shareSelection" class="p-2 hover:bg-gray-700 rounded transition-colors" title="Share Quote">
+            📤
+          </button>
+        </div>
       </div>
     </main>
+
+    <!-- Settings Modal -->
+    <div v-if="showSettings" class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm" @click.self="showSettings = false">
+      <div class="bg-white p-8 rounded-3xl shadow-2xl max-w-sm w-full animate-fade-in">
+        <h3 class="text-xl font-bold text-gray-800 mb-6">User Settings</h3>
+        
+        <div class="mb-6">
+           <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Font Style</label>
+           <div class="flex gap-2">
+             <button 
+               @click="userSettings.fontFamily = 'sans'"
+               class="flex-1 py-3 border rounded-xl font-sans"
+               :class="userSettings.fontFamily === 'sans' ? 'border-sakura-500 bg-sakura-50 text-sakura-600' : 'border-gray-200 text-gray-500'"
+             >Sans</button>
+             <button 
+               @click="userSettings.fontFamily = 'serif'"
+               class="flex-1 py-3 border rounded-xl font-serif"
+               :class="userSettings.fontFamily === 'serif' ? 'border-sakura-500 bg-sakura-50 text-sakura-600' : 'border-gray-200 text-gray-500'"
+             >Serif</button>
+           </div>
+        </div>
+
+        <div class="mb-8">
+           <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Font Size</label>
+           <div class="flex gap-2">
+             <button 
+               @click="userSettings.fontSize = 'normal'"
+               class="flex-1 py-3 border rounded-xl text-sm"
+               :class="userSettings.fontSize === 'normal' ? 'border-sakura-500 bg-sakura-50 text-sakura-600' : 'border-gray-200 text-gray-500'"
+             >Normal</button>
+             <button 
+               @click="userSettings.fontSize = 'large'"
+               class="flex-1 py-3 border rounded-xl text-lg"
+               :class="userSettings.fontSize === 'large' ? 'border-sakura-500 bg-sakura-50 text-sakura-600' : 'border-gray-200 text-gray-500'"
+             >Large</button>
+           </div>
+        </div>
+
+        <button @click="showSettings = false" class="w-full py-3 bg-sakura-500 text-white rounded-xl font-bold shadow-lg hover:bg-sakura-600 transition-colors">Done</button>
+      </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div v-if="showShareModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" @click.self="showShareModal = false">
+      <div class="bg-white p-6 rounded-3xl shadow-2xl max-w-sm w-full animate-fade-in text-center relative overflow-hidden">
+        <!-- Decor -->
+        <div class="absolute -top-10 -right-10 w-32 h-32 bg-sakura-100 rounded-full opacity-50"></div>
+        <div class="absolute -bottom-10 -left-10 w-24 h-24 bg-purple-100 rounded-full opacity-50"></div>
+
+        <h3 class="text-xl font-bold text-gray-800 mb-2 relative z-10">Share this Note 🌸</h3>
+        
+        <div v-if="shareQuote" class="mb-4 text-left bg-gray-50 p-4 rounded-xl text-gray-600 italic border-l-4 border-sakura-300 text-sm relative z-10">
+          "{{ shareQuote }}"
+        </div>
+
+        <div class="bg-white p-4 rounded-xl inline-block shadow-inner border border-gray-100 mb-4">
+           <div id="qrcode"></div>
+        </div>
+        
+        <p class="text-xs text-gray-400 mb-4">Scan to read full note</p>
+
+        <button @click="showShareModal = false" class="text-sm text-gray-500 hover:text-gray-800 underline">Close</button>
+      </div>
+    </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, reactive, nextTick } from 'vue';
 import { MOCK_FILE_SYSTEM } from './constants';
 import { FileNode, NodeType, BreadcrumbItem, TocItem } from './types';
 import FileTree from './components/FileTree.vue';
+import LabReactivity from './components/LabReactivity.vue';
+import LabLifecycle from './components/LabLifecycle.vue';
 
 // --- State ---
 const fileSystem = ref<FileNode[]>([]);
 const currentFile = ref<FileNode | null>(null);
-const currentFolder = ref<FileNode | null>(null); // For directory view
-const viewMode = ref<'latest' | 'files'>('latest');
+const currentFolder = ref<FileNode | null>(null); 
+const viewMode = ref<'latest' | 'files' | 'lab'>('latest');
 const expandedFolders = ref<string[]>([]);
 const toc = ref<TocItem[]>([]);
 const activeHeaderId = ref<string>('');
 const loading = ref(true);
+const currentTool = ref<'reactivity' | 'lifecycle' | null>(null);
+
+// Settings & Tools
+const showSettings = ref(false);
+const userSettings = reactive({
+  fontSize: localStorage.getItem('sakura_fontsize') || 'normal',
+  fontFamily: localStorage.getItem('sakura_fontfamily') || 'sans'
+});
+
+// Selection & Share
+const selectionRect = ref<{top: number, left: number} | null>(null);
+const showShareModal = ref(false);
+const shareQuote = ref('');
+
+// --- Watch Settings ---
+watch(() => userSettings.fontSize, (v) => localStorage.setItem('sakura_fontsize', v));
+watch(() => userSettings.fontFamily, (v) => localStorage.setItem('sakura_fontfamily', v));
 
 // --- Computed ---
 const currentPath = computed(() => {
@@ -243,7 +452,20 @@ const currentPath = computed(() => {
   return '';
 });
 
-const flatFiles = computed(() => {
+// Filter out 'VUE学习笔记' from main list
+const filteredFileSystem = computed(() => {
+  return fileSystem.value.map(node => {
+     if (node.path === 'notes') {
+       return {
+         ...node,
+         children: node.children?.filter(c => !c.path.includes('VUE学习笔记'))
+       }
+     }
+     return node;
+  });
+});
+
+const filteredFlatFiles = computed(() => {
   const flatten = (nodes: FileNode[]): FileNode[] => {
     let files: FileNode[] = [];
     for (const node of nodes) {
@@ -255,14 +477,28 @@ const flatFiles = computed(() => {
     }
     return files;
   };
-  return flatten(fileSystem.value).sort((a, b) => {
+  // Use filtered system to avoid Vue notes
+  return flatten(filteredFileSystem.value).sort((a, b) => {
     return new Date(b.lastModified || 0).getTime() - new Date(a.lastModified || 0).getTime();
   });
 });
 
+// Get 'VUE学习笔记' for Lab
+const labFolder = computed(() => {
+  const findVueFolder = (nodes: FileNode[]): FileNode | undefined => {
+    for (const node of nodes) {
+      if (node.path.includes('VUE学习笔记')) return node;
+      if (node.children) {
+        const found = findVueFolder(node.children);
+        if (found) return found;
+      }
+    }
+  };
+  return findVueFolder(fileSystem.value);
+});
+
 const sortedFolderChildren = computed(() => {
   if (!currentFolder.value || !currentFolder.value.children) return [];
-  // Folders first, then files
   return [...currentFolder.value.children].sort((a, b) => {
     if (a.type === b.type) return a.name.localeCompare(b.name);
     return a.type === NodeType.DIRECTORY ? -1 : 1;
@@ -281,15 +517,14 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
 
 const renderedContent = computed(() => {
   if (!currentFile.value?.content) return '';
-  // @ts-ignore: marked loaded globally via CDN
+  // @ts-ignore
   return window.marked ? window.marked.parse(currentFile.value.content) : currentFile.value.content;
 });
 
 const activeIndicatorTop = computed(() => {
   if (!activeHeaderId.value) return 0;
   const idx = toc.value.findIndex(t => t.id === activeHeaderId.value);
-  // Approximation of position based on list items
-  return idx * 24; // Assuming approx height
+  return idx * 28; 
 });
 
 // --- Helpers ---
@@ -304,7 +539,6 @@ const formatDate = (dateStr?: string) => {
   return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
 };
 
-// Find a node in the tree by path
 const findNodeByPath = (nodes: FileNode[], path: string): FileNode | null => {
   for (const node of nodes) {
     if (node.path === path) return node;
@@ -321,24 +555,32 @@ const expandToPath = (path: string) => {
   const parts = path.split('/');
   let pathBuilder = '';
   const newExpanded = new Set(expandedFolders.value);
-  // Expand all parents
   for (let i = 0; i < parts.length - 1; i++) {
     pathBuilder += (i === 0 ? '' : '/') + parts[i];
     newExpanded.add(pathBuilder);
   }
-  // Also expand self if it is a directory
   if (currentFolder.value && currentFolder.value.path === path) {
     newExpanded.add(path);
   }
   expandedFolders.value = Array.from(newExpanded);
 };
 
+const updateUrl = (path: string | null) => {
+  const url = new URL(window.location.href);
+  if (path) {
+    url.searchParams.set('path', path);
+  } else {
+    url.searchParams.delete('path');
+  }
+  window.history.pushState({}, '', url);
+};
+
 const openFile = (file: FileNode) => {
   currentFile.value = file;
   currentFolder.value = null;
-  // Note: We do NOT switch viewMode automatically if clicking from "Latest". 
-  // User stays in their context.
-  // But if we are in Files mode, we ensure it's expanded.
+  currentTool.value = null; // Clear tool if opening file
+  updateUrl(file.path);
+  
   if (viewMode.value === 'files') {
     expandToPath(file.path);
   }
@@ -348,10 +590,10 @@ const openFile = (file: FileNode) => {
 const openFolder = (folder: FileNode) => {
   currentFile.value = null;
   currentFolder.value = folder;
+  currentTool.value = null;
+  updateUrl(folder.path);
   
-  // When opening a folder explicitly (e.g. from breadcrumb or tree), 
-  // we likely want to see the tree structure.
-  viewMode.value = 'files';
+  if (viewMode.value === 'latest') viewMode.value = 'files';
   expandToPath(folder.path);
 };
 
@@ -361,9 +603,12 @@ const toggleFolder = (path: string) => {
   else expandedFolders.value.splice(idx, 1);
 };
 
-const switchViewMode = (mode: 'latest' | 'files') => {
+const switchViewMode = (mode: 'latest' | 'files' | 'lab') => {
   viewMode.value = mode;
-  // If switching to Files, ensure current selection is visible in tree
+  // If switching to Lab, default to Reactivity tool if no file selected
+  if (mode === 'lab' && !currentFile.value && !currentTool.value) {
+    currentTool.value = 'reactivity';
+  }
   if (mode === 'files' && currentPath.value) {
     expandToPath(currentPath.value);
   }
@@ -372,18 +617,15 @@ const switchViewMode = (mode: 'latest' | 'files') => {
 const navigateToBreadcrumb = (path: string) => {
   const node = findNodeByPath(fileSystem.value, path);
   if (!node) return;
-
-  if (node.type === NodeType.DIRECTORY) {
-    openFolder(node);
-  } else {
-    openFile(node);
-  }
+  if (node.type === NodeType.DIRECTORY) openFolder(node);
+  else openFile(node);
 };
 
 const resetToHome = () => {
   currentFile.value = null;
   currentFolder.value = null;
   viewMode.value = 'latest';
+  updateUrl(null);
 };
 
 const copySource = () => {
@@ -395,11 +637,15 @@ const copySource = () => {
   }
 };
 
+const copyLink = () => {
+  navigator.clipboard.writeText(window.location.href).then(() => {
+    alert("Link copied! Share it with friends. 🌸");
+  });
+};
+
 const downloadSource = () => {
   if (currentFile.value) {
     downloadFile(currentFile.value.name, currentFile.value.content || '');
-  } else if (currentFolder.value) {
-    // Maybe download a JSON of the structure? Or just ignore.
   }
 };
 
@@ -411,6 +657,58 @@ const downloadFile = (filename: string, content: string) => {
   a.download = filename;
   a.click();
   URL.revokeObjectURL(url);
+};
+
+// --- Selection & Share ---
+const handleTextSelection = (e: MouseEvent) => {
+  const selection = window.getSelection();
+  if (selection && selection.toString().length > 0) {
+    const range = selection.getRangeAt(0);
+    const rect = range.getBoundingClientRect();
+    selectionRect.value = {
+      top: rect.top - 10,
+      left: rect.left + rect.width / 2
+    };
+    shareQuote.value = selection.toString();
+  } else {
+    selectionRect.value = null;
+  }
+};
+
+const highlightSelection = () => {
+  const selection = window.getSelection();
+  if (!selection || !selection.rangeCount) return;
+  
+  const range = selection.getRangeAt(0);
+  const span = document.createElement("span");
+  span.className = "temp-highlight";
+  try {
+    range.surroundContents(span);
+  } catch(e) {
+    alert("Complex selection. Please select plain text.");
+  }
+  selectionRect.value = null;
+  selection.removeAllRanges();
+};
+
+const shareSelection = () => {
+  showShareModal.value = true;
+  selectionRect.value = null;
+  
+  nextTick(() => {
+    const container = document.getElementById("qrcode");
+    if (container) {
+      container.innerHTML = "";
+      // @ts-ignore
+      new QRCode(container, {
+        text: window.location.href,
+        width: 128,
+        height: 128,
+        colorDark : "#e11d59",
+        colorLight : "#ffffff",
+      });
+    }
+  });
 };
 
 // --- TOC & Scroll ---
@@ -428,7 +726,7 @@ const generateToc = () => {
     const match = line.match(/^(#{1,3})\s+(.*)$/);
     if (match) {
       const text = match[2];
-      const id = text.toLowerCase().replace(/[^\w\u4e00-\u9fa5]+/g, '-'); // Support Chinese chars
+      const id = text.toLowerCase().replace(/[^\w\u4e00-\u9fa5]+/g, '-'); 
       headers.push({ id, text, level: match[1].length });
     }
   });
@@ -438,13 +736,10 @@ const generateToc = () => {
 const updateActiveHeader = () => {
   const container = document.getElementById('scroll-container');
   if (!container) return;
-  
   const scrollPosition = container.scrollTop;
   let active = '';
-  
   for (const item of toc.value) {
-    const el = document.getElementById(item.id); // Elements inside markdown body
-    // marked usually generates id="header-text"
+    const el = document.getElementById(item.id);
     if (el && el.offsetTop - 150 <= scrollPosition) {
       active = item.id;
     }
@@ -459,7 +754,6 @@ const scrollToHeader = (id: string) => {
 
 watch(currentFile, () => {
   generateToc();
-  // Reset scroll
   setTimeout(() => {
     const container = document.getElementById('scroll-container');
     if (container) container.scrollTop = 0;
@@ -469,10 +763,25 @@ watch(currentFile, () => {
 // --- Lifecycle ---
 onMounted(async () => {
   try {
-    // Add timestamp to prevent caching issues on GitHub Pages
     const res = await fetch(`./files.json?t=${Date.now()}`);
     if (res.ok) {
       fileSystem.value = await res.json();
+      
+      const params = new URLSearchParams(window.location.search);
+      const targetPath = params.get('path');
+      if (targetPath) {
+        const node = findNodeByPath(fileSystem.value, targetPath);
+        if (node) {
+          // If deep link points to a Vue note, switch to Lab mode
+          if (targetPath.includes('VUE学习笔记')) {
+             viewMode.value = 'lab';
+             openFile(node);
+          } else {
+             if (node.type === NodeType.FILE) openFile(node);
+             else openFolder(node);
+          }
+        }
+      }
     } else {
       throw new Error("No index");
     }
@@ -484,7 +793,6 @@ onMounted(async () => {
   }
 
   const container = document.getElementById('scroll-container');
-  // Re-attach scroll listener when container appears
   watch(currentFile, (_, __, onCleanup) => {
     setTimeout(() => {
       const el = document.getElementById('scroll-container');
