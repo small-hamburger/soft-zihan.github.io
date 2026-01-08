@@ -8,7 +8,7 @@ export const I18N = {
     tab_files: "Files",
     tab_lab: "Laboratory",
     lab_dashboard: "Visual Learning Center",
-    lab_dashboard_desc: "Visualize code, understand logic",
+    lab_dashboard_desc: "Deep dive into the core mechanics",
     lab_tools: "Visual Playground",
     lab_resources: "Learning Resources",
     lab_course: "Vue Ninja Training (Project Based)",
@@ -30,27 +30,22 @@ export const I18N = {
     lab_st_info_js: "JS is the muscle/soul. It defines HOW it interacts.",
 
     // HTML/JS Tools
-    lab_html_title: "Browser Kernel Simulator",
-    lab_html_info: "Type HTML/CSS to see how the browser kernel parses and renders the page.",
+    lab_html_title: "HTML Parser & Tokenizer",
+    lab_html_info: "See how the browser engine breaks down raw text into Tokens and builds the DOM Tree.",
     lab_html_mode: "Mode",
-    lab_html_debug: "Structure (Debug)",
-    lab_html_preview: "Render (Preview)",
-    lab_html_process: "Kernel Status",
-    lab_html_status_idle: "Idle",
-    lab_html_status_parse: "Parsing HTML...",
-    lab_html_status_dom: "Building DOM Tree...",
-    lab_html_status_style: "Calculating Styles...",
-    lab_html_status_paint: "Painting Pixels...",
+    lab_html_debug: "Tree View",
+    lab_html_preview: "Render View",
+    lab_html_tokens: "Token Stream",
+    lab_html_tree: "Constructed DOM Tree",
     
     // JS Lab (Updated)
-    lab_js_title: "JS Core Mechanics",
-    lab_js_tab_basics: "1. Basics (Types & Operators)",
-    lab_js_tab_events: "2. Event Propagation",
-    lab_js_type_check: "Type Checker (typeof)",
-    lab_js_equality: "Equality (== vs ===)",
-    lab_js_info: "Switch tabs to explore JS variables, types, and event bubbling.",
-    lab_js_log: "Event Log",
-    lab_js_clear: "Clear",
+    lab_js_title: "JS Runtime Sandbox",
+    lab_js_tab_basics: "Runtime REPL",
+    lab_js_tab_coercion: "Type Coercion Matrix",
+    lab_js_run: "Run Code",
+    lab_js_result: "Result",
+    lab_js_console: "Console Output",
+    lab_js_info: "Type real JavaScript code. Variables are scoped to this sandbox.",
 
     // DOM Lab
     lab_dom_title: "DOM Manipulation Playground",
@@ -92,8 +87,12 @@ export const I18N = {
     lab_job_3: "Other",
     
     // Existing Vue Tools
-    lab_reactivity: "Reactivity",
-    lab_reactivity_desc: "Data binding visualizer",
+    lab_reactivity: "Reactivity Core",
+    lab_reactivity_desc: "Visualizing Track & Trigger",
+    lab_reactivity_track: "Track (Get)",
+    lab_reactivity_trigger: "Trigger (Set)",
+    lab_reactivity_deps: "Dependency Bucket (Dep)",
+    lab_reactivity_effect: "Active Effect",
     lab_lifecycle: "Lifecycle",
     lab_lifecycle_desc: "Hook execution flow",
     lab_lifecycle_component: "Virtual Component",
@@ -102,6 +101,27 @@ export const I18N = {
     lab_directives_desc: "v-if vs v-show visualizer",
     lab_quiz: "Vue Ninja Quiz",
     lab_quiz_desc: "Test your knowledge!",
+
+    // Class & Style Lab (NEW)
+    lab_class_title: "Class & Style Binding",
+    lab_class_desc: "Master the object and array syntax for dynamic styling.",
+    lab_class_toggle: "Toggle Class",
+    lab_class_style_ctrl: "Style Controls",
+    lab_class_result: "Rendered Element",
+    lab_class_code: "Generated Data",
+    lab_class_info: "Manipulate the controls to see how Vue updates the class list and inline styles.",
+
+    // Props & Emit Lab
+    lab_props_title: "Component Communication",
+    lab_props_desc: "Visualizing One-Way Data Flow.",
+    lab_props_parent: "Parent (Controller)",
+    lab_props_child: "Child (Robot)",
+    lab_props_msg: "Message",
+    lab_props_status: "Status",
+    lab_props_emit_log: "Event Log (from Child)",
+    lab_props_action_hit: "Hit",
+    lab_props_action_heal: "Heal",
+    lab_props_info: "Props pass data DOWN. Events emit UP.",
     
     // Quiz Extended
     quiz_cat_all: "Mixed Challenge",
@@ -160,8 +180,8 @@ export const I18N = {
     selection_error: "Selection cannot cross paragraphs.",
     
     // Lab Components content
-    lab_reactivity_title: "Reactivity & Computed",
-    lab_reactivity_info: "Type in the JS box to see how Data drives the View and how Computed properties update automatically.",
+    lab_reactivity_title: "Reactivity System: Track & Trigger",
+    lab_reactivity_info: "Visualize how Vue collects dependencies (Track) into a Bucket and re-runs effects (Trigger) when data changes.",
     lab_lifecycle_title: "Lifecycle Coaster",
     lab_lifecycle_btn_mount: "Mount",
     lab_lifecycle_btn_update: "Update",
@@ -181,7 +201,7 @@ export const I18N = {
     tab_files: "归档",
     tab_lab: "实验室",
     lab_dashboard: "可视化学习中心",
-    lab_dashboard_desc: "看见代码，理解逻辑",
+    lab_dashboard_desc: "拒绝死记硬背，深度理解原理",
     lab_tools: "交互演示",
     lab_resources: "前端修炼场",
     lab_course: "Vue 实战笔记 (源码解析)",
@@ -203,25 +223,22 @@ export const I18N = {
     lab_st_info_js: "JS 是肌肉/灵魂。它定义了页面“怎么动” (How Act)。",
 
     // HTML/JS Tools
-    lab_html_title: "浏览器内核模拟器",
-    lab_html_info: "输入代码，观察浏览器内核如何解析 HTML/CSS 并渲染成网页。",
+    lab_html_title: "HTML 词法分析与 DOM 构建",
+    lab_html_info: "输入代码，实时观察浏览器如何将字符流拆解为 Token，并构建出 DOM 树结构。",
     lab_html_mode: "视图模式",
-    lab_html_debug: "结构调试 (Debug)",
-    lab_html_preview: "渲染预览 (Preview)",
-    lab_html_process: "内核状态",
-    lab_html_status_idle: "就绪",
-    lab_html_status_parse: "解析 HTML 结构...",
-    lab_html_status_dom: "构建 DOM Tree...",
-    lab_html_status_style: "计算 CSS 样式...",
-    lab_html_status_paint: "绘制像素 (Paint)...",
+    lab_html_debug: "DOM 树状图",
+    lab_html_preview: "真实渲染",
+    lab_html_tokens: "Token 流 (词法分析)",
+    lab_html_tree: "DOM 树 (语法分析)",
 
     // JS Lab (Updated)
-    lab_js_title: "JS 核心机制",
-    lab_js_tab_basics: "1. 基础语法 (类型与运算符)",
-    lab_js_tab_events: "2. 事件传播机制 (Bubbling)",
-    lab_js_type_check: "数据类型检测 (typeof)",
-    lab_js_equality: "运算符对比 (== vs ===)",
-    lab_js_info: "切换标签页以探索 JS 变量、类型判断以及事件冒泡机制。",
+    lab_js_title: "JS 运行时沙箱",
+    lab_js_tab_basics: "REPL (执行环境)",
+    lab_js_tab_coercion: "类型转换矩阵",
+    lab_js_run: "执行代码",
+    lab_js_result: "执行结果",
+    lab_js_console: "控制台输出",
+    lab_js_info: "在这里编写真实的 JavaScript 代码。变量仅在当前沙箱内有效。",
     lab_js_log: "事件日志",
     lab_js_clear: "清空",
 
@@ -265,8 +282,12 @@ export const I18N = {
     lab_job_3: "其他",
 
     // Existing Vue Tools
-    lab_reactivity: "响应式原理",
-    lab_reactivity_desc: "数据绑定可视化",
+    lab_reactivity: "响应式原理 (Core)",
+    lab_reactivity_desc: "可视化 Track 与 Trigger",
+    lab_reactivity_track: "收集依赖 (Track)",
+    lab_reactivity_trigger: "触发更新 (Trigger)",
+    lab_reactivity_deps: "依赖桶 (Dep Set)",
+    lab_reactivity_effect: "副作用 (ActiveEffect)",
     lab_lifecycle: "生命周期",
     lab_lifecycle_desc: "钩子执行流程",
     lab_lifecycle_component: "虚拟组件",
@@ -275,6 +296,27 @@ export const I18N = {
     lab_directives_desc: "v-if 与 v-show 的区别",
     lab_quiz: "Vue 忍者挑战",
     lab_quiz_desc: "基于课程内容的随机测试！",
+
+    // Class & Style Lab (NEW)
+    lab_class_title: "Class 与 Style 绑定",
+    lab_class_desc: "掌握 Vue 中处理动态样式的对象语法与数组语法。",
+    lab_class_toggle: "切换 Class",
+    lab_class_style_ctrl: "Style 控制",
+    lab_class_result: "渲染结果",
+    lab_class_code: "数据源",
+    lab_class_info: "操作下方的开关，观察 Vue 如何动态生成 class 字符串和 style 对象。",
+
+    // Props & Emit Lab
+    lab_props_title: "组件通信 (Props & Emit)",
+    lab_props_desc: "可视化单向数据流与事件冒泡。",
+    lab_props_parent: "父组件 (控制器)",
+    lab_props_child: "子组件 (机器人)",
+    lab_props_msg: "指令消息",
+    lab_props_status: "运行状态",
+    lab_props_emit_log: "事件日志 (来自子组件)",
+    lab_props_action_hit: "受击",
+    lab_props_action_heal: "治疗",
+    lab_props_info: "Props 数据向下流，Emit 事件向上冒。",
     
     // Quiz Extended
     quiz_cat_all: "综合大挑战",
@@ -333,8 +375,8 @@ export const I18N = {
     selection_error: "无法跨段落标注",
     
     // Lab Components content
-    lab_reactivity_title: "响应式与计算属性",
-    lab_reactivity_info: "在 JS 框中输入，观察数据如何驱动视图，以及计算属性如何自动更新。",
+    lab_reactivity_title: "响应式系统: 依赖收集与触发",
+    lab_reactivity_info: "深入 Vue 3 原理：观察读取数据时如何收集依赖 (Track)，以及修改数据时如何从依赖桶中取出并执行更新 (Trigger)。",
     lab_lifecycle_title: "生命周期过山车",
     lab_lifecycle_btn_mount: "挂载 (Mount)",
     lab_lifecycle_btn_update: "更新 (Update)",

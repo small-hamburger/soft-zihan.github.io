@@ -2,7 +2,7 @@
 # 02. JS Variables & Reactivity System 🌸
 
 > **Goal**: Review JS variables (`let`, `const`) and understand Vue's Reactivity (`ref`, `reactive`).
-> **Ref**: [📖 MDN JS](https://developer.mozilla.org/en-US/docs/Web/JavaScript), [📖 Vue Reactivity](https://vuejs.org/guide/essentials/reactivity-fundamentals.html)
+> **Ref**: [📖 MDN JS](https://developer.mozilla.org/en-US/docs/Web/JavaScript), [📖 Vue Reactivity](https://cn.vuejs.org/guide/introduction.html)
 
 ## 1. JS Basics Review
 

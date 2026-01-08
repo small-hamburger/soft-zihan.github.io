@@ -1,4 +1,3 @@
-
 <template>
   <div class="space-y-8">
     <!-- Header -->
@@ -143,18 +142,36 @@
       <!-- Tab 2: Vue Core -->
       <div v-else-if="activeTab === 'vue'" class="space-y-12 animate-fade-in">
          
-         <section>
-            <h2 class="text-xl font-bold text-teal-600 dark:text-teal-400 mb-4 flex items-center gap-2">
-              <span class="text-2xl">📋</span> {{ t.lab_vue_list_title }}
-            </h2>
-            <LabVueList :lang="lang" />
-          </section>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
+           <section>
+              <h2 class="text-xl font-bold text-teal-600 dark:text-teal-400 mb-4 flex items-center gap-2">
+                <span class="text-2xl">📋</span> {{ t.lab_vue_list_title }}
+              </h2>
+              <LabVueList :lang="lang" />
+            </section>
+
+             <!-- New Class & Style Section -->
+            <section>
+                <h2 class="text-xl font-bold text-pink-600 dark:text-pink-400 mb-4 flex items-center gap-2">
+                  <span class="text-2xl">💅</span> {{ t.lab_class_title }}
+                </h2>
+                <LabClassStyle :lang="lang" />
+            </section>
+        </div>
 
         <section>
            <h2 class="text-xl font-bold text-purple-600 dark:text-purple-400 mb-4 flex items-center gap-2">
              <span class="text-2xl">🧪</span> {{ t.lab_reactivity }}
            </h2>
            <LabReactivity :lang="lang" />
+        </section>
+
+        <!-- New Props & Emit Section -->
+        <section>
+            <h2 class="text-xl font-bold text-indigo-600 dark:text-indigo-400 mb-4 flex items-center gap-2">
+              <span class="text-2xl">📡</span> {{ t.lab_props_title }}
+            </h2>
+            <LabPropsEmit :lang="lang" />
         </section>
 
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
@@ -210,6 +227,8 @@ import LabJs from './LabJs.vue';
 import LabDom from './LabDom.vue';
 import LabAjax from './LabAjax.vue';
 import LabVueList from './LabVueList.vue';
+import LabPropsEmit from './LabPropsEmit.vue';
+import LabClassStyle from './LabClassStyle.vue';
 
 const props = defineProps<{
   lang: 'en' | 'zh';

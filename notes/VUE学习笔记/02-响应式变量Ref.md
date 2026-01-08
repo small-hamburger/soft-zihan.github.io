@@ -2,7 +2,7 @@
 # 02. JS 变量与响应式系统 🌸
 
 > **学习目标**: 回顾 JS 变量声明 (`let`, `const`)，理解 Vue 的响应式原理 (`ref`, `reactive`) 及计算属性。
-> **参考教材**: [📖 JS 基础 (MDN)](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript), [📖 Vue 基础](https://cn.vuejs.org/)
+> **参考教材**: [📖 JS 基础 (MDN)](https://developer.mozilla.org/zh-CN/docs/Web/JavaScript), [📖 Vue 基础](https://cn.vuejs.org/guide/introduction.html)
 
 ## 1. JS 基础回顾：变量与类型
 
