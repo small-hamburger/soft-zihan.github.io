@@ -483,6 +483,27 @@ const breadcrumbs = computed<BreadcrumbItem[]>(() => {
   });
 });
 
+const markedLoaded = ref(false);
+
+const waitForMarked = async () => {
+    // @ts-ignore
+    if (window.marked) {
+        markedLoaded.value = true;
+        return;
+    }
+    // Simple polling to wait for CDN
+    let attempts = 0;
+    while(attempts < 20) {
+        await new Promise(r => setTimeout(r, 100));
+        // @ts-ignore
+        if (window.marked) {
+            markedLoaded.value = true;
+            return;
+        }
+        attempts++;
+    }
+};
+
 const setupMarkedRenderer = () => {
     // @ts-ignore
     if (!window.marked) return;
@@ -499,7 +520,10 @@ const setupMarkedRenderer = () => {
 };
 
 const renderedContent = computed(() => {
+  // If marked not loaded yet, or no content, return empty or raw
+  if (!markedLoaded.value && !currentFile.value?.isSource) return currentFile.value?.content || 'Loading renderer...';
   if (!currentFile.value?.content) return '';
+
   setupMarkedRenderer();
   let rawContent = currentFile.value.content;
   if (currentFile.value.path) {
@@ -559,11 +583,23 @@ const getCleanParentPath = (path: string) => {
 const formatDate = (dateStr?: string) => dateStr ? new Date(dateStr).toLocaleDateString() : '';
 
 const findNodeByPath = (nodes: FileNode[], path: string): FileNode | null => {
+  // Try exact match
   for (const node of nodes) {
     if (node.path === path) return node;
     if (node.children) {
       const found = findNodeByPath(node.children, path);
       if (found) return found;
+    }
+  }
+  // If exact match fails, try decoding path in case of mismatch
+  const decodedPath = decodeURIComponent(path);
+  if (decodedPath !== path) {
+      for (const node of nodes) {
+        if (node.path === decodedPath) return node;
+        if (node.children) {
+            const found = findNodeByPath(node.children, decodedPath);
+            if (found) return found;
+        }
     }
   }
   return null;
@@ -574,16 +610,24 @@ const fetchFileContent = async (file: FileNode): Promise<string> => {
     if (file.isSource && file.fetchPath) {
         fetchPath = `./${file.fetchPath}`;
     } else {
+        // Safe encoding for URL
         const encodedPath = file.path.split('/').map(p => encodeURIComponent(p)).join('/');
         fetchPath = `./notes/${encodedPath}`;
     }
     
     try {
-        const res = await fetch(fetchPath);
+        let res = await fetch(fetchPath);
+        if (!res.ok) {
+           // Fallback: try unencoded path (some local servers or specific configs might behave differently)
+           // or if file path has spaces that were not auto-encoded by browser in the first place (rare)
+           console.warn(`Fetch failed for ${fetchPath}, trying fallback...`);
+           res = await fetch(`./notes/${file.path}`);
+        }
+        
         if (res.ok) return await res.text();
-        return `# Error ${res.status}\nCould not load file.`;
+        return `# Error ${res.status}\nCould not load file content.\nPath: ${file.path}`;
     } catch (e: any) {
-        return `# Error\n${e.message}`;
+        return `# Error\n${e.message}\nPath: ${file.path}`;
     }
 };
 
@@ -599,6 +643,9 @@ const openFile = async (file: FileNode) => {
   if (container) container.scrollTo({ top: 0, behavior: 'smooth' });
   
   selectionMenu.value.show = false;
+
+  // Ensure marked is ready
+  if (!file.isSource && !markedLoaded.value) await waitForMarked();
 
   if (!file.content) {
     contentLoading.value = true;
@@ -641,13 +688,18 @@ const toggleFolder = (path: string) => {
 };
 
 const updateUrl = (path: string | null) => {
-  const url = new URL(window.location.href);
-  if (path) {
-    url.searchParams.set('path', path);
-  } else {
-    url.searchParams.delete('path');
+  try {
+    const url = new URL(window.location.href);
+    if (path) {
+        url.searchParams.set('path', path);
+    } else {
+        url.searchParams.delete('path');
+    }
+    // Use pushState to avoid reload, but replaceState if just updating query param to same page context
+    window.history.pushState({}, '', url.toString());
+  } catch (e) {
+      console.error("Failed to update URL", e);
   }
-  window.history.pushState({}, '', url.toString());
 };
 
 const resetToHome = () => {
@@ -867,6 +919,9 @@ onMounted(async () => {
 
   if (isDark.value) document.documentElement.classList.add('dark');
   
+  // Start waiting for marked immediately
+  waitForMarked();
+  
   try {
     // Explicitly using ./files.json to ensure relative fetch
     const res = await fetch(`./files.json?t=${Date.now()}`);
@@ -876,11 +931,18 @@ onMounted(async () => {
       const targetPath = params.get('path'); 
       
       if (targetPath) {
-        const node = findNodeByPath(fileSystem.value, targetPath);
+        // Decode it just in case, though browser usually does it
+        const decodedTargetPath = decodeURIComponent(targetPath);
+        const node = findNodeByPath(fileSystem.value, decodedTargetPath) || findNodeByPath(fileSystem.value, targetPath);
+        
         if (node) {
           if (targetPath.includes('VUE学习笔记') || targetPath.includes('VUE Learning')) viewMode.value = 'lab';
           else viewMode.value = 'files';
-          node.type === NodeType.FILE ? openFile(node) : openFolder(node);
+          
+          if (node.type === NodeType.FILE) openFile(node);
+          else openFolder(node);
+        } else {
+            console.warn("Path not found in file system:", targetPath);
         }
       }
     } else {
