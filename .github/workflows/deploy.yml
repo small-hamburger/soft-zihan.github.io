@@ -25,21 +25,18 @@ jobs:
         with:
           node-version: '20'
 
-      - name: Install Dependencies
-        run: npm install
+      # 关键步骤：强制清理环境，防止使用仓库中权限错误的 node_modules
+      - name: Clean and Install Dependencies
+        run: |
+          rm -rf node_modules
+          npm install
 
-      # 1. Generate files.json into public/ folder
       - name: Generate File Tree
         run: npm run gen-tree
 
-      # 2. Build Vue App (Result goes to dist/)
       - name: Build
         run: npm run build
 
-      # 3. Copy actual markdown notes to dist/notes/
-      # Since the frontend fetches "notes/filename.md", we assume the "notes" folder exists in dist.
-      # But our files.json paths are now relative to notes root.
-      # So we copy the CONTENTS of local 'notes/' into 'dist/notes/'
       - name: Copy Content to Dist
         run: |
           mkdir -p dist/notes
@@ -48,7 +45,6 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
 
-      # 4. Upload the dist folder
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
