@@ -27,7 +27,8 @@ Vue 3 引入了 **响应式系统**，核心思想是：**数据变了，视图�
 
 * **定义**: `const isDark = ref(false);`
 * **原理**: Vue 将 boolean 值包裹在一个对象中，通过 `.value` 属性进行读写拦截。
-* **源码实战 (`App.vue`)**:
+* **源码实战 ([`App.vue](/components/App.vue)`)**:
+
   ```typescript
   // 定义一个响应式变量
   const isDark = ref(false); 
@@ -46,7 +47,7 @@ Vue 3 引入了 **响应式系统**，核心思想是：**数据变了，视图�
 `reactive` 利用 ES6 的 **Proxy** (代理) 技术，深度监听对象的变化。
 
 * **定义**: `const settings = reactive({ fontSize: 'normal' });`
-* **源码实战 ([components/LabVueList.vue](/components/LabVueList.vue))**:
+* **源码实战 ([LabVueList.vue](/components/LabVueList.vue))**:
   在员工管理实验中，我们使用 reactive 管理表单数据：
   ```typescript
   const newItem = reactive({
