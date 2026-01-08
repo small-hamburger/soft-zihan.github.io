@@ -2,19 +2,19 @@
 # 05. Lifecycle & Network Requests (Ajax) 🌸
 
 > **Goal**: Understand Ajax, Axios, and the `mounted` lifecycle hook.
-> **Ref**: `source-2.md` Chapter 4 & 5
+> **Ref**: [📖 source-2.md Chapter 4 & 5](/source-2.md)
 
 ## 1. What is Ajax?
 
 *   **Concept**: Asynchronous JavaScript And XML.
 *   **Role**: Exchanging data with a server without reloading the page.
-*   **Demo**: Check the **Lab -> Network & Async** tab for a visualization of the "Province-City-Area" flow.
+*   **Demo**: Check the **Lab -> Network & Async** tab for a visualization of the "Province-City-Area" flow. ([LabAjax.vue](/components/LabAjax.vue))
 
 ## 2. Axios & Async / Await
 
 `source-2.md` recommends Axios over native `XMLHttpRequest`. It also recommends `async/await` to avoid Callback Hell.
 
-**Source Code (`components/LabAjax.vue`)**:
+**Source Code ([components/LabAjax.vue](/components/LabAjax.vue))**:
 
 **Callback Hell (The Old Way)**:
 ```javascript
@@ -44,7 +44,7 @@ Vue instances have a lifecycle. `onMounted` is the standard place for initial da
 *   **Timing**: After the HTML is rendered and the DOM is ready.
 *   **Usage**: "Auto-loading" data when page opens.
 
-**Source Code (`App.vue`)**:
+**Source Code ([App.vue](/App.vue))**:
 Fetching the file list when the blog loads:
 
 ```typescript

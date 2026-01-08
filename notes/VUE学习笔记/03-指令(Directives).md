@@ -2,16 +2,16 @@
 # 03. 指令全家桶 (Directives) 🌸
 
 > **学习目标**: 掌握 Vue 常用指令 `v-for`, `v-bind`, `v-model`, `v-on`, `v-if/show` 的用法。
-> **参考教材**: `source-2.md` 第三章 (Vue指令)
+> **参考教材**: [📖 Vue 指令章节 (source-2.md)](/source-2.md)
 
-Vue 的模板语法中最强大的部分就是指令 (带有 `v-` 前缀的特殊属性)。让我们结合 **实验室 -> 员工管理系统** (`components/LabVueList.vue`) 中的代码来深入理解。
+Vue 的模板语法中最强大的部分就是指令 (带有 `v-` 前缀的特殊属性)。让我们结合 **实验室 -> 员工管理系统** ([components/LabVueList.vue](/components/LabVueList.vue)) 中的代码来深入理解。
 
 ## 1. v-for: 列表渲染
 
 这是最常用的指令，用于循环遍历数组。
 
 *   **语法**: `v-for="(item, index) in list" :key="item.id"`
-*   **源码实战 (`components/LabVueList.vue`)**:
+*   **源码实战 ([components/LabVueList.vue](/components/LabVueList.vue))**:
     在这个复刻 `source-2.md` 员工列表的组件中：
     ```html
     <tr v-for="(item, index) in items" :key="item.id">
@@ -27,7 +27,7 @@ Vue 的模板语法中最强大的部分就是指令 (带有 `v-` 前缀的特�
 想要让 HTML 标签的属性（如 class, src, href, style）变成动态的？使用 `v-bind`，简写为 `:`。
 
 *   **语法**: `<img :src="user.avatar">`
-*   **源码实战 (`components/AppSidebar.vue`)**:
+*   **源码实战 ([components/AppSidebar.vue](/components/AppSidebar.vue))**:
     我们根据当前模式 (`viewMode`) 动态改变按钮样式：
     ```html
     <button 
@@ -42,7 +42,7 @@ Vue 的模板语法中最强大的部分就是指令 (带有 `v-` 前缀的特�
 `v-model` 是表单元素的神器。它实现了**视图**与**数据**的同步：你改输入框，变量变；你改变量，输入框变。
 
 *   **语法**: `<input v-model="username">`
-*   **源码实战 (`components/LabVueList.vue`)**:
+*   **源码实战 ([components/LabVueList.vue](/components/LabVueList.vue))**:
     在添加员工的表单中：
     ```html
     <!-- 姓名输入框 -->
@@ -60,7 +60,7 @@ Vue 的模板语法中最强大的部分就是指令 (带有 `v-` 前缀的特�
 `source-1.md` 中我们用 `addEventListener`，在 Vue 中我们用 `@`。
 
 *   **语法**: `<button @click="handleClick">`
-*   **源码实战 (`components/LabVueList.vue`)**:
+*   **源码实战 ([components/LabVueList.vue](/components/LabVueList.vue))**:
     ```html
     <button @click="addItem">添加员工</button>
     ```

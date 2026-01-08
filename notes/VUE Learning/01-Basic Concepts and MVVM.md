@@ -2,7 +2,7 @@
 # 01. Web Standards & Vue Architecture 🌸
 
 > **Goal**: Understand the Web Standards Triad, Vue as a Progressive Framework, and SPA bootstrapping.
-> **Ref**: `source.md`, `source-2.md`
+> **Ref**: [📖 HTML Source (source.md)](/source.md), [📖 Vue Source (source-2.md)](/source-2.md)
 
 ## 1. The Web Standards Triad
 
@@ -10,7 +10,7 @@ As described in `source.md`, modern web development relies on three pillars. Her
 
 1.  **HTML (Structure)**: 
     *   *Theory*: The skeleton. Defines WHAT is on the page.
-    *   *Project*: Check `index.html`. It's nearly empty (`<div id="app"></div>`). Why? Because Vue is a **SPA (Single Page Application)**. It takes over this div and injects content dynamically via JS.
+    *   *Project*: Check root `index.html`. It's nearly empty (`<div id="app"></div>`). Why? Because Vue is a **SPA (Single Page Application)**. It takes over this div and injects content dynamically via JS.
 2.  **CSS (Presentation)**: 
     *   *Theory*: The skin. Defines HOW it looks.
     *   *Project*: We use **Tailwind CSS** (e.g., `bg-sakura-50`) and component `<style>` tags to define the pink aesthetics and animations.
@@ -25,7 +25,7 @@ Vue is a **progressive** framework for **building user interfaces** (`source-2.m
 ### "Data-Driven View"
 In traditional JS, you manually touch the DOM. In Vue, you only touch **Data**.
 
-**Source Code (`App.vue`)**:
+**Source Code ([App.vue](/App.vue))**:
 ```typescript
 // We define data
 const fileSystem = ref([]); 

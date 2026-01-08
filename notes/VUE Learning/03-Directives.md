@@ -2,16 +2,16 @@
 # 03. The Directive Family 🌸
 
 > **Goal**: Master common directives: `v-for`, `v-bind`, `v-model`, `v-on`, `v-if/show`.
-> **Ref**: `source-2.md` Chapter 3
+> **Ref**: [📖 source-2.md Chapter 3](/source-2.md)
 
-Directives (`v-` prefix) are Vue's template superpowers. Let's look at **Laboratory -> Employee Management** (`components/LabVueList.vue`) examples.
+Directives (`v-` prefix) are Vue's template superpowers. Let's look at **Laboratory -> Employee Management** ([components/LabVueList.vue](/components/LabVueList.vue)) examples.
 
 ## 1. v-for: List Rendering
 
 Loops through arrays.
 
 *   **Syntax**: `v-for="(item, index) in list" :key="item.id"`
-*   **Source Code (`components/LabVueList.vue`)**:
+*   **Source Code ([components/LabVueList.vue](/components/LabVueList.vue))**:
     Matching the Employee List example from `source-2.md`:
     ```html
     <tr v-for="(item, index) in items" :key="item.id">
@@ -27,7 +27,7 @@ Loops through arrays.
 Makes HTML attributes dynamic.
 
 *   **Syntax**: `<img :src="user.avatar">`
-*   **Source Code (`components/AppSidebar.vue`)**:
+*   **Source Code ([components/AppSidebar.vue](/components/AppSidebar.vue))**:
     Dynamic class binding:
     ```html
     <button 
@@ -42,7 +42,7 @@ Makes HTML attributes dynamic.
 Syncs Form Input <-> JS Data.
 
 *   **Syntax**: `<input v-model="username">`
-*   **Source Code (`components/LabVueList.vue`)**:
+*   **Source Code ([components/LabVueList.vue](/components/LabVueList.vue))**:
     ```html
     <!-- Name Input -->
     <input v-model="newItem.name" type="text" />
@@ -59,7 +59,7 @@ Syncs Form Input <-> JS Data.
 Replaces `addEventListener` from `source-1.md`.
 
 *   **Syntax**: `<button @click="handleClick">`
-*   **Source Code (`components/LabVueList.vue`)**:
+*   **Source Code ([components/LabVueList.vue](/components/LabVueList.vue))**:
     ```html
     <button @click="addItem">Add Employee</button>
     ```

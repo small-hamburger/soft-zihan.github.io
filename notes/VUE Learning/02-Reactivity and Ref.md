@@ -2,7 +2,7 @@
 # 02. JS Variables & Reactivity System 🌸
 
 > **Goal**: Review JS variables (`let`, `const`) and understand Vue's Reactivity (`ref`, `reactive`).
-> **Ref**: `source-1.md`, `source-2.md`
+> **Ref**: [📖 JS Source (source-1.md)](/source-1.md), [📖 Vue Source (source-2.md)](/source-2.md)
 
 ## 1. JS Basics Review
 
@@ -25,7 +25,7 @@ Wraps a primitive in an object.
 
 *   **Definition**: `const isDark = ref(false);`
 *   **Mechanism**: Access/Modify via `.value`.
-*   **Source Code (`App.vue`)**:
+*   **Source Code ([App.vue](/App.vue))**:
     ```typescript
     const isDark = ref(false); 
     
@@ -40,7 +40,7 @@ Wraps a primitive in an object.
 Uses ES6 **Proxy** to watch objects deeply.
 
 *   **Definition**: `const settings = reactive({ fontSize: 'normal' });`
-*   **Source Code (`components/LabVueList.vue`)**:
+*   **Source Code ([components/LabVueList.vue](/components/LabVueList.vue))**:
     ```typescript
     const newItem = reactive({
         name: '',
@@ -56,7 +56,7 @@ Uses ES6 **Proxy** to watch objects deeply.
 
 If you want to **calculate** a value based on other data, use `computed`.
 
-**Source Code (`App.vue`)**:
+**Source Code ([App.vue](/App.vue))**:
 Generating breadcrumbs from `currentPath`.
 
 ```typescript
@@ -72,4 +72,4 @@ const breadcrumbs = computed(() => {
 
 ## 4. Lab Experience
 
-Go to **Laboratory -> Vue Core -> Reactivity** (`LabReactivity.vue`) to experience how data drives the DOM.
+Go to **Laboratory -> Vue Core -> Reactivity** ([LabReactivity.vue](/components/LabReactivity.vue)) to experience how data drives the DOM.

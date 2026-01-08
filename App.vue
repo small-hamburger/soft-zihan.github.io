@@ -259,7 +259,7 @@
       </div>
     </main>
     
-    <!-- Lightbox (New) -->
+    <!-- Lightbox (Images) -->
     <div 
       v-if="lightboxImage" 
       class="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center cursor-zoom-out animate-fade-in p-4"
@@ -267,6 +267,34 @@
     >
        <img :src="lightboxImage" class="max-w-full max-h-full rounded-lg shadow-2xl scale-100 object-contain transition-transform duration-300" alt="Fullscreen preview" />
        <div class="absolute bottom-10 text-white/50 text-sm bg-black/50 px-4 py-2 rounded-full">Click anywhere to close</div>
+    </div>
+
+    <!-- Source Code Modal (New) -->
+    <div 
+      v-if="showCodeModal" 
+      class="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center animate-fade-in p-4 md:p-10"
+      @click.self="showCodeModal = false"
+    >
+       <div class="bg-[#1e1e1e] w-full max-w-5xl h-[85vh] rounded-2xl shadow-2xl border border-gray-700 flex flex-col overflow-hidden relative transform transition-all duration-300 scale-100">
+          <!-- Modal Header -->
+          <div class="flex justify-between items-center px-6 py-4 bg-[#252526] border-b border-gray-700 shrink-0">
+             <div class="flex items-center gap-2">
+                <span class="text-2xl">📝</span>
+                <div>
+                   <h3 class="text-sm font-bold text-gray-200 font-mono">{{ codeModalTitle }}</h3>
+                   <span class="text-[10px] text-gray-500">Read Only Preview</span>
+                </div>
+             </div>
+             <div class="flex gap-2">
+               <button @click="copyCodeContent" class="text-xs bg-gray-700 hover:bg-gray-600 text-gray-300 px-3 py-1.5 rounded transition-colors border border-gray-600">Copy</button>
+               <button @click="showCodeModal = false" class="text-gray-400 hover:text-white transition-colors bg-gray-700/50 hover:bg-red-500/50 rounded-full w-8 h-8 flex items-center justify-center">✕</button>
+             </div>
+          </div>
+          <!-- Modal Content -->
+          <div class="flex-1 overflow-auto custom-scrollbar p-0 bg-[#1e1e1e]">
+             <pre class="p-6 text-sm font-mono text-blue-100 leading-relaxed whitespace-pre-wrap"><code>{{ codeModalContent }}</code></pre>
+          </div>
+       </div>
     </div>
 
     <!-- Toast Notification -->
@@ -334,6 +362,11 @@ const showParticles = ref(true);
 const toastMessage = ref('');
 const lightboxImage = ref<string | null>(null);
 const isRawMode = ref(false);
+
+// Source Code Modal State
+const showCodeModal = ref(false);
+const codeModalContent = ref('');
+const codeModalTitle = ref('');
 
 const selectionMenu = ref({ show: false, x: 0, y: 0 });
 
@@ -426,12 +459,7 @@ const labFolder = computed(() => {
   }
   const folder = findFolderByName(fileSystem.value);
   
-  // Also include the source code folder in the lab view
-  const srcFolder = fileSystem.value.find(node => node.path === 'source-code');
-  if (srcFolder && folder) {
-      // Return a combined virtual view or just modify folder (not ideal to mutate prop source)
-      return { ...folder };
-  }
+  // Note: Source code logic moved to internal link handling, not shown in main tree
   return folder;
 });
 
@@ -483,8 +511,6 @@ const renderedContent = computed(() => {
     const serverPrefix = 'notes/'; 
     
     // Improved Image Replacement Logic for GitHub Pages
-    // When Markdown has `![img](assets/foo.png)`, we need to transform it to `notes/parent/assets/foo.png`
-    
     const resolvePath = (relPath: string) => {
       // Ignore absolute paths or HTTP links
       if (relPath.startsWith('http') || relPath.startsWith('/') || relPath.startsWith('data:')) return relPath;
@@ -501,7 +527,6 @@ const renderedContent = computed(() => {
         }
       }
       
-      // If we are on GitHub Pages or nested path, ensure no double slashes
       return `${serverPrefix}${parentParts.join('/')}`;
     };
 
@@ -544,6 +569,24 @@ const findNodeByPath = (nodes: FileNode[], path: string): FileNode | null => {
   return null;
 };
 
+const fetchFileContent = async (file: FileNode): Promise<string> => {
+    let fetchPath = '';
+    if (file.isSource && file.fetchPath) {
+        fetchPath = `./${file.fetchPath}`;
+    } else {
+        const encodedPath = file.path.split('/').map(p => encodeURIComponent(p)).join('/');
+        fetchPath = `./notes/${encodedPath}`;
+    }
+    
+    try {
+        const res = await fetch(fetchPath);
+        if (res.ok) return await res.text();
+        return `# Error ${res.status}\nCould not load file.`;
+    } catch (e: any) {
+        return `# Error\n${e.message}`;
+    }
+};
+
 const openFile = async (file: FileNode) => {
   currentFile.value = file;
   currentFolder.value = null;
@@ -559,34 +602,10 @@ const openFile = async (file: FileNode) => {
 
   if (!file.content) {
     contentLoading.value = true;
-    try {
-      // Determine fetch path based on file type
-      // For Notes: ./notes/path/to/file.md
-      // For Source: ./raw/path_to_file.txt (Generated by script)
-      
-      let fetchPath = '';
-      if (file.isSource && file.fetchPath) {
-          fetchPath = `./${file.fetchPath}`;
-      } else {
-          const encodedPath = file.path.split('/').map(p => encodeURIComponent(p)).join('/');
-          fetchPath = `./notes/${encodedPath}`;
-      }
-      
-      const res = await fetch(fetchPath);
-      if (res.ok) {
-        file.content = await res.text();
-        if (!file.isSource) nextTick(() => generateToc());
-      } else {
-        console.error(`Fetch failed for ${fetchPath}: ${res.status}`);
-        file.content = `# Error Loading Content\n\n**Status:** ${res.status} ${res.statusText}\n\n**Path:** \`${fetchPath}\`\n\nPlease check connection or file existence.`;
-      }
-    } catch (e: any) {
-      console.error(e);
-      file.content = `# Network Error\n\nFailed to fetch content.\n\n\`${e.message}\``;
-    } finally {
-      contentLoading.value = false;
-      currentFile.value = { ...file }; 
-    }
+    file.content = await fetchFileContent(file);
+    contentLoading.value = false;
+    currentFile.value = { ...file }; 
+    if (!file.isSource) nextTick(() => generateToc());
   } else {
     if (!file.isSource) nextTick(() => generateToc());
   }
@@ -658,6 +677,10 @@ const downloadSource = () => {
   }
 };
 
+const copyCodeContent = () => {
+    navigator.clipboard.writeText(codeModalContent.value).then(() => showToast(t.value.toast_copied));
+};
+
 // Selection Popup Logic
 const handleSelection = () => {
   if (currentFile.value?.isSource) return; // No highlight for source code
@@ -704,7 +727,7 @@ const applyFormat = (type: 'highlight' | 'underline') => {
 };
 
 // Lightbox logic & Link Interception
-const handleContentClick = (e: MouseEvent) => {
+const handleContentClick = async (e: MouseEvent) => {
   const target = e.target as HTMLElement;
   
   // 1. Handle Lightbox
@@ -718,12 +741,18 @@ const handleContentClick = (e: MouseEvent) => {
   const link = target.closest('a');
   if (link) {
     const href = link.getAttribute('href');
-    // If it is a local link (starts with ./, ../ or no slash, and ends in .md)
-    if (href && !href.startsWith('http') && !href.startsWith('//') && href.endsWith('.md')) {
+    // Updated condition to support clicking source code files (.vue, .ts, .js, .json)
+    if (href && !href.startsWith('http') && !href.startsWith('//') && 
+       (href.endsWith('.md') || href.endsWith('.vue') || href.endsWith('.ts') || href.endsWith('.js') || href.endsWith('.json'))) {
       e.preventDefault(); // Stop Browser Jump
       
       let targetPath = '';
-      if (currentFile.value?.path) {
+      const isCodeFile = !href.endsWith('.md');
+
+      if (href.startsWith('/')) {
+          // Absolute path from root (e.g. /source.md -> source.md)
+          targetPath = href.substring(1);
+      } else if (currentFile.value?.path) {
         // Resolve relative path
         const currentDir = currentFile.value.path.split('/').slice(0, -1);
         const parts = href.split('/');
@@ -737,21 +766,30 @@ const handleContentClick = (e: MouseEvent) => {
            }
         }
         targetPath = currentDir.join('/');
+      } else {
+          targetPath = href;
       }
 
       // Try to find exact match
       let node = findNodeByPath(fileSystem.value, targetPath);
       
-      // Fallback: Try fuzzy search if exact match fails (sometimes encoding differs)
-      if (!node) {
-         const flat = filteredFlatFiles.value;
-         node = flat.find(f => f.path.endsWith(href)) || null;
-      }
-
       if (node && node.type === NodeType.FILE) {
-        openFile(node);
+        if (node.isSource || node.path.startsWith('source')) { 
+            // Treat source*.md as source code too for viewing
+            codeModalTitle.value = node.name;
+            codeModalContent.value = 'Loading...';
+            showCodeModal.value = true;
+            
+            if (!node.content) {
+                node.content = await fetchFileContent(node);
+            }
+            codeModalContent.value = node.content;
+        } else {
+            // Open normal Markdown file
+            openFile(node);
+        }
       } else {
-        showToast(`Linked note not found: ${href}`);
+        showToast(`File not found: ${href}`);
       }
     }
   }

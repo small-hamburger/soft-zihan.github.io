@@ -81,7 +81,8 @@ const sourceTree = [];
 const componentsNodes = scanDirectory(path.join(rootDir, 'components'), 'components', true);
 if (componentsNodes.length > 0) sourceTree.push(...componentsNodes);
 // Scan Root Files (App.vue, index.html, etc manually picked or scanned)
-const rootFilesToScan = ['App.vue', 'index.html', 'index.tsx', 'vite.config.ts', 'tailwind.config.js'];
+// Added source*.md files here so they are treated as source code resources
+const rootFilesToScan = ['App.vue', 'index.html', 'index.tsx', 'vite.config.ts', 'tailwind.config.js', 'source.md', 'source-1.md', 'source-2.md'];
 rootFilesToScan.forEach(file => {
     const fullPath = path.join(rootDir, file);
     if(fs.existsSync(fullPath)) {

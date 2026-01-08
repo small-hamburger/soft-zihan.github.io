@@ -2,19 +2,19 @@
 # 05. 生命周期与网络请求 (Ajax) 🌸
 
 > **学习目标**: 理解 Ajax 异步请求，掌握 Axios 的使用，理解 Vue 生命周期钩子 `mounted`。
-> **参考教材**: `source-2.md` 第四、五章 (Ajax, 生命周期)
+> **参考教材**: [📖 source-2.md 第四、五章](/source-2.md)
 
 ## 1. 什么是 Ajax？
 
 *   **概念**: Asynchronous JavaScript And XML（异步 JavaScript 和 XML）。
 *   **作用**: 在不刷新整个页面的情况下，与服务器交换数据并更新部分网页。
-*   **实战**: 在 **Sakura Lab -> 网络与异步** 中，你可以看到“省-市-区”三级联动的全过程可视化。
+*   **实战**: 在 **Sakura Lab -> 网络与异步** 中，你可以看到“省-市-区”三级联动的全过程可视化。([LabAjax.vue](/components/LabAjax.vue))
 
 ## 2. Axios 与 Async / Await
 
 `source-2.md` 推荐使用 Axios 来代替原生的 Ajax，并使用 `async/await` 来解决回调地狱。
 
-**源码实战 (`components/LabAjax.vue`)**:
+**源码实战 ([components/LabAjax.vue](/components/LabAjax.vue))**:
 在这个组件中，我们模拟了教材中的代码逻辑：
 
 **回调地狱 (Callback Hell) 写法**:
@@ -48,7 +48,7 @@ Vue 实例有一个完整的生命周期（创建 -> 挂载 -> 更新 -> 销毁�
 *   **触发时机**: HTML 页面渲染完成，DOM 树已经生成。
 *   **用途**: 发送初始化的 Ajax 请求。
 
-**源码实战 (`App.vue`)**:
+**源码实战 ([App.vue](/App.vue))**:
 我们的博客在加载时，需要去获取 `files.json` 文件列表：
 
 ```typescript

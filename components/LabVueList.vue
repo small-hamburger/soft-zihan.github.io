@@ -16,11 +16,12 @@
         <div class="flex items-center justify-between px-4 py-2 bg-[#252526] border-b border-gray-700">
             <span class="text-xs text-gray-400 font-mono">LabVueList.vue (Core Logic)</span>
         </div>
-        <pre class="p-4 text-xs font-mono text-gray-300 overflow-auto custom-scrollbar h-full leading-relaxed"><code class="language-html">&lt;!-- 1. 列表渲染 (v-for) --&gt;
+        <!-- Added v-pre to skip compilation of mustache syntax inside -->
+        <pre v-pre class="p-4 text-xs font-mono text-gray-300 overflow-auto custom-scrollbar h-full leading-relaxed"><code class="language-html">&lt;!-- 1. 列表渲染 (v-for) --&gt;
 &lt;tr v-for="(item, index) in items" :key="item.id"&gt;
   &lt;!-- 索引展示 --&gt;
-  &lt;td&gt;{{"{{ index + 1 }}"}}&lt;/td&gt;
-  &lt;td&gt;{{"{{ item.name }}"}}&lt;/td&gt;
+  &lt;td&gt;{{ index + 1 }}&lt;/td&gt;
+  &lt;td&gt;{{ item.name }}&lt;/td&gt;
   
   &lt;!-- 2. 条件渲染 (v-if/v-else-if/v-else) --&gt;
   &lt;td&gt;

@@ -87,19 +87,6 @@
                 {{ t.no_vue_notes }}
               </div>
             </div>
-
-            <!-- Source Code Section (Appended via generate-tree.js virtual folder) -->
-            <div v-if="fileSystem.find(n => n.path === 'source-code')" class="mb-6">
-               <h3 class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">Project Source</h3>
-               <FileTree 
-                  :nodes="fileSystem.find(n => n.path === 'source-code')?.children || []" 
-                  :expanded-paths="expandedFolders"
-                  :current-path="currentPath"
-                  @toggle-folder="$emit('toggle-folder', $event)"
-                  @select-file="$emit('select-file', $event)"
-                  @select-folder="$emit('select-folder', $event)"
-                />
-            </div>
             
             <!-- External Resources Section -->
             <div class="space-y-6">

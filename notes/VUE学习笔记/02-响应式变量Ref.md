@@ -2,7 +2,7 @@
 # 02. JS 变量与响应式系统 🌸
 
 > **学习目标**: 回顾 JS 变量声明 (`let`, `const`)，理解 Vue 的响应式原理 (`ref`, `reactive`) 及计算属性。
-> **参考教材**: `source-1.md` (JS基础), `source-2.md` (Vue基础)
+> **参考教材**: [📖 JS 基础 (source-1.md)](/source-1.md), [📖 Vue 基础 (source-2.md)](/source-2.md)
 
 ## 1. JS 基础回顾：变量与类型
 
@@ -44,7 +44,7 @@ Vue 3 引入了 **响应式系统**，核心思想是：**数据变了，视图�
 `reactive` 利用 ES6 的 **Proxy** (代理) 技术，深度监听对象的变化。
 
 *   **定义**: `const settings = reactive({ fontSize: 'normal' });`
-*   **源码实战 (`components/LabVueList.vue`)**:
+*   **源码实战 ([components/LabVueList.vue](/components/LabVueList.vue))**:
     在员工管理实验中，我们使用 reactive 管理表单数据：
     ```typescript
     const newItem = reactive({
@@ -78,4 +78,4 @@ const breadcrumbs = computed(() => {
 
 ## 4. 实验室体验
 
-请前往 **实验室 -> Vue 核心 -> 响应式原理** (`LabReactivity.vue`)，亲自体验数据变化如何自动更新 DOM。
+请前往 **实验室 -> Vue 核心 -> 响应式原理** ([LabReactivity.vue](/components/LabReactivity.vue))，亲自体验数据变化如何自动更新 DOM。
