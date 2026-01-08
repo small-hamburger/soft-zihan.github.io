@@ -61,7 +61,7 @@ app.mount('#app');
 
 ## 4. 单文件组件 (SFC)
 
-打开 [components/AppSidebar.vue](/components/AppSidebar.vue)，你会看到 Vue 标志性的 `.vue` 文件结构，它完美对应了 Web 标准：
+打开 [AppSidebar.vue](/components/AppSidebar.vue)，你会看到 Vue 标志性的 `.vue` 文件结构，它完美对应了 Web 标准：
 
 * **`<template>`**: 定义 HTML 结构。
 * **`<script setup>`**: 定义 JavaScript 逻辑 (组合式 API)。
