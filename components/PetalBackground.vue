@@ -27,16 +27,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue';
+import { ref, onMounted, onUnmounted } from 'vue';
 
 const props = defineProps<{
   speed: 'slow' | 'fast';
 }>();
 
-// Check theme via DOM class as props might not update fast enough for RAF loop logic sometimes, 
-// but here we use a reactive checker or just check prop passed from App.vue if available. 
-// For simplicity, we check the class on the html element or use a simple heuristic.
-// Better: Add a prop or check document.documentElement.classList.
 const isDark = ref(false);
 
 interface Petal {
@@ -48,13 +44,16 @@ interface Petal {
   size: number;
   opacity: number;
   
-  // Physics
-  speedY: number;
-  speedX: number;
-  swayAmp: number; // Amplitude of horizontal sway
-  swayFreq: number; // Frequency of sway
+  // Physics Base Values (independent of global speed setting)
+  baseSpeedY: number;
+  baseSpeedX: number;
+  swayAmp: number; 
+  swayFreq: number;
   timeOffset: number;
   
+  // Stacking
+  landingOffset: number; // Random offset from bottom for natural piling
+
   // State
   isDragging: boolean;
   isLanded: boolean;
@@ -67,13 +66,14 @@ let animationFrameId: number;
 let nextId = 0;
 
 // Config
-const MAX_PETALS = 40; // Total active falling petals
-const MAX_LANDED = 30; // Max petals accumulated at bottom
-const GROUND_HEIGHT_LIMIT = 120; // Max height of pile from bottom
+const MAX_PETALS = 50; 
+const MAX_LANDED = 80; // Increased for "fuller" pile
+// Distribution: Bias towards 0 (bottom). 
+// Using power of random to cluster near 0. Math.pow(random, 3) makes most values small.
+const getLandingOffset = () => Math.pow(Math.random(), 3) * 60; 
 
 const createPetal = (yStart = -50): Petal => {
-  const size = Math.random() * 10 + 12; // 12-22px
-  const speedMult = props.speed === 'fast' ? 1.5 : 0.8;
+  const size = Math.random() * 10 + 12;
   
   return {
     id: nextId++,
@@ -84,11 +84,14 @@ const createPetal = (yStart = -50): Petal => {
     size: size,
     opacity: Math.random() * 0.4 + 0.6,
     
-    speedY: (Math.random() * 1 + 0.5) * speedMult,
-    speedX: (Math.random() - 0.5) * 0.5,
+    // Store BASE speed. Actual speed = base * props.multiplier
+    baseSpeedY: (Math.random() * 1 + 1), // 1.0 - 2.0 base
+    baseSpeedX: (Math.random() - 0.5) * 1, // -0.5 to 0.5
     swayAmp: Math.random() * 2,
     swayFreq: Math.random() * 0.02 + 0.01,
     timeOffset: Math.random() * 1000,
+    
+    landingOffset: getLandingOffset(),
     
     isDragging: false,
     isLanded: false,
@@ -97,13 +100,12 @@ const createPetal = (yStart = -50): Petal => {
   };
 };
 
-// Dragging State
 const draggedPetalId = ref<number | null>(null);
 
 const startDrag = (p: Petal, e: MouseEvent | TouchEvent) => {
   draggedPetalId.value = p.id;
   p.isDragging = true;
-  p.isLanded = false; // Lift off ground
+  p.isLanded = false; 
   p.opacity = 1;
 
   const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX;
@@ -115,7 +117,6 @@ const startDrag = (p: Petal, e: MouseEvent | TouchEvent) => {
 
 const handleDragMove = (e: MouseEvent | TouchEvent) => {
   if (draggedPetalId.value === null) return;
-  
   const p = petals.value.find(pet => pet.id === draggedPetalId.value);
   if (!p) return;
 
@@ -124,17 +125,13 @@ const handleDragMove = (e: MouseEvent | TouchEvent) => {
 
   p.x = clientX - p.dragOffsetX;
   p.y = clientY - p.dragOffsetY;
-  p.speedY = 0; // Stop falling momentum
 };
 
 const endDrag = () => {
   if (draggedPetalId.value === null) return;
-  
   const p = petals.value.find(pet => pet.id === draggedPetalId.value);
   if (p) {
     p.isDragging = false;
-    // Give a little throw momentum
-    p.speedY = props.speed === 'fast' ? 1.5 : 0.8; 
   }
   draggedPetalId.value = null;
 };
@@ -143,11 +140,12 @@ const update = () => {
   const h = window.innerHeight;
   const w = window.innerWidth;
   
-  // Update Theme Check (Cheap enough for RAF?)
-  // Optimization: standard check
   isDark.value = document.documentElement.classList.contains('dark');
 
-  // Spawn new if needed
+  // Dynamic Speed Multiplier: Calculate every frame to react to settings change
+  const currentSpeedMult = props.speed === 'fast' ? 2.5 : 1.0;
+
+  // Spawn logic
   const activeCount = petals.value.filter(p => !p.isLanded).length;
   if (activeCount < MAX_PETALS && Math.random() < 0.05) {
     petals.value.push(createPetal());
@@ -158,47 +156,46 @@ const update = () => {
     if (p.isDragging) return;
 
     if (p.isLanded) {
-       // Cleanup old landed petals if too many
+       // Cleanup if pile too big
        const landed = petals.value.filter(p => p.isLanded);
        if (landed.length > MAX_LANDED) {
           // Remove the oldest landed one (first in array usually)
-          const oldest = landed[0];
+          const oldest = landed[0]; 
           const idx = petals.value.indexOf(oldest);
           if (idx > -1) petals.value.splice(idx, 1);
        }
        return;
     }
 
-    // Apply movement
+    // Move
     p.timeOffset++;
     const sway = Math.sin(p.timeOffset * p.swayFreq) * p.swayAmp;
     
-    p.x += p.speedX + sway;
-    p.y += p.speedY;
-    p.rotation += (p.speedX + sway) * 2;
+    // Apply dynamic multiplier to base speed
+    p.x += (p.baseSpeedX + sway) * currentSpeedMult * 0.5; // Dampen X speed a bit
+    p.y += p.baseSpeedY * currentSpeedMult;
+    p.rotation += (p.baseSpeedX + sway) * 2;
 
     // Wrap X
     if (p.x > w + 20) p.x = -20;
     if (p.x < -20) p.x = w + 20;
 
     // Landing Logic
-    const bottomLimit = h - Math.random() * GROUND_HEIGHT_LIMIT; // Irregular pile
-    if (p.y > bottomLimit) {
-      p.y = bottomLimit;
+    // Use stored landingOffset so it feels like the petal has a specific resting spot in the pile
+    const landY = h - p.size - p.landingOffset; 
+    
+    if (p.y > landY) {
+      p.y = landY;
       p.isLanded = true;
-      p.rotation = Math.random() * 180; // Settle angle
-      // Randomly decide if it stays or disappears immediately to reduce clutter
-      if (Math.random() > 0.7) {
-          p.opacity = 0; // Mark for removal
-      }
+      p.rotation = Math.random() * 360; // Settle flat or random
     }
   });
 
-  // Remove invisible/fallen-through petals
+  // Cleanup fallen off screen (unlikely with landing logic, but for safety)
   for (let i = petals.value.length - 1; i >= 0; i--) {
     const p = petals.value[i];
-    if (p.opacity <= 0.01) {
-      petals.value.splice(i, 1);
+    if (p.y > h + 100) { 
+        petals.value.splice(i, 1);
     }
   }
 
@@ -207,7 +204,7 @@ const update = () => {
 
 onMounted(() => {
   // Pre-seed a few
-  for (let i=0; i<10; i++) petals.value.push(createPetal(Math.random() * window.innerHeight));
+  for (let i=0; i<15; i++) petals.value.push(createPetal(Math.random() * window.innerHeight * 0.8));
   animationFrameId = requestAnimationFrame(update);
 });
 
