@@ -420,7 +420,7 @@ const setupMarkedRenderer = () => {
       .replace(/[^\w\-\u4e00-\u9fa5]+/g, '');
       return `<h${level} id="${id}">${text}</h${level}>`;
   };
-  marked.setOptions({ renderer });
+  marked.use({ renderer });
 };
 
 // Async Rendering Logic
@@ -471,6 +471,8 @@ const updateRenderedContent = async () => {
     }
 
     try {
+        // marked.parse is async in some configs, or sync in others, but returns promise or string.
+        // await is safe for both.
         renderedHtml.value = await marked.parse(rawContent);
     } catch (e) {
         console.error("Marked render error:", e);
