@@ -45,11 +45,12 @@ export function useSearch() {
       
       for (const node of nodes) {
         if (node.type === NodeType.FILE && !node.isSource) {
+          const searchableContent = (node.content || node.contentSnippet || '') + ' ' + node.name
           files.push({
             id: node.path,
             name: node.name.replace('.md', ''),
             path: node.path,
-            content: (node.content || '') + ' ' + node.name  // Include filename in searchable content
+            content: searchableContent  // Include filename in searchable content
           })
         }
         if (node.children) {

@@ -11,6 +11,14 @@ export interface FileNode {
   type: NodeType;
   children?: FileNode[];
   content?: string;
+  /**
+   * Lightweight snippet (first ~1200 chars) used for search indexing without
+   * fetching the full markdown upfront. Populated by the file tree generator.
+   */
+  contentSnippet?: string;
+  /** Precomputed stats to avoid recalculating on the client side. */
+  wordCount?: number;
+  lineCount?: number;
   lastModified?: string;
   isSource?: boolean;
 }

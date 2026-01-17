@@ -48,6 +48,23 @@ function scanDirectory(basePath, relativePath, isSourceCode = false) {
       const isCode = isSourceCode && (item.endsWith('.vue') || item.endsWith('.ts') || item.endsWith('.js') || item.endsWith('.json') || item.endsWith('.html'));
 
       if (isMd || isCode) {
+        // Read content once to compute stats and provide a lightweight snippet for search/metadata
+        let content = '';
+        try {
+          content = fs.readFileSync(fullPath, 'utf-8');
+        } catch (err) {
+          console.warn(`⚠️  Failed to read file ${fullPath}:`, err);
+        }
+
+        const lines = content ? content.split(/\r?\n/) : [];
+        // Count Chinese characters + English words for a better approximation of word count
+        const chineseChars = content ? (content.match(/[\u4e00-\u9fa5]/g) || []).length : 0;
+        const englishWords = content ? (content.match(/[a-zA-Z]+/g) || []).length : 0;
+        const wordCount = chineseChars + englishWords;
+        const lineCount = lines.length || undefined;
+        // Keep snippet small to avoid bloating files.json while still enabling content search
+        const contentSnippet = content ? content.slice(0, 1200) : '';
+
         // For source code, we copy it to public/raw with .txt extension to ensure fetchability on GitHub Pages
         let fetchPath = itemRelativePath;
         if (isCode) {
@@ -63,7 +80,10 @@ function scanDirectory(basePath, relativePath, isSourceCode = false) {
           fetchPath: fetchPath,   // Actual path to fetch content
           type: 'file',
           lastModified: stat.mtime,
-          isSource: isCode
+          isSource: isCode,
+          wordCount: isMd ? wordCount : undefined,
+          lineCount: isMd ? lineCount : undefined,
+          contentSnippet: isMd ? contentSnippet : undefined
         });
       }
     }
