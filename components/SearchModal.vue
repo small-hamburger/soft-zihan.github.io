@@ -28,6 +28,7 @@
               @keydown.enter="selectResult"
               @keydown.up.prevent="navigateResults(-1)"
               @keydown.down.prevent="navigateResults(1)"
+              autofocus
             />
             <kbd class="hidden sm:inline-flex items-center px-2 py-1 text-xs font-medium text-gray-500 bg-gray-100 dark:bg-gray-800 rounded">ESC</kbd>
           </div>

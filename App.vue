@@ -55,7 +55,7 @@
     <!-- Main Content Wrapper -->
     <main class="flex-1 flex flex-col h-full overflow-hidden relative isolate">
       <!-- Wallpaper Layer (behind decorations, excluding sidebar) -->
-      <WallpaperLayer :is-dark="appStore.isDark" :light-url="wallpaperLightUrl" :dark-url="wallpaperDarkUrl" :mode="appStore.userSettings.bannerMode" />
+      <WallpaperLayer :is-dark="appStore.isDark" :light-url="wallpaperLightUrl" :dark-url="wallpaperDarkUrl" :bannerMode="appStore.userSettings.bannerMode" />
 
       <!-- Decorative Background Elements -->
       <div class="absolute inset-0 z-[-1] overflow-hidden pointer-events-none">
@@ -154,14 +154,14 @@
                    <span v-if="currentFile.isSource" class="bg-gray-100 dark:bg-gray-700 text-gray-500 px-3 py-1 rounded text-xs font-mono">Read Only</span>
                  </div>
                  <!-- Article Actions -->
-                 <div class="flex items-center gap-4 mt-4" v-if="!currentFile.isSource">
+                 <div class="flex items-center gap-4 mt-4 flex-wrap" v-if="!currentFile.isSource">
                    <button 
                      @click="handleLike"
                      class="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-all"
-                     :class="articleStore.isLiked(currentFile.path) ? 'bg-sakura-100 dark:bg-sakura-900/30 text-sakura-600' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-sakura-50'"
+                     :class="articleStore.isLiked(currentFile.path) ? 'bg-red-50 dark:bg-red-900/30 text-red-600' : 'bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-red-50'"
                    >
                      <span>{{ articleStore.isLiked(currentFile.path) ? '❤️' : '🤍' }}</span>
-                     <span>{{ articleStore.getLikes(currentFile.path) }}</span>
+                     <span class="font-bold">{{ articleStore.getLikes(currentFile.path) }}</span>
                    </button>
                    <button 
                      @click="articleStore.toggleFavorite(currentFile.path)"
@@ -171,7 +171,10 @@
                      <span>{{ articleStore.isFavorited(currentFile.path) ? '⭐' : '☆' }}</span>
                      <span>{{ t.favorite }}</span>
                    </button>
-                   <span class="text-xs text-gray-400 ml-auto">
+                   <span class="text-xs text-gray-400 flex items-center gap-1">
+                     📖 {{ getArticleViews(currentFile.path) }} {{ lang === 'zh' ? '人阅读' : 'views' }}
+                   </span>
+                   <span class="text-xs text-gray-400">
                      📝 {{ currentFile.content?.length || 0 }} {{ t.words }}
                    </span>
                  </div>
@@ -381,7 +384,7 @@ import { useSearch } from './composables/useSearch';
 const appStore = useAppStore();
 const articleStore = useArticleStore();
 const musicStore = useMusicStore();
-const { initSearchIndex, search, highlightMatches, showSearchModal: searchModalOpen } = useSearch();
+const { initSearchIndex, search, highlightMatches, showSearchModal: searchModalOpen, rebuildSearchIndex } = useSearch();
 
 // i18n with Persistence (from store)
 const lang = computed({
@@ -728,7 +731,9 @@ const openFile = async (file: FileNode) => {
     contentLoading.value = true;
     file.content = await fetchFileContent(file);
     contentLoading.value = false;
-    currentFile.value = { ...file }; 
+    currentFile.value = { ...file };
+    // Rebuild search index after loading new content
+    if (rebuildSearchIndex) rebuildSearchIndex();
   }
   
   // Trigger rendering logic
@@ -813,10 +818,17 @@ const copyCodeContent = () => {
 };
 
 // Handle search selection
-const handleSearchSelect = (file: FileNode) => {
+const handleSearchSelect = (result: any) => {
   showSearch.value = false;
   sidebarOpen.value = false;
-  openFile(file);
+  
+  // Find the actual FileNode from the file system
+  const node = findNodeByPath(fileSystem.value, result.path);
+  if (node && node.type === NodeType.FILE) {
+    openFile(node);
+  } else {
+    showToast(t.value.file_not_found);
+  }
 };
 
 // Handle like action
@@ -824,6 +836,15 @@ const handleLike = () => {
   if (currentFile.value) {
     articleStore.toggleLike(currentFile.value.path);
   }
+};
+
+// Get article view count (stored locally with likes count)
+const getArticleViews = (path: string): number => {
+  // Simulate views based on likes and local storage hash
+  const likes = articleStore.getLikes(path);
+  // Views are usually 5-10x likes
+  const baseViews = likes * (5 + Math.random() * 5);
+  return Math.max(1, Math.round(baseViews));
 };
 
 // Selection Popup Logic

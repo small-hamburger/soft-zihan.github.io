@@ -100,17 +100,17 @@ export const startLongPress = (x: number, y: number) => {
   longPressStartX = x;
   longPressStartY = y;
   
-  // Longer threshold + softer start
+  // Faster trigger (300ms instead of 600ms) for quicker response
   longPressTimer = setTimeout(() => {
     vortexState.value = {
       active: true,
       x,
       y,
-      strength: 20, // Soft start - petals slowly accelerate
-      maxStrength: 120, // Reduced max for more subtle effect
+      strength: 30, // Start with stronger force for faster visible effect
+      maxStrength: 150, // Back to original max strength
       radius: 180 // Slightly smaller radius for tighter spiral
     };
-  }, 600); // 600ms for intentional activation
+  }, 300);  // 300ms instead of 600ms - faster trigger
 };
 
 export const updateLongPress = (x: number, y: number) => {
@@ -132,9 +132,9 @@ export const updateLongPress = (x: number, y: number) => {
   if (vortexState.value.active && distance <= 60) {
     vortexState.value.x = x;
     vortexState.value.y = y;
-    // Smooth, slower strength increase for natural feel
+    // Faster strength increase for more dynamic effect
     vortexState.value.strength = Math.min(
-      vortexState.value.strength + 1,
+      vortexState.value.strength + 2.5,  // Increased from 1 to 2.5
       vortexState.value.maxStrength
     );
   }

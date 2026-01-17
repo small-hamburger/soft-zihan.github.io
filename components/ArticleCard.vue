@@ -15,25 +15,6 @@
           {{ file.name.replace('.md', '') }}
         </span>
       </div>
-      
-      <!-- Like Button -->
-      <button 
-        @click.stop="toggleLike"
-        class="shrink-0 p-1.5 rounded-full transition-all"
-        :class="isLiked 
-          ? 'bg-red-50 dark:bg-red-900/30 text-red-500' 
-          : 'hover:bg-sakura-50 dark:hover:bg-gray-700 text-gray-400 hover:text-red-400'"
-      >
-        <svg 
-          class="w-4 h-4 transition-transform" 
-          :class="{ 'scale-110': isLiked }"
-          :fill="isLiked ? 'currentColor' : 'none'" 
-          stroke="currentColor" 
-          viewBox="0 0 24 24"
-        >
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-        </svg>
-      </button>
     </div>
     
     <!-- Meta Info Row -->
@@ -91,7 +72,6 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'click'): void
-  (e: 'like'): void
 }>()
 
 const articleStore = useArticleStore()
@@ -125,10 +105,5 @@ const formatNumber = (num: number): string => {
     return (num / 1000).toFixed(1) + 'k'
   }
   return num.toString()
-}
-
-const toggleLike = () => {
-  articleStore.toggleLike(props.file.path)
-  emit('like')
 }
 </script>

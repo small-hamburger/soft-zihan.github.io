@@ -10,6 +10,7 @@ export interface SearchResult {
   content: string
   excerpt: string
   score: number
+  fileNode?: any  // Optional reference to FileNode for direct opening
 }
 
 export function useSearch() {
@@ -18,9 +19,16 @@ export function useSearch() {
   const isSearching = ref(false)
   const showSearchModal = ref(false)
   const searchIndex = ref<MiniSearch<any> | null>(null)
+  const fileSystem = ref<FileNode[]>([])
   
   // Initialize search index
-  const initSearchIndex = async (fileSystem: FileNode[]) => {
+  const initSearchIndex = async (fs: FileNode[]) => {
+    fileSystem.value = fs
+    rebuildSearchIndex()
+  }
+  
+  // Rebuild search index with current file contents
+  const rebuildSearchIndex = () => {
     const miniSearch = new MiniSearch({
       fields: ['name', 'content'],
       storeFields: ['name', 'path', 'content'],
@@ -41,7 +49,7 @@ export function useSearch() {
             id: node.path,
             name: node.name.replace('.md', ''),
             path: node.path,
-            content: node.content || ''
+            content: (node.content || '') + ' ' + node.name  // Include filename in searchable content
           })
         }
         if (node.children) {
@@ -52,7 +60,7 @@ export function useSearch() {
       return files
     }
     
-    const documents = flattenFiles(fileSystem)
+    const documents = flattenFiles(fileSystem.value)
     miniSearch.addAll(documents)
     searchIndex.value = miniSearch
   }
@@ -144,6 +152,7 @@ export function useSearch() {
     isSearching,
     showSearchModal,
     initSearchIndex,
+    rebuildSearchIndex,
     search,
     highlightMatches,
     clearSearch
