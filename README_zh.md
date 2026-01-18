@@ -16,6 +16,7 @@
 - **主题模式**：支持 "Day Sakura" (浅色) 和 "Night Sakura" (深色) 两种主题模式，支持不同主题下切换壁纸，支持音乐播放。
 - **交互式花瓣效果**：可拖拽樱花花瓣系统，稳定的指针事件、网格堆叠、移动端触控优化。
 - **Sakura Lab**: 内置互动实验室，包含可视化教学组件。
+- **发布工作台**：导入预览、选择性上传、标签/作者元信息写入，并自动上传 Markdown 中的本地图片。
 - **无后端个性化**：利用 `localStorage` 存储用户选择的字体、字号、主题和花瓣速度偏好等。
 
 ---
@@ -54,6 +55,7 @@
 - [components/FileTree.vue](/components/FileTree.vue): 用于显示目录结构的递归文件树组件
 - [components/FolderView.vue](/components/FolderView.vue): 用于显示文件夹内容的组件
 - [components/SettingsModal.vue](/components/SettingsModal.vue): 用户偏好设置模态框（主题、字体、花瓣速度、壁纸等）
+- [components/WriteEditor.vue](/components/WriteEditor.vue): 发布工作台，支持 Markdown 预览、标签/作者元信息、批量导入与本地图片上传
 - [components/PetalBackground.vue](/components/PetalBackground.vue): 优化的交互式樱花花瓣背景：
   - 稳定拖拽：全局 Pointer 事件监听（统一鼠标/触摸）
   - 网格堆叠：底部轻量网格系统，避免重叠，形成自然堆积效果

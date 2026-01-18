@@ -29,7 +29,7 @@
         <template v-for="(tab, index) in tabs" :key="tab.id">
           <div 
             class="flex-1 h-2 rounded-full transition-all duration-300 cursor-pointer"
-            :class="tabs.findIndex(t => t.id === activeTab) >= index ? 'bg-sakura-400' : 'bg-gray-200 dark:bg-gray-700'"
+            :class="activeTabIndex >= index ? 'bg-sakura-400' : 'bg-gray-200 dark:bg-gray-700'"
             @click="activeTab = tab.id"
           ></div>
         </template>
@@ -47,17 +47,17 @@
       <div class="max-w-4xl mx-auto mb-8 px-4">
         <div class="bg-gradient-to-r from-sakura-50 to-purple-50 dark:from-sakura-900/20 dark:to-purple-900/20 rounded-2xl p-4 md:p-6 border border-sakura-100 dark:border-sakura-800/30">
           <div class="flex items-start gap-4">
-            <div class="text-4xl">{{ tabs.find(t => t.id === activeTab)?.icon }}</div>
+            <div class="text-4xl">{{ activeTabInfo?.icon }}</div>
             <div class="flex-1">
               <h3 class="font-bold text-gray-800 dark:text-gray-100 text-lg">
-                {{ lang === 'zh' ? `第${tabs.find(t => t.id === activeTab)?.stage}阶段：` : `Stage ${tabs.find(t => t.id === activeTab)?.stage}: ` }}
-                {{ tabs.find(t => t.id === activeTab)?.label.replace(/^[^\s]+\s/, '') }}
+                {{ lang === 'zh' ? `第${activeTabInfo?.stage}阶段：` : `Stage ${activeTabInfo?.stage}: ` }}
+                {{ activeTabInfo?.label.replace(/^[^\s]+\s/, '') }}
               </h3>
               <p class="text-sm text-sakura-600 dark:text-sakura-400 mt-1">
-                🎯 {{ tabs.find(t => t.id === activeTab)?.goal }}
+                🎯 {{ activeTabInfo?.goal }}
               </p>
               <p class="text-xs text-gray-500 mt-2">
-                {{ tabs.find(t => t.id === activeTab)?.desc }}
+                {{ activeTabInfo?.desc }}
               </p>
             </div>
             <div class="hidden md:block text-right">
@@ -368,7 +368,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive } from 'vue';
+import { ref, computed, reactive, watch, onMounted } from 'vue';
 import { I18N } from '../constants';
 import LabQuizGame from './LabQuizGame.vue';
 import LabReactivity from './LabReactivity.vue';
@@ -398,12 +398,22 @@ const props = defineProps<{
   lang: 'en' | 'zh';
 }>();
 
-const t = computed(() => I18N[props.lang]);
+const t = computed(() => I18N[props.lang as 'en' | 'zh']);
 
 const activeTab = ref('foundation');
+const labTabStorageKey = computed(() => `lab_active_tab_${props.lang}`);
+
+type LabTab = {
+  id: string;
+  label: string;
+  icon: string;
+  stage: number;
+  desc: string;
+  goal: string;
+};
 
 // Learning path stages - progressive learning from basics to advanced
-const tabs = computed(() => [
+const tabs = computed<LabTab[]>(() => [
   { 
     id: 'foundation', 
     label: props.lang === 'zh' ? '🌐 Web基础' : '🌐 Web Basics', 
@@ -453,6 +463,27 @@ const tabs = computed(() => [
     goal: props.lang === 'zh' ? '检验综合能力' : 'Test your skills'
   },
 ]);
+
+const activeTabInfo = computed<LabTab | undefined>(() => tabs.value.find((tab: LabTab) => tab.id === activeTab.value));
+const activeTabIndex = computed(() => tabs.value.findIndex((tab: LabTab) => tab.id === activeTab.value));
+
+onMounted(() => {
+  const saved = localStorage.getItem(labTabStorageKey.value);
+  if (saved && tabs.value.some((tab: LabTab) => tab.id === saved)) {
+    activeTab.value = saved;
+  }
+});
+
+watch(activeTab, (val: string) => {
+  localStorage.setItem(labTabStorageKey.value, val);
+});
+
+watch(() => props.lang, () => {
+  const saved = localStorage.getItem(labTabStorageKey.value);
+  if (saved && tabs.value.some((tab: LabTab) => tab.id === saved)) {
+    activeTab.value = saved;
+  }
+});
 
 // Web Standards State
 const standards = reactive({

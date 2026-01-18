@@ -222,6 +222,135 @@
             @change="handleMarkdownFolder"
           />
         </div>
+
+        <!-- Import Preview Modal -->
+        <div v-if="showImportModal" class="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-8">
+          <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="closeImportModal"></div>
+          <div class="relative w-full max-w-6xl h-[85vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
+            <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+              <div>
+                <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100">
+                  {{ lang === 'zh' ? '导入预览' : 'Import Preview' }}
+                </h3>
+                <p class="text-xs text-gray-500 dark:text-gray-400">
+                  {{ lang === 'zh' ? '请选择将要上传的文件，并补充标签/作者信息' : 'Select files to upload and fill tags/author info' }}
+                </p>
+              </div>
+              <button
+                @click="closeImportModal"
+                class="p-2 hover:bg-red-50 dark:hover:bg-red-900/30 text-gray-400 hover:text-red-500 rounded-lg transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4 p-4 overflow-hidden">
+              <!-- File List -->
+              <div class="md:col-span-1 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden flex flex-col">
+                <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-500 dark:text-gray-400 flex items-center justify-between">
+                  <span>{{ lang === 'zh' ? '待上传文件' : 'Files' }}</span>
+                  <span class="text-[10px]">{{ importSelected.length }}/{{ importMdFiles.length }}</span>
+                </div>
+                <div class="flex items-center gap-2 px-3 py-2 text-xs text-gray-500 dark:text-gray-400 border-b border-gray-200 dark:border-gray-700">
+                  <button @click="selectAllImport" class="px-2 py-1 rounded bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                    {{ lang === 'zh' ? '全选' : 'All' }}
+                  </button>
+                  <button @click="clearImportSelection" class="px-2 py-1 rounded bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
+                    {{ lang === 'zh' ? '清空' : 'None' }}
+                  </button>
+                </div>
+                <div class="flex-1 overflow-y-auto custom-scrollbar">
+                  <div
+                    v-for="item in importMdFiles"
+                    :key="item.relPath"
+                    class="flex items-start gap-2 px-3 py-2 text-xs border-b border-gray-100 dark:border-gray-800 hover:bg-sakura-50/60 dark:hover:bg-gray-800/50"
+                  >
+                    <input
+                      type="checkbox"
+                      class="mt-0.5"
+                      :value="item.relPath"
+                      v-model="importSelected"
+                    />
+                    <button
+                      class="text-left flex-1 truncate"
+                      @click="importPreviewPath = item.relPath"
+                    >
+                      <span class="font-medium text-gray-700 dark:text-gray-200">{{ item.relPath }}</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Preview & Meta -->
+              <div class="md:col-span-2 flex flex-col gap-4 overflow-hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  <input
+                    v-model="importAuthorName"
+                    type="text"
+                    :placeholder="lang === 'zh' ? '作者名（可选）' : 'Author name (optional)'"
+                    class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
+                  />
+                  <input
+                    v-model="importAuthorUrl"
+                    type="url"
+                    :placeholder="lang === 'zh' ? '作者链接（可选）' : 'Author URL (optional)'"
+                    class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-800 dark:text-gray-100"
+                  />
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="text-xs text-gray-400">🏷️</span>
+                  <div class="flex flex-wrap gap-2">
+                    <span
+                      v-for="tag in importTags"
+                      :key="tag"
+                      class="text-xs px-2 py-0.5 rounded-full bg-sakura-100 dark:bg-sakura-900/30 text-sakura-600 dark:text-sakura-300 flex items-center gap-1"
+                    >
+                      {{ tag }}
+                      <button
+                        class="text-[10px] text-sakura-400 hover:text-sakura-600"
+                        @click="removeImportTag(tag)"
+                      >✕</button>
+                    </span>
+                  </div>
+                  <input
+                    v-model="importTagInput"
+                    type="text"
+                    :placeholder="lang === 'zh' ? '添加标签，回车确认' : 'Add tag, press Enter'"
+                    class="flex-1 min-w-[160px] text-sm bg-transparent border-0 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400"
+                    @keydown.enter.prevent="addImportTagFromInput"
+                    @blur="addImportTagFromInput"
+                  />
+                  <span class="text-[10px] text-gray-400">{{ importTags.length }}/5</span>
+                </div>
+
+                <div class="flex-1 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden flex flex-col">
+                  <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-500 dark:text-gray-400">
+                    {{ lang === 'zh' ? '预览' : 'Preview' }}
+                  </div>
+                  <div class="flex-1 p-4 overflow-y-auto prose prose-sakura dark:prose-invert max-w-none" v-html="importPreviewHtml"></div>
+                </div>
+              </div>
+            </div>
+
+            <div class="px-5 py-4 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex items-center justify-between">
+              <div class="text-xs text-gray-500 dark:text-gray-400">
+                {{ lang === 'zh' ? '目标目录：' : 'Target:' }}
+                <span class="font-mono">{{ targetFolder }}</span>
+              </div>
+              <div class="flex items-center gap-3">
+                <div v-if="isImporting" class="text-xs text-gray-400">{{ importProgress }}%</div>
+                <button
+                  @click="publishImportedFiles"
+                  :disabled="isImporting || !importSelected.length || !hasToken"
+                  class="px-5 py-2 text-sm font-medium text-white bg-sakura-500 hover:bg-sakura-600 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
+                >
+                  {{ isImporting ? (lang === 'zh' ? '上传中...' : 'Uploading...') : (lang === 'zh' ? '开始上传' : 'Start Upload') }}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </Transition>
   </Teleport>
@@ -254,6 +383,20 @@ const publishTags = ref<string[]>([])
 const tagInput = ref('')
 const markdownFileInput = ref<HTMLInputElement | null>(null)
 const markdownFolderInput = ref<HTMLInputElement | null>(null)
+
+const showImportModal = ref(false)
+const importMode = ref<'file' | 'folder'>('file')
+const importFiles = ref<File[]>([])
+const importSelected = ref<string[]>([])
+const importPreviewPath = ref('')
+const importPreviewContent = ref('')
+const importTags = ref<string[]>([])
+const importTagInput = ref('')
+const importAuthorName = ref('')
+const importAuthorUrl = ref('')
+const isImporting = ref(false)
+const importProgress = ref(0)
+const importError = ref('')
 
 // 从设置中读取配置
 const repoOwner = ref('soft-zihan')
@@ -334,6 +477,25 @@ const lineCount = computed(() => content.value.split('\n').length)
 const previewHtml = computed(() => {
   try {
     return marked.parse(content.value)
+  } catch {
+    return '<p class="text-red-500">Preview Error</p>'
+  }
+})
+
+const stripMetaComment = (text: string) => text.replace(/^\s*<!--[\s\S]*?-->\s*/, '')
+
+const importMdFiles = computed(() => {
+  return importFiles.value
+    .filter((f: File) => /\.(md|markdown)$/i.test(f.name))
+    .map((file: File) => {
+      const relPath = normalizePath(getFileRelPath(file, importMode.value))
+      return { file, relPath }
+    })
+})
+
+const importPreviewHtml = computed(() => {
+  try {
+    return marked.parse(stripMetaComment(importPreviewContent.value || ''))
   } catch {
     return '<p class="text-red-500">Preview Error</p>'
   }
@@ -503,6 +665,26 @@ const removeTag = (tag: string) => {
   localStorage.setItem(`publish_tags_${props.lang}`, JSON.stringify(publishTags.value))
 }
 
+const addImportTagFromInput = () => {
+  if (!importTagInput.value.trim()) return
+  const newTags = normalizeTags(importTagInput.value)
+  const merged = [...importTags.value]
+  for (const t of newTags) {
+    if (merged.includes(t)) continue
+    if (merged.length >= 5) {
+      alert(props.lang === 'zh' ? '标签最多 5 个' : 'Up to 5 tags')
+      break
+    }
+    merged.push(t)
+  }
+  importTags.value = merged
+  importTagInput.value = ''
+}
+
+const removeImportTag = (tag: string) => {
+  importTags.value = importTags.value.filter((t: string) => t !== tag)
+}
+
 const saveDraft = () => {
   localStorage.setItem('sakura_draft', JSON.stringify({
     title: title.value,
@@ -629,15 +811,243 @@ const triggerMarkdownFolder = () => markdownFolderInput.value?.click()
 const handleMarkdownFiles = async (e: Event) => {
   const input = e.target as HTMLInputElement
   if (!input.files?.length) return
-  await uploadMarkdownFiles(Array.from(input.files), 'file')
+  await openImportModal(Array.from(input.files), 'file')
   input.value = ''
 }
 
 const handleMarkdownFolder = async (e: Event) => {
   const input = e.target as HTMLInputElement
   if (!input.files?.length) return
-  await uploadMarkdownFiles(Array.from(input.files), 'folder')
+  await openImportModal(Array.from(input.files), 'folder')
   input.value = ''
+}
+
+function getFileRelPath(file: File, mode: 'file' | 'folder') {
+  const rel = (mode === 'folder' && (file as any).webkitRelativePath)
+    ? (file as any).webkitRelativePath
+    : file.name
+  return rel || file.name
+}
+
+function normalizePath(raw: string) {
+  const cleaned = raw.replace(/\\/g, '/').replace(/^\/+/, '')
+  const parts = cleaned.split('/').filter(Boolean)
+  const stack: string[] = []
+  for (const part of parts) {
+    if (part === '.') continue
+    if (part === '..') stack.pop()
+    else stack.push(part)
+  }
+  return stack.join('/')
+}
+
+const openImportModal = async (files: File[], mode: 'file' | 'folder') => {
+  importFiles.value = files
+  importMode.value = mode
+  const mdList = importMdFiles.value
+  if (!mdList.length) {
+    alert(props.lang === 'zh' ? '未检测到 Markdown 文件' : 'No Markdown files found')
+    return
+  }
+  importSelected.value = mdList.map((m: { relPath: string }) => m.relPath)
+  importPreviewPath.value = mdList[0]?.relPath || ''
+  importPreviewContent.value = mdList[0] ? await mdList[0].file.text() : ''
+
+  const savedTags = localStorage.getItem(`publish_tags_${props.lang}`)
+  if (savedTags) {
+    try {
+      const tags = JSON.parse(savedTags)
+      importTags.value = Array.isArray(tags) ? tags.slice(0, 5) : []
+    } catch {
+      importTags.value = []
+    }
+  } else {
+    importTags.value = []
+  }
+
+  importAuthorName.value = localStorage.getItem('author_name') || ''
+  importAuthorUrl.value = localStorage.getItem('author_url') || ''
+  importProgress.value = 0
+  importError.value = ''
+  showImportModal.value = true
+}
+
+const closeImportModal = () => {
+  if (isImporting.value) return
+  showImportModal.value = false
+}
+
+const selectAllImport = () => {
+  importSelected.value = importMdFiles.value.map((m: { relPath: string }) => m.relPath)
+}
+
+const clearImportSelection = () => {
+  importSelected.value = []
+}
+
+const isRemotePath = (p: string) => {
+  return /^https?:\/\//i.test(p) || p.startsWith('//') || p.startsWith('data:') || p.startsWith('local-image:')
+}
+
+const extractImagePaths = (text: string) => {
+  const paths: string[] = []
+  for (const match of text.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g)) {
+    paths.push(match[1])
+  }
+  for (const match of text.matchAll(/<img[^>]+src=["']([^"']+)["']/gi)) {
+    paths.push(match[1])
+  }
+  return paths
+}
+
+const normalizeImageToken = (raw: string) => {
+  let cleaned = raw.trim()
+  if ((cleaned.startsWith('"') && cleaned.endsWith('"')) || (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+    cleaned = cleaned.slice(1, -1)
+  }
+  const [pathPart, ...rest] = cleaned.split(/\s+/)
+  return { path: pathPart, tail: rest.join(' ') }
+}
+
+const resolveImagePath = (mdRelPath: string, imgPath: string) => {
+  if (!imgPath || isRemotePath(imgPath)) return null
+  if (imgPath.startsWith('/')) return null
+  const mdDir = mdRelPath.split('/').slice(0, -1)
+  const parts = imgPath.split('/')
+  const stack = [...mdDir]
+  for (const part of parts) {
+    if (!part || part === '.') continue
+    if (part === '..') stack.pop()
+    else stack.push(part)
+  }
+  return normalizePath(stack.join('/'))
+}
+
+const replaceLocalImages = (text: string, mdRelPath: string, urlMap: Map<string, string>) => {
+  const replacePath = (raw: string) => {
+    const { path, tail } = normalizeImageToken(raw)
+    const resolved = resolveImagePath(mdRelPath, path)
+    if (resolved && urlMap.has(resolved)) {
+      const url = urlMap.get(resolved) as string
+      return tail ? `${url} ${tail}` : url
+    }
+    return raw
+  }
+
+  let output = text.replace(/!\[[^\]]*\]\(([^)]+)\)/g, (match, p1) => {
+    const next = replacePath(p1)
+    return match.replace(p1, next)
+  })
+  output = output.replace(/<img[^>]+src=["']([^"']+)["']/gi, (match, p1) => {
+    const next = replacePath(p1)
+    return match.replace(p1, next)
+  })
+  return output
+}
+
+const buildTagsForImport = (text: string, baseTags: string[]) => {
+  const existing = parseMetaComment(text).tags
+  const merged = [...baseTags, ...existing.filter(t => !baseTags.includes(t))]
+  return merged.slice(0, 5)
+}
+
+const publishImportedFiles = async () => {
+  const token = getToken()
+  if (!token) {
+    alert(props.lang === 'zh' ? '请先在设置中配置 GitHub Token' : 'Please configure GitHub Token in Settings')
+    return
+  }
+
+  const rootFolder = getRootFolder()
+  const cleanFolder = targetFolder.value.replace(/^\/+|\/+$/g, '')
+  if (!cleanFolder.startsWith(rootFolder) || cleanFolder.includes('..')) {
+    alert(props.lang === 'zh'
+      ? `发布路径必须在 ${rootFolder} 目录下`
+      : `Publish path must be under ${rootFolder}`)
+    return
+  }
+
+  const selectedItems = importMdFiles.value.filter((m: { relPath: string }) => importSelected.value.includes(m.relPath))
+  if (!selectedItems.length) {
+    alert(props.lang === 'zh' ? '请先选择要上传的文件' : 'Please select files to upload')
+    return
+  }
+
+  localStorage.setItem(`publish_tags_${props.lang}`, JSON.stringify(importTags.value))
+  localStorage.setItem('author_name', importAuthorName.value)
+  localStorage.setItem('author_url', importAuthorUrl.value)
+
+  isImporting.value = true
+  importProgress.value = 0
+  importError.value = ''
+
+  try {
+    const imageFiles = importFiles.value.filter((f: File) => /\.(png|jpe?g|gif|webp|svg)$/i.test(f.name))
+    const imageMap = new Map<string, File>()
+    for (const file of imageFiles) {
+      const rel = normalizePath(getFileRelPath(file, importMode.value))
+      imageMap.set(rel, file)
+    }
+
+    const contentMap = new Map<string, string>()
+    const imageRefs = new Set<string>()
+
+    for (const item of selectedItems) {
+      const text = await item.file.text()
+      contentMap.set(item.relPath, text)
+      const paths = extractImagePaths(text)
+      for (const raw of paths) {
+        const { path } = normalizeImageToken(raw)
+        const resolved = resolveImagePath(item.relPath, path)
+        if (resolved && imageMap.has(resolved)) imageRefs.add(resolved)
+      }
+    }
+
+    const totalSteps = imageRefs.size + selectedItems.length
+    let step = 0
+
+    const imageUrlMap = new Map<string, string>()
+    const imageFolder = 'notes/images'
+    for (const imgPath of imageRefs) {
+      const file = imageMap.get(imgPath)
+      if (!file) continue
+      const url = await uploadImage(
+        { owner: repoOwner.value, repo: repoName.value, branch: 'main', token },
+        file,
+        imageFolder
+      )
+      if (url) imageUrlMap.set(imgPath, url)
+      step += 1
+      importProgress.value = Math.round((step / totalSteps) * 100)
+    }
+
+    for (const item of selectedItems) {
+      let finalContent = contentMap.get(item.relPath) || ''
+      finalContent = replaceLocalImages(finalContent, item.relPath, imageUrlMap)
+      const tags = buildTagsForImport(finalContent, importTags.value)
+      finalContent = applyMetaComment(finalContent, tags, importAuthorName.value, importAuthorUrl.value)
+
+      const path = `${cleanFolder}/${item.relPath}`
+      await uploadFile(
+        { owner: repoOwner.value, repo: repoName.value, branch: 'main', token },
+        path,
+        finalContent,
+        `Import article: ${item.relPath}`
+      )
+
+      step += 1
+      importProgress.value = Math.round((step / totalSteps) * 100)
+    }
+
+    alert(props.lang === 'zh' ? '导入完成！' : 'Import completed!')
+    showImportModal.value = false
+  } catch (e: any) {
+    importError.value = e?.message || String(e)
+    alert(`${props.lang === 'zh' ? '导入失败' : 'Import failed'}: ${importError.value}`)
+  } finally {
+    isImporting.value = false
+    importProgress.value = 0
+  }
 }
 
 const uploadMarkdownFiles = async (files: File[], mode: 'file' | 'folder' = 'file') => {
@@ -758,6 +1168,11 @@ watch(() => props.lang, () => {
 })
 
 watch(pathSuffix, () => syncTargetFolder())
+
+watch(importPreviewPath, async () => {
+  const item = importMdFiles.value.find((m: { relPath: string }) => m.relPath === importPreviewPath.value)
+  importPreviewContent.value = item ? await item.file.text() : ''
+})
 </script>
 
 <style scoped>

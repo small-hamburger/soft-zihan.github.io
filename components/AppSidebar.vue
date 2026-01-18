@@ -6,7 +6,7 @@
       <div class="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-sakura-50/50 to-transparent dark:from-sakura-900/20 pointer-events-none"></div>
       
       <!-- Language Switcher - 移动端放右上角避免与菜单按钮冲突 -->
-      <div class="absolute top-4 right-4 md:left-4 md:right-auto z-20">
+      <div class="absolute top-4 left-4 z-20">
           <button @click="$emit('toggle-lang')" class="text-xs font-bold px-2 py-1 rounded bg-sakura-50 dark:bg-gray-800 text-sakura-600 dark:text-sakura-400 hover:bg-sakura-100 transition-colors shadow-sm border border-sakura-100 dark:border-gray-700">
             {{ lang === 'en' ? 'EN / 中' : '中 / EN' }}
           </button>

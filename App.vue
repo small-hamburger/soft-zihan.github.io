@@ -172,8 +172,23 @@
 
              <!-- Header with Like/Favorite buttons -->
              <div class="mb-8 border-b border-gray-100 dark:border-gray-700 pb-6">
-                 <div class="flex justify-between items-start">
-                   <h1 class="text-3xl md:text-4xl font-bold text-gray-800 dark:text-gray-100 tracking-tight leading-tight flex-1">{{ currentFile.name.replace('.md', '') }}</h1>
+                 <div class="flex justify-between items-start gap-4">
+                   <div class="flex flex-wrap items-center gap-3 flex-1">
+                     <h1 class="text-3xl md:text-4xl font-bold text-gray-800 dark:text-gray-100 tracking-tight leading-tight">{{ currentFile.name.replace('.md', '') }}</h1>
+                     <span v-if="currentAuthorName || currentAuthorUrl" class="text-sm text-gray-400 flex items-center gap-1">
+                       <span>👤</span>
+                       <a
+                         v-if="currentAuthorUrl"
+                         :href="currentAuthorUrl"
+                         target="_blank"
+                         rel="noopener"
+                         class="text-sakura-600 dark:text-sakura-300 hover:underline"
+                       >
+                         {{ currentAuthorName || currentAuthorUrl }}
+                       </a>
+                       <span v-else>{{ currentAuthorName }}</span>
+                     </span>
+                   </div>
                    <span v-if="currentFile.isSource" class="bg-gray-100 dark:bg-gray-700 text-gray-500 px-3 py-1 rounded text-xs font-mono">Read Only</span>
                  </div>
                  <!-- Article Actions -->
@@ -215,19 +230,6 @@
                        </span>
                      </span>
                    </span>
-                   <span v-if="currentAuthorName || currentAuthorUrl" class="text-xs text-gray-400 flex items-center gap-1">
-                     👤
-                     <a
-                       v-if="currentAuthorUrl"
-                       :href="currentAuthorUrl"
-                       target="_blank"
-                       rel="noopener"
-                       class="text-sakura-600 dark:text-sakura-300 hover:underline"
-                     >
-                       {{ currentAuthorName || currentAuthorUrl }}
-                     </a>
-                     <span v-else>{{ currentAuthorName }}</span>
-                   </span>
                  </div>
              </div>
 
@@ -239,6 +241,7 @@
               class="markdown-body dark:text-gray-300 selection:bg-sakura-200 dark:selection:bg-sakura-900"
               @click="handleContentClick"
               @mouseup="handleSelection"
+              @touchend="handleSelection"
               @contextmenu="handleSelectionContextMenu"
             ></div>
 
@@ -807,7 +810,7 @@ const updateRenderedContent = async () => {
         const parentDirParts = currentFile.value.path.split('/');
         parentDirParts.pop(); // remove filename
         const parentDir = parentDirParts.join('/'); 
-        const serverPrefix = 'notes/'; 
+        const serverPrefix = '/notes/'; 
         
         const resolvePath = (relPath: string) => {
             if (relPath.startsWith('http') || relPath.startsWith('/') || relPath.startsWith('data:')) return relPath;
@@ -1116,6 +1119,23 @@ const handleSelectionContextMenu = (e: MouseEvent) => {
   };
 };
 
+const handleSelectionChange = () => {
+  if (currentFile.value?.isSource) return;
+  const sel = window.getSelection();
+  if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+    selectionMenu.value.show = false;
+    return;
+  }
+  const range = sel.getRangeAt(0);
+  const viewer = document.getElementById('markdown-viewer');
+  if (!viewer || !viewer.contains(range.commonAncestorContainer)) {
+    selectionMenu.value.show = false;
+    return;
+  }
+  lastSelectionRange.value = range.cloneRange();
+  handleSelection();
+};
+
 const applyFormat = (type: 'highlight-yellow' | 'highlight-green' | 'highlight-blue' | 'highlight-pink' | 'underline-wavy' | 'underline-double') => {
     const selection = window.getSelection();
     if (!selection || selection.rangeCount === 0) return;
@@ -1321,14 +1341,7 @@ onMounted(async () => {
   // Keyboard shortcuts
   document.addEventListener('keydown', handleKeydown);
 
-    document.addEventListener('selectionchange', () => {
-      const sel = window.getSelection();
-      if (sel && !sel.isCollapsed && sel.rangeCount > 0) {
-        lastSelectionRange.value = sel.getRangeAt(0).cloneRange();
-      } else {
-        selectionMenu.value.show = false;
-      }
-    });
+    document.addEventListener('selectionchange', handleSelectionChange);
 
   if (appStore.isDark) document.documentElement.classList.add('dark');
   
@@ -1392,6 +1405,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown);
+  document.removeEventListener('selectionchange', handleSelectionChange);
   const scrollEl = document.getElementById('scroll-container');
   if (scrollEl) {
     scrollEl.removeEventListener('scroll', () => {});

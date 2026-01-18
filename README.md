@@ -20,6 +20,7 @@ A pure static personal blog system built with **Vue 3** + **Tailwind CSS**, desi
 * **Theme Modes** : Supports "Day Sakura" (light) and "Night Sakura" (dark) themes, with wallpaper switching in different themes and music playback.
 * **Interactive Petal Effects** : A draggable cherry blossom petal system with stable pointer events, grid stacking, and mobile touch optimization.
 * **Sakura Lab** : Built-in interactive lab with visual teaching components.
+* **Publishing Studio** : Import preview, selective upload, tags/author metadata injection, and automatic local image upload for Markdown.
 * **Backend-Free Personalization** : Uses `localStorage` to store user preferences for font, font size, theme, petal speed, and more.
 
 ---
@@ -58,6 +59,7 @@ This section describes the key files and directories in the project:
 - [components/FileTree.vue](/components/FileTree.vue): Recursive file tree component for displaying the directory structure
 - [components/FolderView.vue](/components/FolderView.vue): Component for displaying folder contents
 - [components/SettingsModal.vue](/components/SettingsModal.vue): Modal for user preferences (theme, font, petal speed, wallpaper, etc.)
+- [components/WriteEditor.vue](/components/WriteEditor.vue): Publishing studio with Markdown preview, tag/author metadata, and bulk import (folder) upload with local images
 - [components/PetalBackground.vue](/components/PetalBackground.vue): Optimized animated sakura petal background with:
   - Stable drag via global Pointer Events (mouse/touch unified)
   - Grid-based bottom stacking for natural piling effect
