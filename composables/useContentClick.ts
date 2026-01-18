@@ -120,8 +120,10 @@ export function useContentClick(
     if (link) {
       const href = link.getAttribute('href')
       
+      // 先检查是否需要拦截，如果需要则立即阻止默认行为
       if (href && isSupportedInternalLink(href)) {
         e.preventDefault()
+        e.stopPropagation()
         
         const targetPath = resolveTargetPath(href, currentFile.value?.path)
         const isCode = isCodeFile(targetPath)
