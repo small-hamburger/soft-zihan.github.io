@@ -57,6 +57,10 @@ const loadGiscus = () => {
   // Clear container
   giscusContainer.value.innerHTML = ''
   
+  // 构建用于评论映射的唯一标识符（基于文章路径）
+  // 去掉前缀斜杠，确保路径一致性
+  const normalizedPath = props.path.replace(/^\//, '')
+  
   // Create new script
   const script = document.createElement('script')
   script.src = 'https://giscus.app/client.js'
@@ -64,8 +68,9 @@ const loadGiscus = () => {
   script.setAttribute('data-repo-id', config.repoId)
   script.setAttribute('data-category', config.category)
   script.setAttribute('data-category-id', config.categoryId)
-  script.setAttribute('data-mapping', 'pathname')
-  script.setAttribute('data-strict', '0')
+  script.setAttribute('data-mapping', 'specific')  // 使用 specific 映射
+  script.setAttribute('data-term', normalizedPath)  // 指定具体的路径作为 term
+  script.setAttribute('data-strict', '1')  // 严格匹配
   script.setAttribute('data-reactions-enabled', '1')
   script.setAttribute('data-emit-metadata', '0')
   script.setAttribute('data-input-position', 'top')

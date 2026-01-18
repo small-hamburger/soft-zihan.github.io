@@ -13,20 +13,11 @@
   <div 
     v-if="musicStore.currentTrack && !isMusicPage && !isMobileDevice" 
     ref="fabContainer"
-    class="fixed z-50 pointer-events-auto hidden md:block"
+    class="fixed z-50 pointer-events-auto hidden md:block group/fab"
     :style="{ bottom: fabPosition.bottom + 'px', right: fabPosition.right + 'px' }"
     @mouseenter="showControls"
     @mouseleave="hideControlsDelayed"
   >
-    
-    <!-- Drag Handle (显示在按钮上方) -->
-    <div 
-      class="absolute -top-6 left-1/2 -translate-x-1/2 cursor-move px-2 py-1 bg-black/50 rounded text-white text-xs opacity-0 group-hover:opacity-100 transition-opacity select-none"
-      @mousedown="startDrag"
-      @touchstart="startDrag"
-    >
-      ⋮⋮
-    </div>
     
     <!-- Hover Media Controls -->
     <div 
@@ -132,11 +123,17 @@
       </div>
     </div>
     
-    <!-- Rotating Circle Button -->
-    <button
-      @click="togglePlay"
-      class="w-16 h-16 rounded-full bg-gradient-to-br from-sakura-400 to-sakura-600 shadow-2xl shadow-sakura-500/40 hover:shadow-sakura-500/60 transition-all duration-300 hover:scale-110 active:scale-95 flex items-center justify-center relative overflow-hidden"
+    <!-- Rotating Circle Button - 支持拖动 -->
+    <div
+      @mousedown="handleButtonMouseDown"
+      @touchstart="handleButtonTouchStart"
+      class="w-16 h-16 rounded-full bg-gradient-to-br from-sakura-400 to-sakura-600 shadow-2xl shadow-sakura-500/40 hover:shadow-sakura-500/60 transition-all duration-300 hover:scale-110 flex items-center justify-center relative overflow-hidden cursor-grab active:cursor-grabbing select-none"
+      :class="{ 'scale-95': isDragging }"
     >
+      <!-- Drag Indicator -->
+      <div 
+        class="absolute -top-1 left-1/2 -translate-x-1/2 w-6 h-1 bg-white/40 rounded-full opacity-0 group-hover/fab:opacity-100 transition-opacity"
+      ></div>
       <!-- Rotating Cover Background -->
       <div 
         class="absolute inset-1 rounded-full overflow-hidden"
@@ -170,10 +167,10 @@
       </div>
       
       <!-- Hover tooltip (simple one) - Hidden when controls are shown -->
-      <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover/audio:opacity-0 transition-opacity duration-200 pointer-events-none">
-        {{ musicStore.isPlaying ? 'Pause' : 'Play' }}
+      <div class="absolute bottom-full mb-2 left-1/2 -translate-x-1/2 bg-black/80 text-white text-xs px-2 py-1 rounded whitespace-nowrap opacity-0 group-hover/fab:opacity-100 transition-opacity duration-200 pointer-events-none">
+        {{ isDragging ? '拖动中' : (musicStore.isPlaying ? 'Pause' : 'Play') }}
       </div>
-    </button>
+    </div>
   </div>
 </template>
 
@@ -190,6 +187,63 @@ const fabPosition = ref({ bottom: 32, right: 32 })
 const isDragging = ref(false)
 const dragStart = ref({ x: 0, y: 0 })
 const positionStart = ref({ bottom: 0, right: 0 })
+const hasMoved = ref(false) // 用于区分点击和拖动
+
+// 处理鼠标按下 - 准备拖动
+const handleButtonMouseDown = (e: MouseEvent) => {
+  e.preventDefault()
+  hasMoved.value = false
+  
+  dragStart.value = { x: e.clientX, y: e.clientY }
+  positionStart.value = { ...fabPosition.value }
+  
+  document.addEventListener('mousemove', onDrag)
+  document.addEventListener('mouseup', handleButtonMouseUp)
+}
+
+// 处理触摸开始
+const handleButtonTouchStart = (e: TouchEvent) => {
+  hasMoved.value = false
+  
+  const touch = e.touches[0]
+  dragStart.value = { x: touch.clientX, y: touch.clientY }
+  positionStart.value = { ...fabPosition.value }
+  
+  document.addEventListener('touchmove', onDrag, { passive: false })
+  document.addEventListener('touchend', handleButtonTouchEnd)
+}
+
+// 鼠标释放 - 判断是点击还是拖动
+const handleButtonMouseUp = () => {
+  document.removeEventListener('mousemove', onDrag)
+  document.removeEventListener('mouseup', handleButtonMouseUp)
+  
+  if (!hasMoved.value) {
+    // 没有移动，视为点击
+    togglePlay()
+  } else {
+    // 有移动，保存位置
+    localStorage.setItem('music_fab_position', JSON.stringify(fabPosition.value))
+  }
+  
+  isDragging.value = false
+  hasMoved.value = false
+}
+
+// 触摸结束
+const handleButtonTouchEnd = () => {
+  document.removeEventListener('touchmove', onDrag)
+  document.removeEventListener('touchend', handleButtonTouchEnd)
+  
+  if (!hasMoved.value) {
+    togglePlay()
+  } else {
+    localStorage.setItem('music_fab_position', JSON.stringify(fabPosition.value))
+  }
+  
+  isDragging.value = false
+  hasMoved.value = false
+}
 
 const startDrag = (e: MouseEvent | TouchEvent) => {
   e.preventDefault()
@@ -208,17 +262,28 @@ const startDrag = (e: MouseEvent | TouchEvent) => {
 }
 
 const onDrag = (e: MouseEvent | TouchEvent) => {
-  if (!isDragging.value) return
-  
   const clientX = 'touches' in e ? e.touches[0].clientX : e.clientX
   const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY
   
   const deltaX = clientX - dragStart.value.x
   const deltaY = clientY - dragStart.value.y
   
+  // 检测是否有足够的移动（超过5px视为拖动）
+  if (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5) {
+    hasMoved.value = true
+    isDragging.value = true
+  }
+  
+  if (!hasMoved.value) return
+  
+  // 阻止触摸事件的默认行为（防止滚动）
+  if ('touches' in e) {
+    e.preventDefault()
+  }
+  
   // 计算新位置（注意：right 和 bottom 是从右下角计算的）
   const newRight = Math.max(8, Math.min(window.innerWidth - 80, positionStart.value.right - deltaX))
-  const newBottom = Math.max(8, Math.min(window.innerHeight - 80, positionStart.value.bottom + deltaY))
+  const newBottom = Math.max(8, Math.min(window.innerHeight - 80, positionStart.value.bottom - deltaY))
   
   fabPosition.value = { bottom: newBottom, right: newRight }
 }

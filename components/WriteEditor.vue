@@ -33,19 +33,8 @@
                 :class="hasToken ? 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400'"
               >
                 <div class="w-2 h-2 rounded-full" :class="hasToken ? 'bg-green-500' : 'bg-yellow-500'"></div>
-                {{ hasToken ? (lang === 'zh' ? 'GitHub 已连接' : 'GitHub Connected') : (lang === 'zh' ? '未配置 Token' : 'No Token') }}
+                {{ hasToken ? (lang === 'zh' ? 'GitHub 已连接' : 'GitHub Connected') : (lang === 'zh' ? '请在设置中配置' : 'Configure in Settings') }}
               </div>
-              
-              <button 
-                @click="showTokenModal = true"
-                class="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors text-gray-500"
-                :title="lang === 'zh' ? '配置 GitHub Token' : 'Configure GitHub Token'"
-              >
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                </svg>
-              </button>
               
               <button 
                 @click="confirmClose"
@@ -148,8 +137,28 @@
                   class="absolute bottom-full mb-2 left-0 w-80 max-h-64 overflow-y-auto bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl z-50"
                 >
                   <div class="p-2 border-b border-gray-200 dark:border-gray-700 text-xs text-gray-500">
-                    {{ lang === 'zh' ? '选择发布目录' : 'Select publish folder' }}
+                    {{ lang === 'zh' ? '选择或输入发布目录' : 'Select or enter publish folder' }}
                   </div>
+                  
+                  <!-- 新建路径输入 -->
+                  <div class="p-2 border-b border-gray-200 dark:border-gray-700">
+                    <div class="flex gap-2">
+                      <input 
+                        v-model="customFolder"
+                        type="text"
+                        :placeholder="lang === 'zh' ? '输入新路径 (如: notes/新分类)' : 'Enter new path'"
+                        class="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-900"
+                        @keyup.enter="addCustomFolder"
+                      />
+                      <button 
+                        @click="addCustomFolder"
+                        class="px-2 py-1 text-xs bg-sakura-500 text-white rounded hover:bg-sakura-600"
+                      >
+                        {{ lang === 'zh' ? '添加' : 'Add' }}
+                      </button>
+                    </div>
+                  </div>
+                  
                   <div 
                     v-for="folder in availableFolders"
                     :key="folder"
@@ -191,66 +200,6 @@
             ></div>
           </div>
         </div>
-        
-        <!-- Token Configuration Modal -->
-        <div 
-          v-if="showTokenModal"
-          class="absolute inset-0 flex items-center justify-center z-10"
-        >
-          <div class="absolute inset-0 bg-black/50" @click="showTokenModal = false"></div>
-          <div class="relative bg-white dark:bg-gray-800 rounded-xl shadow-xl p-6 w-full max-w-md">
-            <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4">
-              {{ lang === 'zh' ? '配置 GitHub Token' : 'Configure GitHub Token' }}
-            </h3>
-            <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              {{ lang === 'zh' 
-                ? '需要一个有 repo 权限的 Personal Access Token 才能发布文章。' 
-                : 'A Personal Access Token with repo permission is required to publish articles.' }}
-            </p>
-            <input 
-              v-model="tokenInput"
-              type="password"
-              placeholder="ghp_xxxxxxxxxxxxxxxx"
-              class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100 mb-4"
-            />
-            <div class="flex items-center gap-2 mb-4">
-              <input v-model="repoOwner" type="text" placeholder="Owner" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-sm" />
-              <span class="text-gray-400">/</span>
-              <input v-model="repoName" type="text" placeholder="Repo" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-sm" />
-            </div>
-            
-            <!-- 作者名称 -->
-            <div class="mb-4">
-              <label class="block text-sm text-gray-600 dark:text-gray-400 mb-2">
-                {{ lang === 'zh' ? '作者名称 (GitHub 用户名)' : 'Author Name (GitHub username)' }}
-              </label>
-              <input 
-                v-model="authorName" 
-                type="text" 
-                placeholder="your-github-username"
-                class="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-900 text-gray-800 dark:text-gray-100"
-              />
-              <p class="text-xs text-gray-400 mt-1">
-                {{ lang === 'zh' ? '将作为文章标签添加，用于筛选' : 'Will be added as article tag for filtering' }}
-              </p>
-            </div>
-            
-            <div class="flex justify-end gap-2">
-              <button 
-                @click="showTokenModal = false"
-                class="px-4 py-2 text-sm text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-              >
-                {{ lang === 'zh' ? '取消' : 'Cancel' }}
-              </button>
-              <button 
-                @click="saveToken"
-                class="px-4 py-2 text-sm font-medium text-white bg-sakura-500 hover:bg-sakura-600 rounded-lg transition-colors"
-              >
-                {{ lang === 'zh' ? '保存' : 'Save' }}
-              </button>
-            </div>
-          </div>
-        </div>
       </div>
     </Transition>
   </Teleport>
@@ -271,23 +220,22 @@ const emit = defineEmits<{
   (e: 'published', path: string): void
 }>()
 
-const { isPublishing, publishProgress, getToken, setToken, publishArticle } = useGitHubPublish()
+const { isPublishing, publishProgress, getToken, uploadFile, uploadImage } = useGitHubPublish()
 
 const editorRef = ref<HTMLTextAreaElement | null>(null)
 const title = ref('')
 const content = ref('')
 const targetFolder = ref('notes/zh')
+const customFolder = ref('')
 const images = ref<Array<{ id: string; file: File; preview: string }>>([])
-const showTokenModal = ref(false)
 const showFolderBrowser = ref(false)
-const tokenInput = ref('')
+
+// 从设置中读取配置
 const repoOwner = ref('soft-zihan')
 const repoName = ref('soft-zihan.github.io')
-const authorName = ref('') // 作者名称
-const tokenValue = ref('') // 用于追踪 token 状态
 
 // 可选的发布目录列表
-const availableFolders = [
+const availableFolders = ref([
   'notes/zh',
   'notes/zh/Linux命令行',
   'notes/zh/Linux命令行/01_基础',
@@ -301,9 +249,22 @@ const availableFolders = [
   'notes/en/Linux Command Line/3 Tips and Tricks',
   'notes/VUE学习笔记',
   'notes/VUE Learning'
-]
+])
 
-const hasToken = computed(() => !!tokenValue.value)
+// 添加自定义路径
+const addCustomFolder = () => {
+  const folder = customFolder.value.trim()
+  if (folder && !availableFolders.value.includes(folder)) {
+    availableFolders.value.unshift(folder)
+    // 保存到 localStorage
+    localStorage.setItem('custom_folders', JSON.stringify(availableFolders.value.filter(f => !f.startsWith('notes/'))))
+  }
+  targetFolder.value = folder
+  customFolder.value = ''
+  showFolderBrowser.value = false
+}
+
+const hasToken = computed(() => !!localStorage.getItem('github_pat'))
 
 const wordCount = computed(() => {
   const chinese = (content.value.match(/[\u4e00-\u9fa5]/g) || []).length
@@ -375,7 +336,6 @@ const insertMarkdown = (action: string) => {
   
   content.value = content.value.substring(0, start) + insertion + content.value.substring(end)
   
-  // Restore focus and cursor
   setTimeout(() => {
     textarea.focus()
     const newPos = start + insertion.length + cursorOffset
@@ -393,7 +353,6 @@ const handleImageUpload = (e: Event) => {
   
   images.value.push({ id, file, preview })
   
-  // Insert placeholder in content
   const placeholder = `![${file.name}](local-image:${id})`
   const textarea = editorRef.value
   if (textarea) {
@@ -440,58 +399,82 @@ const loadDraft = () => {
   }
 }
 
-const saveToken = () => {
-  if (tokenInput.value) {
-    setToken(tokenInput.value)
-    tokenValue.value = tokenInput.value // 更新本地状态
-    localStorage.setItem('github_repo_owner', repoOwner.value)
-    localStorage.setItem('github_repo_name', repoName.value)
-  }
-  if (authorName.value) {
-    localStorage.setItem('author_name', authorName.value)
-  }
-  showTokenModal.value = false
-}
-
 const publish = async () => {
   const token = getToken()
   if (!token || !title.value.trim() || !content.value.trim()) return
   
-  // 构建带有作者信息的 frontmatter
-  let finalContent = content.value
-  const author = authorName.value.trim()
-  if (author) {
-    const frontmatter = `---
-author: ${author}
-authorUrl: https://github.com/${author}
-date: ${new Date().toISOString().split('T')[0]}
-tags: [${author}]
----
-
-`
-    // 如果内容已有 frontmatter，则合并
+  // 从设置读取作者信息
+  const authorName = localStorage.getItem('author_name') || ''
+  const authorUrl = localStorage.getItem('author_url') || ''
+  
+  let processedContent = content.value
+  
+  // 统一图片存放目录
+  const imageFolder = 'notes/images'
+  
+  // 上传图片
+  if (images.value.length > 0) {
+    for (const img of images.value) {
+      const imageUrl = await uploadImage(
+        { owner: repoOwner.value, repo: repoName.value, branch: 'main', token },
+        img.file,
+        imageFolder
+      )
+      if (imageUrl) {
+        processedContent = processedContent.replace(
+          new RegExp(`local-image:${img.id}`, 'g'),
+          imageUrl
+        )
+      }
+    }
+  }
+  
+  // 只有在用户填写了作者链接时才添加 authorUrl
+  let frontmatter = ''
+  if (authorName || authorUrl) {
+    const fmParts = []
+    if (authorUrl) {
+      fmParts.push(`authorUrl: ${authorUrl}`)
+    }
+    if (authorName) {
+      fmParts.push(`tags: [${authorName}]`)
+    }
+    
+    if (fmParts.length > 0) {
+      frontmatter = `---\n${fmParts.join('\n')}\n---\n\n`
+    }
+  }
+  
+  // 如果内容已有 frontmatter，则合并
+  let finalContent = processedContent
+  if (frontmatter) {
     if (finalContent.startsWith('---')) {
       const endIndex = finalContent.indexOf('---', 3)
       if (endIndex > 0) {
-        const existingFm = finalContent.slice(0, endIndex + 3)
-        finalContent = existingFm.replace('---\n', `---\nauthor: ${author}\nauthorUrl: https://github.com/${author}\ntags: [${author}]\n`) + finalContent.slice(endIndex + 3)
+        // 合并到现有 frontmatter
+        const existingFm = finalContent.slice(4, endIndex).trim()
+        const newFmContent = frontmatter.slice(4, -5).trim()
+        finalContent = `---\n${existingFm}\n${newFmContent}\n---\n\n${finalContent.slice(endIndex + 4).trim()}`
       }
     } else {
       finalContent = frontmatter + finalContent
     }
   }
   
-  const result = await publishArticle(
-    {
-      owner: repoOwner.value,
-      repo: repoName.value,
-      branch: 'main',
-      token
-    },
-    title.value,
+  // 生成文件名
+  const fileName = title.value
+    .toLowerCase()
+    .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
+    .replace(/^-|-$/g, '')
+    + '.md'
+  
+  const path = `${targetFolder.value}/${fileName}`
+  
+  const result = await uploadFile(
+    { owner: repoOwner.value, repo: repoName.value, branch: 'main', token },
+    path,
     finalContent,
-    targetFolder.value,
-    images.value.map(img => ({ id: img.id, file: img.file }))
+    `Add article: ${title.value}`
   )
   
   if (result.success) {
@@ -516,9 +499,19 @@ onMounted(() => {
   loadDraft()
   repoOwner.value = localStorage.getItem('github_repo_owner') || 'soft-zihan'
   repoName.value = localStorage.getItem('github_repo_name') || 'soft-zihan.github.io'
-  authorName.value = localStorage.getItem('author_name') || ''
-  tokenValue.value = getToken() || '' // 初始化 token 状态
-  tokenInput.value = tokenValue.value // 预填充 token 输入框
+  
+  // 加载自定义文件夹
+  const customFolders = localStorage.getItem('custom_folders')
+  if (customFolders) {
+    try {
+      const folders = JSON.parse(customFolders)
+      folders.forEach((f: string) => {
+        if (!availableFolders.value.includes(f)) {
+          availableFolders.value.unshift(f)
+        }
+      })
+    } catch {}
+  }
 })
 </script>
 

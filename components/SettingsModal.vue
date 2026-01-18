@@ -1,6 +1,6 @@
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm" @click.self="$emit('close')">
-    <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-2xl max-w-sm w-full animate-fade-in border border-white/50 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
+    <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-2xl max-w-md w-full animate-fade-in border border-white/50 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
       <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-6">{{ t.settings_title }}</h3>
       
       <!-- Banner Mode -->
@@ -58,26 +58,80 @@
           </div>
       </div>
 
+      <!-- GitHub Configuration -->
+      <div class="mb-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">GitHub {{ t.connection || '连接' }}</label>
+        
+        <!-- Token Status -->
+        <div class="flex items-center gap-2 mb-3 p-2 rounded-lg" :class="hasToken ? 'bg-green-50 dark:bg-green-900/20' : 'bg-yellow-50 dark:bg-yellow-900/20'">
+          <div class="w-2 h-2 rounded-full" :class="hasToken ? 'bg-green-500' : 'bg-yellow-500'"></div>
+          <span class="text-sm" :class="hasToken ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'">
+            {{ hasToken ? (t.github_connected || 'GitHub 已连接') : (t.github_not_connected || '未配置 Token') }}
+          </span>
+        </div>
+        
+        <!-- Token Input -->
+        <div class="mb-3">
+          <input 
+            v-model="tokenInput"
+            type="password"
+            placeholder="ghp_xxxxxxxxxxxxxxxx"
+            class="w-full px-3 py-2 text-sm border rounded-xl bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400"
+          />
+          <p class="text-xs text-gray-400 mt-1">{{ t.token_hint || '需要 repo 权限的 Personal Access Token' }}</p>
+        </div>
+        
+        <!-- Repo Settings -->
+        <div class="flex items-center gap-2 mb-3">
+          <input v-model="repoOwner" type="text" placeholder="Owner" class="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900" />
+          <span class="text-gray-400">/</span>
+          <input v-model="repoName" type="text" placeholder="Repo" class="flex-1 px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-gray-900" />
+        </div>
+        
+        <!-- Author Settings -->
+        <div class="mb-3">
+          <label class="block text-xs text-gray-500 mb-1">{{ t.author_name || '作者名称' }}</label>
+          <input 
+            v-model="authorName"
+            type="text"
+            placeholder="your-name"
+            class="w-full px-3 py-2 text-sm border rounded-xl bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400"
+          />
+        </div>
+        
+        <div class="mb-3">
+          <label class="block text-xs text-gray-500 mb-1">{{ t.author_url || '作者链接 (可选)' }}</label>
+          <input 
+            v-model="authorUrl"
+            type="text"
+            placeholder="https://github.com/username"
+            class="w-full px-3 py-2 text-sm border rounded-xl bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400"
+          />
+        </div>
+        
+        <button 
+          @click="saveGitHubConfig"
+          class="w-full py-2 border rounded-xl text-sm transition-colors border-sakura-500 bg-sakura-50 dark:bg-sakura-900/20 text-sakura-600 dark:text-sakura-400 hover:bg-sakura-100 dark:hover:bg-sakura-900/30"
+        >
+          {{ t.save_config || '保存配置' }}
+        </button>
+      </div>
+
       <!-- Backup & Restore -->
       <div class="mb-6 border-t border-gray-200 dark:border-gray-700 pt-6">
         <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{{ t.backup_title || '云端备份' }}</label>
         
-        <!-- Author Name Input -->
-        <div class="mb-3">
-          <input 
-            v-model="backupAuthorName"
-            type="text"
-            :placeholder="t.backup_author_placeholder || '输入备份作者名'"
-            class="w-full px-3 py-2 text-sm border rounded-xl bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-gray-800 dark:text-gray-200 placeholder-gray-400"
-          />
+        <!-- Warning Notice -->
+        <div class="mb-3 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-xs text-amber-600 dark:text-amber-400">
+          ⚠️ {{ t.backup_warning || '备份不包含 GitHub Token，恢复后需重新配置' }}
         </div>
         
         <!-- Backup Button -->
         <button 
           @click="handleBackup"
-          :disabled="isBackingUp || !hasToken"
+          :disabled="isBackingUp || !hasToken || !authorName.trim()"
           class="w-full py-2 mb-2 border rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
-          :class="hasToken ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30' : 'border-gray-300 dark:border-gray-600 text-gray-400 cursor-not-allowed'"
+          :class="hasToken && authorName.trim() ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30' : 'border-gray-300 dark:border-gray-600 text-gray-400 cursor-not-allowed'"
         >
           <span v-if="isBackingUp" class="animate-spin">⏳</span>
           <span v-else>☁️</span>
@@ -85,7 +139,10 @@
         </button>
         
         <p v-if="!hasToken" class="text-xs text-amber-500 mb-2">
-          {{ t.backup_need_token || '请先在发布文章中设置 GitHub Token' }}
+          {{ t.backup_need_token || '请先配置 GitHub Token' }}
+        </p>
+        <p v-else-if="!authorName.trim()" class="text-xs text-amber-500 mb-2">
+          {{ t.backup_need_author || '请先填写作者名称' }}
         </p>
         
         <!-- Backup List Toggle -->
@@ -171,6 +228,36 @@ const emit = defineEmits<{
 const appStore = useAppStore()
 const { currentThemeWallpapers, setWallpaper } = useWallpapers()
 
+// GitHub Configuration
+const tokenInput = ref('')
+const repoOwner = ref('soft-zihan')
+const repoName = ref('soft-zihan.github.io')
+const authorName = ref('')
+const authorUrl = ref('')
+
+const hasToken = computed(() => !!localStorage.getItem('github_pat'))
+
+const saveGitHubConfig = () => {
+  if (tokenInput.value) {
+    localStorage.setItem('github_pat', tokenInput.value)
+  }
+  if (repoOwner.value) {
+    localStorage.setItem('github_repo_owner', repoOwner.value)
+  }
+  if (repoName.value) {
+    localStorage.setItem('github_repo_name', repoName.value)
+  }
+  if (authorName.value) {
+    localStorage.setItem('author_name', authorName.value)
+  }
+  if (authorUrl.value) {
+    localStorage.setItem('author_url', authorUrl.value)
+  }
+  backupMessage.value = '配置已保存'
+  backupSuccess.value = true
+  setTimeout(() => { backupMessage.value = '' }, 2000)
+}
+
 // Backup functionality
 const { 
   isBackingUp, 
@@ -183,41 +270,30 @@ const {
   parseBackupFilename 
 } = useBackup()
 
-const backupAuthorName = ref(localStorage.getItem('publish_author') || '')
 const showBackupList = ref(false)
 const backupMessage = ref('')
 const backupSuccess = ref(false)
 
-const hasToken = computed(() => !!localStorage.getItem('github_pat'))
-
-// GitHub repo info (从 metadata 或固定值)
-const GITHUB_OWNER = 'soft-zihan'
-const GITHUB_REPO = 'soft-zihan.github.io'
-
 const handleBackup = async () => {
-  if (!backupAuthorName.value.trim()) {
-    backupMessage.value = '请输入备份作者名'
+  if (!authorName.value.trim()) {
+    backupMessage.value = '请填写作者名称'
     backupSuccess.value = false
     return
   }
   
-  // 保存作者名
-  localStorage.setItem('publish_author', backupAuthorName.value)
-  
-  const result = await backupToGitHub(GITHUB_OWNER, GITHUB_REPO, backupAuthorName.value)
+  const result = await backupToGitHub(repoOwner.value, repoName.value, authorName.value)
   backupMessage.value = result.message
   backupSuccess.value = result.success
   
   if (result.success) {
-    // 刷新备份列表
-    await listBackups(GITHUB_OWNER, GITHUB_REPO)
+    await listBackups(repoOwner.value, repoName.value)
   }
 }
 
 const toggleBackupList = async () => {
   showBackupList.value = !showBackupList.value
   if (showBackupList.value) {
-    await listBackups(GITHUB_OWNER, GITHUB_REPO)
+    await listBackups(repoOwner.value, repoName.value)
   }
 }
 
@@ -226,12 +302,11 @@ const handleRestore = async (filename: string) => {
     return
   }
   
-  const result = await restoreFromGitHub(GITHUB_OWNER, GITHUB_REPO, filename)
+  const result = await restoreFromGitHub(repoOwner.value, repoName.value, filename)
   backupMessage.value = result.message
   backupSuccess.value = result.success
   
   if (result.success) {
-    // 提示刷新页面
     if (confirm('恢复成功！是否立即刷新页面以应用更改？')) {
       window.location.reload()
     }
@@ -239,23 +314,30 @@ const handleRestore = async (filename: string) => {
 }
 
 const handleDelete = async (backup: any) => {
-  if (!confirm(`确定要删除备份 "${parseBackupFilename(backup.name).author}" 吗？`)) {
+  if (!confirm(\`确定要删除备份 "\${parseBackupFilename(backup.name).author}" 吗？\`)) {
     return
   }
   
-  const result = await deleteBackup(GITHUB_OWNER, GITHUB_REPO, backup.name, backup.sha)
+  const result = await deleteBackup(repoOwner.value, repoName.value, backup.name, backup.sha)
   backupMessage.value = result.message
   backupSuccess.value = result.success
   
   if (result.success) {
-    await listBackups(GITHUB_OWNER, GITHUB_REPO)
+    await listBackups(repoOwner.value, repoName.value)
   }
 }
 
 onMounted(() => {
-  // 预加载备份列表（如果有 token）
+  // Load saved config
+  tokenInput.value = localStorage.getItem('github_pat') || ''
+  repoOwner.value = localStorage.getItem('github_repo_owner') || 'soft-zihan'
+  repoName.value = localStorage.getItem('github_repo_name') || 'soft-zihan.github.io'
+  authorName.value = localStorage.getItem('author_name') || ''
+  authorUrl.value = localStorage.getItem('author_url') || ''
+  
+  // Preload backup list
   if (hasToken.value) {
-    listBackups(GITHUB_OWNER, GITHUB_REPO)
+    listBackups(repoOwner.value, repoName.value)
   }
 })
 </script>
