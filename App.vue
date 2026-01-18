@@ -211,6 +211,7 @@
               class="markdown-body dark:text-gray-300 selection:bg-sakura-200 dark:selection:bg-sakura-900"
               @click="handleContentClick"
               @mouseup="handleSelection"
+              @contextmenu="handleSelectionContextMenu"
             ></div>
 
             <!-- Source Code / Raw Mode -->
@@ -917,18 +918,51 @@ const handleSelection = () => {
   }
   
   const range = selection.getRangeAt(0);
-  const rect = range.getBoundingClientRect();
-  
   const viewer = document.getElementById('markdown-viewer');
   if (!viewer || !viewer.contains(range.commonAncestorContainer)) {
       selectionMenu.value.show = false;
       return;
   }
 
+  const rect = (() => {
+    const r = range.getBoundingClientRect();
+    if (r && (r.width || r.height)) return r;
+    const rects = range.getClientRects();
+    return rects.length > 0 ? rects[0] : null;
+  })();
+
+  if (!rect) {
+    selectionMenu.value.show = false;
+    return;
+  }
+
   selectionMenu.value = {
     show: true,
     x: rect.left + rect.width / 2,
     y: rect.top - 10
+  };
+};
+
+const handleSelectionContextMenu = (e: MouseEvent) => {
+  if (currentFile.value?.isSource) return;
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+    selectionMenu.value.show = false;
+    return;
+  }
+
+  const range = selection.getRangeAt(0);
+  const viewer = document.getElementById('markdown-viewer');
+  if (!viewer || !viewer.contains(range.commonAncestorContainer)) {
+    selectionMenu.value.show = false;
+    return;
+  }
+
+  e.preventDefault();
+  selectionMenu.value = {
+    show: true,
+    x: e.clientX,
+    y: e.clientY
   };
 };
 

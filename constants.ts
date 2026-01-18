@@ -3,9 +3,9 @@
 // Giscus Configuration (get values from https://giscus.app)
 export const GISCUS_CONFIG = {
   repo: 'soft-zihan/soft-zihan.github.io',
-  repoId: '', // Fill from giscus.app
+  repoId: 'R_kgDOQ1b8-A',
   category: 'Announcements',
-  categoryId: '' // Fill from giscus.app
+  categoryId: 'DIC_kwDOQ1b8-M4C1Ezk'
 }
 
 // Umami Configuration (optional)

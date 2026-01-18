@@ -40,9 +40,9 @@ const loaded = ref(false)
 // 4. 复制生成的 data-repo-id 和 data-category-id
 const config = {
   repo: props.repo || 'soft-zihan/soft-zihan.github.io',
-  repoId: props.repoId || '', // ⚠️ 请在 giscus.app 获取
+  repoId: props.repoId || 'R_kgDOQ1b8-A',
   category: props.category || 'Announcements',
-  categoryId: props.categoryId || '', // ⚠️ 请在 giscus.app 获取
+  categoryId: props.categoryId || 'DIC_kwDOQ1b8-M4C1Ezk',
 }
 
 const loadGiscus = () => {
@@ -69,7 +69,7 @@ const loadGiscus = () => {
   script.setAttribute('data-reactions-enabled', '1')
   script.setAttribute('data-emit-metadata', '0')
   script.setAttribute('data-input-position', 'top')
-  script.setAttribute('data-theme', props.isDark ? 'dark_dimmed' : 'light')
+  script.setAttribute('data-theme', 'preferred_color_scheme')
   script.setAttribute('data-lang', props.lang === 'zh' ? 'zh-CN' : 'en')
   script.setAttribute('data-loading', 'lazy')
   script.crossOrigin = 'anonymous'
@@ -87,7 +87,7 @@ const updateGiscusTheme = () => {
   const iframe = document.querySelector<HTMLIFrameElement>('.giscus-frame')
   if (iframe) {
     iframe.contentWindow?.postMessage(
-      { giscus: { setConfig: { theme: props.isDark ? 'dark_dimmed' : 'light' } } },
+      { giscus: { setConfig: { theme: 'preferred_color_scheme' } } },
       'https://giscus.app'
     )
   }

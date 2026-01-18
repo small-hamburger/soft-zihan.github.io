@@ -230,88 +230,33 @@
           <LabAjax :lang="lang" />
         </section>
 
-        <!-- TypeScript Placeholder -->
-        <section class="max-w-4xl mx-auto">
-          <div class="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 text-center">
-            <div class="text-4xl mb-4">🔷</div>
-            <h3 class="font-bold text-gray-700 dark:text-gray-300 text-lg mb-2">
-              {{ lang === 'zh' ? 'TypeScript 类型系统' : 'TypeScript Type System' }}
-            </h3>
-            <p class="text-gray-500 text-sm mb-4">
-              {{ lang === 'zh' ? '类型注解、接口、泛型 - 开发中...' : 'Type annotations, interfaces, generics - Coming soon...' }}
-            </p>
-            <span class="inline-block px-4 py-2 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full text-sm">
-              {{ lang === 'zh' ? '🚧 即将推出' : '🚧 Coming Soon' }}
-            </span>
-          </div>
+        <!-- TypeScript Lab -->
+        <section>
+          <LabTypeScript :lang="lang" />
         </section>
       </div>
 
       <!-- Tab 3: Engineering -->
       <div v-else-if="activeTab === 'engineering'" class="space-y-12 animate-fade-in">
         
-        <!-- Module System Placeholder -->
-        <section class="max-w-4xl mx-auto">
-          <div class="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 text-center">
-            <div class="text-4xl mb-4">📦</div>
-            <h3 class="font-bold text-gray-700 dark:text-gray-300 text-lg mb-2">
-              {{ lang === 'zh' ? '模块化系统' : 'Module System' }}
-            </h3>
-            <p class="text-gray-500 text-sm mb-4">
-              {{ lang === 'zh' ? 'ESM vs CommonJS、导入导出、模块作用域' : 'ESM vs CommonJS, import/export, module scope' }}
-            </p>
-            <span class="inline-block px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full text-sm">
-              {{ lang === 'zh' ? '🚧 即将推出' : '🚧 Coming Soon' }}
-            </span>
-          </div>
+        <!-- Module System Lab -->
+        <section>
+          <LabModuleSystem :lang="lang" />
         </section>
 
-        <!-- NPM Placeholder -->
-        <section class="max-w-4xl mx-auto">
-          <div class="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 text-center">
-            <div class="text-4xl mb-4">📚</div>
-            <h3 class="font-bold text-gray-700 dark:text-gray-300 text-lg mb-2">
-              {{ lang === 'zh' ? 'NPM 包管理' : 'NPM Package Management' }}
-            </h3>
-            <p class="text-gray-500 text-sm mb-4">
-              {{ lang === 'zh' ? 'package.json、依赖管理、语义化版本' : 'package.json, dependencies, semantic versioning' }}
-            </p>
-            <span class="inline-block px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full text-sm">
-              {{ lang === 'zh' ? '🚧 即将推出' : '🚧 Coming Soon' }}
-            </span>
-          </div>
+        <!-- NPM Lab -->
+        <section>
+          <LabNpm :lang="lang" />
         </section>
 
-        <!-- Build Tools Placeholder -->
-        <section class="max-w-4xl mx-auto">
-          <div class="bg-gray-50 dark:bg-gray-800/50 rounded-2xl p-8 border-2 border-dashed border-gray-300 dark:border-gray-600 text-center">
-            <div class="text-4xl mb-4">⚙️</div>
-            <h3 class="font-bold text-gray-700 dark:text-gray-300 text-lg mb-2">
-              {{ lang === 'zh' ? '构建工具 (Vite)' : 'Build Tools (Vite)' }}
-            </h3>
-            <p class="text-gray-500 text-sm mb-4">
-              {{ lang === 'zh' ? '为什么需要打包、Vite 配置、环境变量' : 'Why bundling, Vite config, env variables' }}
-            </p>
-            <span class="inline-block px-4 py-2 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-full text-sm">
-              {{ lang === 'zh' ? '🚧 即将推出' : '🚧 Coming Soon' }}
-            </span>
-          </div>
+        <!-- Build Tools Lab -->
+        <section>
+          <LabBuildTools :lang="lang" />
         </section>
 
-        <!-- TailwindCSS Preview -->
-        <section class="max-w-4xl mx-auto">
-          <div class="bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/20 dark:to-blue-900/20 rounded-2xl p-8 border border-cyan-200 dark:border-cyan-800/30 text-center">
-            <div class="text-4xl mb-4">🎨</div>
-            <h3 class="font-bold text-gray-700 dark:text-gray-300 text-lg mb-2">
-              {{ lang === 'zh' ? 'TailwindCSS 快速入门' : 'TailwindCSS Quickstart' }}
-            </h3>
-            <p class="text-gray-500 text-sm mb-4">
-              {{ lang === 'zh' ? '工具类 CSS、响应式设计、暗色模式' : 'Utility CSS, responsive design, dark mode' }}
-            </p>
-            <span class="inline-block px-4 py-2 bg-cyan-100 dark:bg-cyan-900/30 text-cyan-600 dark:text-cyan-400 rounded-full text-sm">
-              {{ lang === 'zh' ? '🚧 即将推出' : '🚧 Coming Soon' }}
-            </span>
-          </div>
+        <!-- TailwindCSS Lab -->
+        <section>
+          <LabTailwind :lang="lang" />
         </section>
       </div>
 
@@ -430,6 +375,11 @@ import LabVueList from './LabVueList.vue';
 import LabPropsEmit from './LabPropsEmit.vue';
 import LabClassStyle from './LabClassStyle.vue';
 import LabCodeEvolution from './LabCodeEvolution.vue';
+import LabTypeScript from './LabTypeScript.vue';
+import LabModuleSystem from './LabModuleSystem.vue';
+import LabNpm from './LabNpm.vue';
+import LabBuildTools from './LabBuildTools.vue';
+import LabTailwind from './LabTailwind.vue';
 
 defineEmits<{
   'select-lab': [lab: 'event-handling' | 'slot'];

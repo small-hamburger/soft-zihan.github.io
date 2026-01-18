@@ -232,6 +232,20 @@ const playModeTitle = computed(() => {
   return modes[musicStore.playMode] || ''
 })
 
+const playAudio = async () => {
+  if (!audioEl.value) return
+  try {
+    await audioEl.value.play()
+  } catch (e) {
+    const el = audioEl.value
+    const onCanPlay = () => {
+      el.removeEventListener('canplay', onCanPlay)
+      el.play().catch(() => musicStore.pause())
+    }
+    el.addEventListener('canplay', onCanPlay, { once: true })
+  }
+}
+
 // Simple play/pause toggle
 const togglePlay = () => {
   if (musicStore.isPlaying) {
@@ -245,21 +259,31 @@ const togglePlay = () => {
 watch(() => musicStore.isPlaying, (playing) => {
   if (!audioEl.value) return
   if (playing) {
-    audioEl.value.play().catch(e => {
-      console.warn('Autoplay prevented:', e)
-      musicStore.pause()
-    })
+    playAudio()
   } else {
     audioEl.value.pause()
   }
 })
 
 watch(() => musicStore.currentIndex, () => {
-  if (audioEl.value) {
-    audioEl.value.currentTime = 0
-    if (musicStore.isPlaying) {
-      audioEl.value.play().catch(() => musicStore.pause())
-    }
+  if (!audioEl.value) return
+  audioEl.value.currentTime = 0
+  musicStore.setCurrentTime(0)
+  musicStore.setDuration(0)
+  audioEl.value.load()
+  if (musicStore.isPlaying) {
+    playAudio()
+  }
+})
+
+watch(() => musicStore.currentTrack?.url, (url) => {
+  if (!audioEl.value || !url) return
+  audioEl.value.currentTime = 0
+  musicStore.setCurrentTime(0)
+  musicStore.setDuration(0)
+  audioEl.value.load()
+  if (musicStore.isPlaying) {
+    playAudio()
   }
 })
 
