@@ -142,11 +142,14 @@
                   
                   <!-- 新建路径输入 -->
                   <div class="p-2 border-b border-gray-200 dark:border-gray-700">
+                    <div class="text-xs text-gray-400 mb-1">
+                      {{ lang === 'zh' ? `新路径将添加到 ${getRootFolder()} 下` : `New path will be under ${getRootFolder()}` }}
+                    </div>
                     <div class="flex gap-2">
                       <input 
                         v-model="customFolder"
                         type="text"
-                        :placeholder="lang === 'zh' ? '输入新路径 (如: notes/新分类)' : 'Enter new path'"
+                        :placeholder="lang === 'zh' ? '子目录名 (如: 我的分类)' : 'Subfolder name (e.g. MyCategory)'"
                         class="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-900"
                         @keyup.enter="addCustomFolder"
                       />
@@ -234,8 +237,8 @@ const showFolderBrowser = ref(false)
 const repoOwner = ref('soft-zihan')
 const repoName = ref('soft-zihan.github.io')
 
-// 可选的发布目录列表
-const availableFolders = ref([
+// 默认的发布目录列表
+const defaultFolders = [
   'notes/zh',
   'notes/zh/Linux命令行',
   'notes/zh/Linux命令行/01_基础',
@@ -249,15 +252,40 @@ const availableFolders = ref([
   'notes/en/Linux Command Line/3 Tips and Tricks',
   'notes/VUE学习笔记',
   'notes/VUE Learning'
-])
+]
+const availableFolders = ref([...defaultFolders])
 
-// 添加自定义路径
+// 根据语言获取根目录
+const getRootFolder = () => props.lang === 'zh' ? 'notes/zh' : 'notes/en'
+
+// 添加自定义路径 - 必须在当前语言的 notes 目录下
 const addCustomFolder = () => {
-  const folder = customFolder.value.trim()
-  if (folder && !availableFolders.value.includes(folder)) {
+  let folder = customFolder.value.trim()
+  if (!folder) return
+  
+  const rootFolder = getRootFolder()
+  
+  // 移除开头的斜杠
+  folder = folder.replace(/^\/+/, '')
+  
+  // 如果用户没有输入 notes/xx 前缀，自动添加
+  if (!folder.startsWith('notes/')) {
+    folder = `${rootFolder}/${folder}`
+  } else if (!folder.startsWith(rootFolder)) {
+    // 如果输入的是 notes/ 开头但不是当前语言的目录，提示错误
+    alert(props.lang === 'zh' 
+      ? `路径必须在 ${rootFolder} 目录下` 
+      : `Path must be under ${rootFolder}`)
+    return
+  }
+  
+  if (!availableFolders.value.includes(folder)) {
     availableFolders.value.unshift(folder)
-    // 保存到 localStorage
-    localStorage.setItem('custom_folders', JSON.stringify(availableFolders.value.filter(f => !f.startsWith('notes/'))))
+    // 只保存自定义添加的文件夹
+    const customFolders = availableFolders.value.filter(f => 
+      !defaultFolders.includes(f)
+    )
+    localStorage.setItem('custom_folders', JSON.stringify(customFolders))
   }
   targetFolder.value = folder
   customFolder.value = ''
@@ -401,90 +429,120 @@ const loadDraft = () => {
 
 const publish = async () => {
   const token = getToken()
-  if (!token || !title.value.trim() || !content.value.trim()) return
-  
-  // 从设置读取作者信息
-  const authorName = localStorage.getItem('author_name') || ''
-  const authorUrl = localStorage.getItem('author_url') || ''
-  
-  let processedContent = content.value
-  
-  // 统一图片存放目录
-  const imageFolder = 'notes/images'
-  
-  // 上传图片
-  if (images.value.length > 0) {
-    for (const img of images.value) {
-      const imageUrl = await uploadImage(
-        { owner: repoOwner.value, repo: repoName.value, branch: 'main', token },
-        img.file,
-        imageFolder
-      )
-      if (imageUrl) {
-        processedContent = processedContent.replace(
-          new RegExp(`local-image:${img.id}`, 'g'),
-          imageUrl
-        )
-      }
-    }
+  if (!token) {
+    alert(props.lang === 'zh' ? '请先在设置中配置 GitHub Token' : 'Please configure GitHub Token in Settings')
+    return
+  }
+  if (!title.value.trim() || !content.value.trim()) {
+    alert(props.lang === 'zh' ? '请输入标题和内容' : 'Please enter title and content')
+    return
   }
   
-  // 只有在用户填写了作者链接时才添加 authorUrl
-  let frontmatter = ''
-  if (authorName || authorUrl) {
-    const fmParts = []
-    if (authorUrl) {
-      fmParts.push(`authorUrl: ${authorUrl}`)
-    }
-    if (authorName) {
-      fmParts.push(`tags: [${authorName}]`)
-    }
+  isPublishing.value = true
+  publishProgress.value = 10
+  
+  try {
+    // 从设置读取作者信息
+    const authorName = localStorage.getItem('author_name') || ''
+    const authorUrl = localStorage.getItem('author_url') || ''
     
-    if (fmParts.length > 0) {
-      frontmatter = `---\n${fmParts.join('\n')}\n---\n\n`
-    }
-  }
-  
-  // 如果内容已有 frontmatter，则合并
-  let finalContent = processedContent
-  if (frontmatter) {
-    if (finalContent.startsWith('---')) {
-      const endIndex = finalContent.indexOf('---', 3)
-      if (endIndex > 0) {
-        // 合并到现有 frontmatter
-        const existingFm = finalContent.slice(4, endIndex).trim()
-        const newFmContent = frontmatter.slice(4, -5).trim()
-        finalContent = `---\n${existingFm}\n${newFmContent}\n---\n\n${finalContent.slice(endIndex + 4).trim()}`
+    let processedContent = content.value
+    
+    // 统一图片存放目录
+    const imageFolder = 'notes/images'
+    
+    // 上传图片
+    if (images.value.length > 0) {
+      publishProgress.value = 20
+      const totalImages = images.value.length
+      for (let i = 0; i < totalImages; i++) {
+        const img = images.value[i]
+        const imageUrl = await uploadImage(
+          { owner: repoOwner.value, repo: repoName.value, branch: 'main', token },
+          img.file,
+          imageFolder
+        )
+        if (imageUrl) {
+          processedContent = processedContent.replace(
+            new RegExp(`local-image:${img.id}`, 'g'),
+            imageUrl
+          )
+        }
+        publishProgress.value = 20 + Math.round((i + 1) / totalImages * 40)
       }
     } else {
-      finalContent = frontmatter + finalContent
+      publishProgress.value = 60
     }
-  }
   
-  // 生成文件名
-  const fileName = title.value
-    .toLowerCase()
-    .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
-    .replace(/^-|-$/g, '')
-    + '.md'
-  
-  const path = `${targetFolder.value}/${fileName}`
-  
-  const result = await uploadFile(
-    { owner: repoOwner.value, repo: repoName.value, branch: 'main', token },
-    path,
-    finalContent,
-    `Add article: ${title.value}`
-  )
-  
-  if (result.success) {
-    emit('published', result.url || '')
-    title.value = ''
-    content.value = ''
-    images.value = []
-    localStorage.removeItem('sakura_draft')
-  } else {
-    alert(`${props.lang === 'zh' ? '发布失败' : 'Publish failed'}: ${result.message}`)
+    // 只有在用户填写了作者链接时才添加 authorUrl
+    let frontmatter = ''
+    if (authorName || authorUrl) {
+      const fmParts = []
+      if (authorUrl) {
+        fmParts.push(`authorUrl: ${authorUrl}`)
+      }
+      if (authorName) {
+        fmParts.push(`tags: [${authorName}]`)
+      }
+      
+      if (fmParts.length > 0) {
+        frontmatter = `---\n${fmParts.join('\n')}\n---\n\n`
+      }
+    }
+    
+    // 如果内容已有 frontmatter，则合并
+    let finalContent = processedContent
+    if (frontmatter) {
+      if (finalContent.startsWith('---')) {
+        const endIndex = finalContent.indexOf('---', 3)
+        if (endIndex > 0) {
+          // 合并到现有 frontmatter
+          const existingFm = finalContent.slice(4, endIndex).trim()
+          const newFmContent = frontmatter.slice(4, -5).trim()
+          finalContent = `---\n${existingFm}\n${newFmContent}\n---\n\n${finalContent.slice(endIndex + 4).trim()}`
+        }
+      } else {
+        finalContent = frontmatter + finalContent
+      }
+    }
+    
+    // 生成文件名
+    const fileName = title.value
+      .toLowerCase()
+      .replace(/[^\w\u4e00-\u9fa5]+/g, '-')
+      .replace(/^-|-$/g, '')
+      + '.md'
+    
+    // 确保目标文件夹不以斜杠开头或结尾
+    const cleanFolder = targetFolder.value.replace(/^\/+|\/+$/g, '')
+    const path = `${cleanFolder}/${fileName}`
+    
+    publishProgress.value = 80
+    
+    const result = await uploadFile(
+      { owner: repoOwner.value, repo: repoName.value, branch: 'main', token },
+      path,
+      finalContent,
+      `Add article: ${title.value}`
+    )
+    
+    publishProgress.value = 100
+    
+    if (result.success) {
+      emit('published', result.url || '')
+      title.value = ''
+      content.value = ''
+      images.value = []
+      localStorage.removeItem('sakura_draft')
+      alert(props.lang === 'zh' ? '发布成功！' : 'Published successfully!')
+    } else {
+      alert(`${props.lang === 'zh' ? '发布失败' : 'Publish failed'}: ${result.message}`)
+    }
+  } catch (e: any) {
+    alert(`${props.lang === 'zh' ? '发布出错' : 'Publish error'}: ${e.message || e}`)
+  } finally {
+    isPublishing.value = false
+    publishProgress.value = 0
   }
 }
 
