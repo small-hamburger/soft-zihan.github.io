@@ -758,7 +758,7 @@ const extractMetaFromContent = (content: string): { tags: string[]; author: stri
     const tagsMatch = block.match(/tags?\s*:\s*([^\n]+)/i);
     if (tagsMatch) {
       meta.tags = tagsMatch[1]
-        .split(',')
+        .split(/[,，]/)
         .map(t => t.trim().replace(/['"]/g, ''))
         .filter(Boolean);
     }
@@ -774,7 +774,10 @@ const extractMetaFromContent = (content: string): { tags: string[]; author: stri
     const frontmatter = fmMatch[1];
     const tagsMatch = frontmatter.match(/tags:\s*\[([^\]]*)\]/);
     if (tagsMatch) {
-      const fmTags = tagsMatch[1].split(',').map(t => t.trim().replace(/['"]/g, '')).filter(t => t);
+      const fmTags = tagsMatch[1]
+        .split(/[,，]/)
+        .map(t => t.trim().replace(/['"]/g, ''))
+        .filter(t => t);
       meta.tags = Array.from(new Set([...meta.tags, ...fmTags]));
     }
     const singleTagMatch = frontmatter.match(/tags:\s*(\S+)/);
@@ -1000,13 +1003,20 @@ const extractTagsFromContent = (content: string): string[] => {
   return meta.tags || [];
 };
 
+// 从文件中提取 tags（优先使用 contentSnippet，回退到 content）
+const extractTagsFromFile = (file: FileNode): string[] => {
+  // 优先使用 contentSnippet（从 files.json 预加载），否则使用完整 content
+  const text = file.contentSnippet || file.content || '';
+  return extractTagsFromContent(text);
+};
+
 // 文件是否可见（收藏/标签筛选）
 const isFileVisible = (file: FileNode): boolean => {
   if (articleStore.showFavoritesOnly && !articleStore.isFavorite(file.path)) {
     return false;
   }
   if (articleStore.selectedTags.length < articleStore.availableTags.length) {
-    const fileTags = extractTagsFromContent(file.content || '');
+    const fileTags = extractTagsFromFile(file);
     if (fileTags.length === 0) {
       return articleStore.isTagSelected('notag');
     }
@@ -1029,7 +1039,7 @@ const collectAllTags = () => {
   
   const tags = new Set<string>();
   for (const file of flatten(allFiles)) {
-    const fileTags = extractTagsFromContent(file.content || '');
+    const fileTags = extractTagsFromFile(file);
     fileTags.forEach(t => tags.add(t));
   }
   
@@ -1676,24 +1686,10 @@ const handleContentClick = async (e: MouseEvent) => {
     
     const isSupportedInternal = (raw?: string | null) => {
       if (!raw) return false;
-      
-      // 处理完整 URL（可能是同源链接被渲染成绝对路径）
-      let pathToCheck = raw;
-      try {
-        const url = new URL(raw, window.location.origin);
-        // 如果是同源链接，提取路径部分
-        if (url.origin === window.location.origin) {
-          pathToCheck = url.pathname;
-        } else {
-          // 外部链接，不处理
-          return false;
-        }
-      } catch {
-        // 不是有效 URL，可能是相对路径，继续处理
-        if (raw.startsWith('http') || raw.startsWith('//')) return false;
-      }
-      
-      const cleaned = stripHashQuery(pathToCheck);
+      if (raw.startsWith('http') || raw.startsWith('//')) return false;
+      // 绝对路径 /xxx 不拦截，让浏览器正常跳转
+      if (raw.startsWith('/')) return false;
+      const cleaned = stripHashQuery(raw);
       if (!cleaned || cleaned.startsWith('#')) return false;
       const lower = cleaned.toLowerCase();
       const exts = ['.md', '.vue', '.ts', '.tsx', '.js', '.jsx', '.json', '.html', '.css', '.scss'];
@@ -1704,15 +1700,7 @@ const handleContentClick = async (e: MouseEvent) => {
       e.preventDefault(); // Stop Browser Jump
       
       let targetPath = '';
-      // 从 href 中提取实际路径（处理可能被渲染成绝对 URL 的情况）
-      let normalizedHref = normalized || normalizeHref(href);
-      try {
-        const url = new URL(href, window.location.origin);
-        if (url.origin === window.location.origin) {
-          normalizedHref = decodeURIComponent(url.pathname);
-        }
-      } catch {}
-      
+      const normalizedHref = normalized || normalizeHref(href);
       const isCodeFile = !normalizedHref.toLowerCase().endsWith('.md');
 
       if (normalizedHref.startsWith('/')) {
@@ -1948,9 +1936,8 @@ onMounted(async () => {
     // Initialize search index after file system is loaded
     if (fileSystem.value.length > 0) {
       await initSearchIndex(fileSystem.value, lang.value);
-      // 收集所有 tags（在搜索索引初始化后，因为此时内容可能还没完全加载）
-      // 延迟执行以等待内容加载
-      setTimeout(() => collectAllTags(), 2000);
+      // 收集所有 tags（contentSnippet 已在 files.json 中预加载，无需延迟）
+      collectAllTags();
     }
     
     // Setup scroll listener for mobile header hide/show (after content loads)

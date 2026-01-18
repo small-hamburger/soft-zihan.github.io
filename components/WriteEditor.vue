@@ -233,7 +233,9 @@
                   {{ lang === 'zh' ? '导入预览' : 'Import Preview' }}
                 </h3>
                 <p class="text-xs text-gray-500 dark:text-gray-400">
-                  {{ lang === 'zh' ? '本地链接的图片在预览时看不到，但是上传时会一并上传。' : 'Select files to upload and fill tags/author info' }}
+                  {{ lang === 'zh'
+                    ? '本地图片必须包含在导入的文件夹内，否则无法上传。'
+                    : 'Local images must be inside the imported folder to be uploaded.' }}
                 </p>
               </div>
               <button
@@ -324,13 +326,21 @@
                   <span class="text-[10px] text-gray-400">{{ importTags.length }}/5</span>
                 </div>
 
-                <div class="flex-1 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden flex flex-col">
+                  <div class="flex-1 border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden flex flex-col">
                   <div class="px-4 py-2 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-200 dark:border-gray-700 text-xs font-bold text-gray-500 dark:text-gray-400 flex items-center justify-between">
                     <span>{{ lang === 'zh' ? '预览' : 'Preview' }}</span>
                     <span class="text-[10px] text-gray-400" v-if="importPreviewStatus">
                       {{ importPreviewStatus }}
                     </span>
                   </div>
+                    <div
+                      v-if="importMissingImages > 0"
+                      class="px-4 py-2 text-xs text-red-500 bg-red-50 dark:bg-red-900/20 border-b border-red-100 dark:border-red-900/30"
+                    >
+                      {{ lang === 'zh'
+                        ? `检测到 ${importMissingImages} 张本地图片未在导入文件夹内，请把图片放到同一文件夹后再上传。`
+                        : `Found ${importMissingImages} local images not in the imported folder. Please include them before uploading.` }}
+                    </div>
                   <div class="flex-1 p-4 overflow-y-auto prose prose-sakura dark:prose-invert max-w-none" v-html="importPreviewHtml"></div>
                 </div>
               </div>
@@ -345,7 +355,7 @@
                 <div v-if="isImporting" class="text-xs text-gray-400">{{ importProgress }}%</div>
                 <button
                   @click="publishImportedFiles"
-                  :disabled="isImporting || !importSelected.length || !hasToken"
+                  :disabled="isImporting || !importSelected.length || !hasToken || importMissingImages > 0"
                   class="px-5 py-2 text-sm font-medium text-white bg-sakura-500 hover:bg-sakura-600 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
                 >
                   {{ isImporting ? (lang === 'zh' ? '上传中...' : 'Uploading...') : (lang === 'zh' ? '开始上传' : 'Start Upload') }}
@@ -401,6 +411,7 @@ const importAuthorUrl = ref('')
 const isImporting = ref(false)
 const importProgress = ref(0)
 const importError = ref('')
+const importMissingImages = ref(0)
 const importImageUrlCache = ref(new Map<string, string>())
 
 // 从设置中读取配置
@@ -610,7 +621,10 @@ const parseMetaComment = (text: string) => {
   const block = match[1]
   const tagsMatch = block.match(/tags?\s*:\s*([^\n]+)/i)
   if (tagsMatch) {
-    result.tags = tagsMatch[1].split(',').map(t => t.trim().replace(/['"]/g, '')).filter(Boolean)
+    result.tags = tagsMatch[1]
+      .split(/[,，]/)
+      .map(t => t.trim().replace(/['"]/g, ''))
+      .filter(Boolean)
   }
   const authorMatch = block.match(/author\s*:\s*([^\n]+)/i)
   if (authorMatch) result.author = authorMatch[1].trim()
@@ -643,7 +657,7 @@ const buildTagsForPublish = (text: string) => {
 
 const normalizeTags = (raw: string) => {
   return raw
-    .split(',')
+    .split(/[,，]/)
     .map(t => t.trim())
     .filter(Boolean)
 }
@@ -784,6 +798,9 @@ const publish = async () => {
         }
       }
 
+      const resolvedLocalFiles = new Map<string, File>()
+      const missingRefs: string[] = []
+
       for (const ref of localRefs) {
         let file: File | undefined = localImageTokenMap.get(ref)
           || localImageNameMap.get(ref)
@@ -793,19 +810,32 @@ const publish = async () => {
           if (fetched) file = fetched
         }
         if (file) {
-          const imageUrl = await uploadImage(
-            { owner: repoOwner.value, repo: repoName.value, branch: 'main', token },
-            file,
-            imageFolder
-          )
-          if (imageUrl) {
-            imageUrlMap.set(ref, imageUrl)
-            const base = getImageBasename(ref)
-            if (base) imageUrlMap.set(base, imageUrl)
-            imageUrlMap.set(file.name, imageUrl)
-            imageUrlMap.set(encodeURI(file.name), imageUrl)
-            imageUrlMap.set(safeDecode(file.name), imageUrl)
-          }
+          resolvedLocalFiles.set(ref, file)
+        } else {
+          missingRefs.push(ref)
+        }
+      }
+
+      if (missingRefs.length > 0) {
+        alert(props.lang === 'zh'
+          ? `检测到 ${missingRefs.length} 张本地图片未找到，请确保图片在同一文件夹或已导入后再发布。`
+          : `Found ${missingRefs.length} local images missing. Please include them before publishing.`)
+        return
+      }
+
+      for (const [ref, file] of resolvedLocalFiles.entries()) {
+        const imageUrl = await uploadImage(
+          { owner: repoOwner.value, repo: repoName.value, branch: 'main', token },
+          file,
+          imageFolder
+        )
+        if (imageUrl) {
+          imageUrlMap.set(ref, imageUrl)
+          const base = getImageBasename(ref)
+          if (base) imageUrlMap.set(base, imageUrl)
+          imageUrlMap.set(file.name, imageUrl)
+          imageUrlMap.set(encodeURI(file.name), imageUrl)
+          imageUrlMap.set(safeDecode(file.name), imageUrl)
         }
         step += 1
         publishProgress.value = 20 + Math.round((step / totalImages) * 40)
@@ -910,6 +940,7 @@ const prepareImportPreview = async (relPath: string) => {
   if (!item) {
     importPreviewContent.value = ''
     importPreviewStatus.value = ''
+    importMissingImages.value = 0
     return
   }
 
@@ -918,6 +949,7 @@ const prepareImportPreview = async (relPath: string) => {
   if (!token) {
     importPreviewContent.value = rawText
     importPreviewStatus.value = props.lang === 'zh' ? '未配置 Token，无法上传图片' : 'Token missing, image upload skipped'
+    importMissingImages.value = 0
     return
   }
 
@@ -972,6 +1004,7 @@ const prepareImportPreview = async (relPath: string) => {
   if (total === 0) {
     importPreviewContent.value = rawText
     importPreviewStatus.value = props.lang === 'zh' ? '无本地图片' : 'No local images'
+    importMissingImages.value = 0
     return
   }
 
@@ -1027,6 +1060,7 @@ const prepareImportPreview = async (relPath: string) => {
     : rawText
 
   importPreviewContent.value = replaced
+  importMissingImages.value = notFound
   
   // 更详细的状态信息
   if (notFound > 0) {
@@ -1077,12 +1111,14 @@ const openImportModal = async (files: File[], mode: 'file' | 'folder') => {
   importAuthorUrl.value = localStorage.getItem('author_url') || ''
   importProgress.value = 0
   importError.value = ''
+  importMissingImages.value = 0
   showImportModal.value = true
 }
 
 const closeImportModal = () => {
   if (isImporting.value) return
   showImportModal.value = false
+  importMissingImages.value = 0
 }
 
 const selectAllImport = () => {
@@ -1329,6 +1365,15 @@ const publishImportedFiles = async () => {
           imageRefToFile.set(path, matchedFile)
         }
       }
+    }
+
+    const missingRefs = Array.from(localImageRefs).filter(ref => !imageRefToFile.get(ref))
+    if (missingRefs.length > 0) {
+      importMissingImages.value = missingRefs.length
+      alert(props.lang === 'zh'
+        ? `检测到 ${missingRefs.length} 张本地图片未在导入文件夹内，请补齐后再上传。`
+        : `Found ${missingRefs.length} local images missing from the imported folder. Please include them before uploading.`)
+      return
     }
 
     const totalSteps = localImageRefs.size + selectedItems.length
