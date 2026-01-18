@@ -516,7 +516,7 @@ import { useContentRenderer } from './composables/useContentRenderer';
 import { useRawEditor } from './composables/useRawEditor';
 import { useLightbox } from './composables/useLightbox';
 import { useSelectionMenu } from './composables/useSelectionMenu';
-import { useContentClick, useFileVisibility } from './composables/useContentClick';
+import { useContentClick, useFileVisibility, isSupportedInternalLink } from './composables/useContentClick';
 
 // =====================
 // Stores
@@ -870,9 +870,22 @@ const { handleContentClick } = useContentClick(
 );
 
 // Event handlers
-const handleContentClickEvent = async (e: MouseEvent) => {
+const handleContentClickEvent = (e: MouseEvent) => {
   if (selectionMenu.value.locked) return;
-  await handleContentClick(e, selectionMenu.value.locked);
+  
+  // 同步判断：如果是内部链接，立即阻止默认行为（在任何 async 操作之前）
+  const target = e.target as HTMLElement;
+  const link = target.closest('a');
+  if (link) {
+    const href = link.getAttribute('href');
+    if (href && isSupportedInternalLink(href)) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  }
+  
+  // 然后异步处理点击逻辑
+  handleContentClick(e, selectionMenu.value.locked);
 };
 
 const handleSelectionEvent = () => {
