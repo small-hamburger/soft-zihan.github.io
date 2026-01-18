@@ -785,11 +785,12 @@ const publish = async () => {
       }
 
       for (const ref of localRefs) {
-        let file = localImageTokenMap.get(ref)
+        let file: File | undefined = localImageTokenMap.get(ref)
           || localImageNameMap.get(ref)
           || localImageNameMap.get(getImageBasename(ref))
         if (!file) {
-          file = await fetchLocalImageFile(ref)
+          const fetched = await fetchLocalImageFile(ref)
+          if (fetched) file = fetched
         }
         if (file) {
           const imageUrl = await uploadImage(
@@ -937,16 +938,34 @@ const prepareImportPreview = async (relPath: string) => {
 
   const imageRefs = extractImagePaths(rawText)
   const localImageRefs = new Set<string>()
+  const localImageRefToFile = new Map<string, File | null>() // 记录引用到文件的映射
+  
   for (const raw of imageRefs) {
     const { path } = normalizeImageToken(raw)
     if (!path || isDataOrLocalToken(path) || isHttpUrl(path)) continue
-    const resolved = resolveImagePath(relPath, path)
-    if (resolved && imageMap.has(resolved)) {
-      localImageRefs.add(resolved)
-      continue
+    
+    // 获取所有可能的路径变体
+    const variants = getImagePathVariants(path, relPath)
+    let matchedFile: File | null = null
+    let matchedKey = path
+    
+    // 尝试在 imageMap 和 imageNameMap 中查找匹配
+    for (const variant of variants) {
+      if (imageMap.has(variant)) {
+        matchedFile = imageMap.get(variant)!
+        matchedKey = variant
+        break
+      }
+      if (imageNameMap.has(variant)) {
+        matchedFile = imageNameMap.get(variant)!
+        matchedKey = variant
+        break
+      }
     }
-    const base = getImageBasename(path)
-    if (base && imageNameMap.has(base)) localImageRefs.add(base)
+    
+    // 无论是否找到文件，都记录这个本地图片引用（用原始路径作为 key）
+    localImageRefs.add(path)
+    localImageRefToFile.set(path, matchedFile)
   }
 
   const total = localImageRefs.size
@@ -959,6 +978,7 @@ const prepareImportPreview = async (relPath: string) => {
   const imageUrlMap = new Map<string, string>()
   let success = 0
   let failed = 0
+  let notFound = 0
 
   for (const ref of localImageRefs) {
     const cached = getCachedImageUrl(ref, importImageUrlCache.value)
@@ -969,12 +989,22 @@ const prepareImportPreview = async (relPath: string) => {
       continue
     }
 
-    const file = imageMap.get(ref)
-      || imageNameMap.get(ref)
-      || imageNameMap.get(getImageBasename(ref))
+    // 优先使用之前匹配到的文件
+    let file = localImageRefToFile.get(ref)
+    
+    // 如果没有匹配到，再尝试其他方式查找
+    if (!file) {
+      const variants = getImagePathVariants(ref, relPath)
+      for (const variant of variants) {
+        file = imageMap.get(variant) || imageNameMap.get(variant)
+        if (file) break
+      }
+    }
 
     if (!file) {
-      failed += 1
+      notFound += 1
+      // 记录未找到的图片，方便调试
+      console.warn(`[WriteEditor] Image not found in import files: ${ref}`)
       continue
     }
 
@@ -997,7 +1027,13 @@ const prepareImportPreview = async (relPath: string) => {
     : rawText
 
   importPreviewContent.value = replaced
-  if (failed === 0) {
+  
+  // 更详细的状态信息
+  if (notFound > 0) {
+    importPreviewStatus.value = props.lang === 'zh'
+      ? `检测到 ${total} 张本地图片，${notFound} 张未在导入文件夹中找到`
+      : `Found ${total} local images, ${notFound} not in imported folder`
+  } else if (failed === 0) {
     importPreviewStatus.value = props.lang === 'zh'
       ? `图片上传成功：${success}/${total}`
       : `Images uploaded: ${success}/${total}`
@@ -1108,6 +1144,32 @@ function resolveImagePath(mdRelPath: string, imgPath: string) {
   return normalizePath(stack.join('/'))
 }
 
+// 获取图片路径的所有可能变体（用于匹配）
+function getImagePathVariants(imgPath: string, mdRelPath?: string): string[] {
+  const decoded = safeDecode(imgPath)
+  const encoded = encodeURI(decoded)
+  const basename = getImageBasename(imgPath)
+  const variants = [imgPath, decoded, encoded]
+  if (basename) {
+    variants.push(basename, safeDecode(basename), encodeURI(basename))
+  }
+  // 如果有 md 相对路径，也尝试解析
+  if (mdRelPath) {
+    const resolved = resolveImagePath(mdRelPath, imgPath)
+    if (resolved) {
+      variants.push(resolved, safeDecode(resolved), encodeURI(resolved))
+    }
+  }
+  // 对于 ../xxx 路径，提取去掉 ../ 后的部分
+  const cleanedPath = decoded.replace(/^\.\.\/+/g, '')
+  if (cleanedPath !== decoded) {
+    variants.push(cleanedPath, safeDecode(cleanedPath), encodeURI(cleanedPath))
+    const cleanedBase = getImageBasename(cleanedPath)
+    if (cleanedBase) variants.push(cleanedBase)
+  }
+  return [...new Set(variants)]
+}
+
 function getImageBasename(p: string) {
   const cleaned = safeDecode(p).split('?')[0].split('#')[0]
   const parts = cleaned.split('/')
@@ -1132,18 +1194,15 @@ function setCacheForKey(key: string, url: string, cache: Map<string, string>) {
 
 function getImageKeyCandidates(mdRelPath: string, raw: string) {
   const { path } = normalizeImageToken(raw)
-  const keys = [path, safeDecode(path), encodeURI(path)]
-  const resolved = resolveImagePath(mdRelPath, path)
-  if (resolved) keys.push(resolved)
-  const base = getImageBasename(path)
-  if (base) keys.push(base)
-  return keys
+  // 使用更全面的变体匹配
+  return getImagePathVariants(path, mdRelPath)
 }
 
 function replaceLocalImages(text: string, mdRelPath: string, urlMap: Map<string, string>) {
   const replacePath = (raw: string) => {
     const { path, tail } = normalizeImageToken(raw)
-    const candidates = getImageKeyCandidates(mdRelPath, raw)
+    // 使用新的全面变体匹配
+    const candidates = getImagePathVariants(path, mdRelPath)
     const matched = candidates.find(key => urlMap.has(key))
     if (matched) {
       const url = urlMap.get(matched) as string
@@ -1166,9 +1225,8 @@ function replaceLocalImages(text: string, mdRelPath: string, urlMap: Map<string,
 function replaceImagesByUrlMap(text: string, urlMap: Map<string, string>) {
   const replacePath = (raw: string) => {
     const { path, tail } = normalizeImageToken(raw)
-    const candidates = [path, safeDecode(path), encodeURI(path)]
-    const base = getImageBasename(path)
-    if (base) candidates.push(base)
+    // 使用全面的变体匹配
+    const candidates = getImagePathVariants(path)
     const matched = candidates.find(key => urlMap.has(key))
     if (matched) {
       const url = urlMap.get(matched) as string
@@ -1240,6 +1298,7 @@ const publishImportedFiles = async () => {
 
     const contentMap = new Map<string, string>()
     const localImageRefs = new Set<string>()
+    const imageRefToFile = new Map<string, File | null>() // 记录原始路径到文件的映射
 
     for (const item of selectedItems) {
       const text = await item.file.text()
@@ -1247,16 +1306,27 @@ const publishImportedFiles = async () => {
       const paths = extractImagePaths(text)
       for (const raw of paths) {
         const { path } = normalizeImageToken(raw)
-        if (!path || isDataOrLocalToken(path)) continue
-        if (isHttpUrl(path)) continue
-        const resolved = resolveImagePath(item.relPath, path)
-        if (resolved && imageMap.has(resolved)) {
-          localImageRefs.add(resolved)
-          continue
+        if (!path || isDataOrLocalToken(path) || isHttpUrl(path)) continue
+        
+        // 获取所有可能的路径变体
+        const variants = getImagePathVariants(path, item.relPath)
+        let matchedFile: File | null = null
+        
+        for (const variant of variants) {
+          if (imageMap.has(variant)) {
+            matchedFile = imageMap.get(variant)!
+            break
+          }
+          if (imageNameMap.has(variant)) {
+            matchedFile = imageNameMap.get(variant)!
+            break
+          }
         }
-        const base = getImageBasename(path)
-        if (base && imageNameMap.has(base)) {
-          localImageRefs.add(base)
+        
+        // 记录本地图片引用及其对应的文件（可能为 null）
+        localImageRefs.add(path)
+        if (matchedFile) {
+          imageRefToFile.set(path, matchedFile)
         }
       }
     }
@@ -1276,8 +1346,20 @@ const publishImportedFiles = async () => {
         continue
       }
 
-      const file = imageMap.get(imgPath) || imageNameMap.get(imgPath)
+      // 优先使用之前匹配到的文件
+      let file = imageRefToFile.get(imgPath)
+      
+      // 如果没有匹配到，再尝试其他方式查找
       if (!file) {
+        const variants = getImagePathVariants(imgPath)
+        for (const variant of variants) {
+          file = imageMap.get(variant) || imageNameMap.get(variant)
+          if (file) break
+        }
+      }
+      
+      if (!file) {
+        console.warn(`[WriteEditor] Image not found for upload: ${imgPath}`)
         step += 1
         importProgress.value = Math.round((step / totalSteps) * 100)
         continue
@@ -1289,8 +1371,11 @@ const publishImportedFiles = async () => {
       )
       if (url) {
         imageUrlMap.set(imgPath, url)
-        const base = getImageBasename(imgPath)
-        if (base) imageUrlMap.set(base, url)
+        // 同时设置所有可能的变体
+        const variants = getImagePathVariants(imgPath)
+        for (const v of variants) {
+          imageUrlMap.set(v, url)
+        }
         setCacheForKey(imgPath, url, importImageUrlCache.value)
       }
       step += 1

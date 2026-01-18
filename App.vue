@@ -1672,12 +1672,20 @@ const handleContentClick = async (e: MouseEvent) => {
  const link = target.closest('a');
   if (link) {
     const href = link.getAttribute('href');
+    
+    // 解码 href 以正确匹配扩展名
+    const decodedHref = href ? decodeURIComponent(href) : '';
     const normalized = href ? normalizeHref(href) : '';
     
     const isSupportedInternal = (raw?: string | null) => {
       if (!raw) return false;
+      // 检查原始和解码后的链接
+      const decoded = (() => {
+        try { return decodeURIComponent(raw); } catch { return raw; }
+      })();
+      if (decoded.startsWith('http') || decoded.startsWith('//')) return false;
       if (raw.startsWith('http') || raw.startsWith('//')) return false;
-      const cleaned = stripHashQuery(raw);
+      const cleaned = stripHashQuery(decoded);
       if (!cleaned || cleaned.startsWith('#')) return false;
       const lower = cleaned.toLowerCase();
       const exts = ['.md', '.vue', '.ts', '.tsx', '.js', '.jsx', '.json', '.html', '.css', '.scss'];
@@ -1686,6 +1694,7 @@ const handleContentClick = async (e: MouseEvent) => {
 
     if (href && isSupportedInternal(href)) {
       e.preventDefault(); // Stop Browser Jump
+      e.stopPropagation(); // 阻止事件冒泡
       
       let targetPath = '';
       const normalizedHref = normalized || normalizeHref(href);
