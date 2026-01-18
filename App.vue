@@ -869,6 +869,25 @@ const { handleContentClick } = useContentClick(
   showToast
 );
 
+// 捕获阶段拦截内部链接点击（在冒泡阶段之前拦截，确保 preventDefault 生效）
+const handleLinkCapture = (e: Event) => {
+  const mouseEvent = e as MouseEvent;
+  const target = mouseEvent.target as HTMLElement;
+  // 确保在 markdown-viewer 内部
+  if (!target.closest('#markdown-viewer')) return;
+  
+  const link = target.closest('a');
+  if (link) {
+    const internalHref = link.getAttribute('data-internal-href');
+    const href = link.getAttribute('href');
+    // 如果有 data-internal-href 或者是支持的内部链接，立即阻止默认行为
+    if (internalHref || (href && isSupportedInternalLink(href))) {
+      mouseEvent.preventDefault();
+      mouseEvent.stopPropagation();
+    }
+  }
+};
+
 // Event handlers
 const handleContentClickEvent = (e: MouseEvent) => {
   if (selectionMenu.value.locked) return;
@@ -1050,6 +1069,8 @@ onMounted(async () => {
   // Keyboard shortcuts
   document.addEventListener('keydown', handleKeydown);
   document.addEventListener('selectionchange', handleSelectionChange);
+  // 捕获阶段拦截内部链接点击
+  document.addEventListener('click', handleLinkCapture, { capture: true });
 
   if (appStore.isDark) document.documentElement.classList.add('dark');
 
@@ -1130,6 +1151,7 @@ onMounted(async () => {
 onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown);
   document.removeEventListener('selectionchange', handleSelectionChange);
+  document.removeEventListener('click', handleLinkCapture, { capture: true });
   const scrollEl = document.getElementById('scroll-container');
   if (scrollEl) {
     scrollEl.removeEventListener('scroll', () => {});

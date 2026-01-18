@@ -165,88 +165,95 @@ obj.name = 'new value'</pre>
     <!-- Part 3: Deep Reactivity Pitfalls -->
     <div class="max-w-4xl mx-auto bg-white/80 dark:bg-gray-800/80 rounded-2xl p-8 border border-gray-200 dark:border-gray-700 shadow-lg">
       <h3 class="text-lg font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2">
-        <span class="text-2xl">2️⃣</span> {{ lang === 'zh' ? '深层修改的响应性' : 'Deep Modification Reactivity' }}
+        <span class="text-2xl">2️⃣</span> {{ lang === 'zh' ? '响应性注意事项' : 'Reactivity Considerations' }}
       </h3>
       
       <p class="text-sm text-gray-600 dark:text-gray-400 mb-6">
-        {{ lang === 'zh' ? '直接修改数组索引或对象不会触发更新。需要使用特殊方法。' : 'Direct array index or object modification won\'t trigger updates. Use special methods.' }}
+        {{ lang === 'zh' ? 'Vue 3 使用 Proxy，大多数操作都能自动响应，但仍有一些需要注意的地方。' : 'Vue 3 uses Proxy, most operations are reactive, but there are still some things to note.' }}
       </p>
 
       <!-- Demo -->
       <div class="space-y-6">
-        <!-- Array Demo -->
-        <div class="bg-red-50 dark:bg-red-900/20 rounded-xl p-6 border-2 border-red-300 dark:border-red-600">
-          <h4 class="font-bold text-red-700 dark:text-red-300 mb-4">❌ {{ lang === 'zh' ? '错误方式（不会更新）' : 'Wrong Way (Won\'t Update)' }}</h4>
-          <div class="bg-red-900 text-red-200 p-4 rounded-lg font-mono text-xs mb-4 overflow-x-auto">
-            <pre>const items = ref([1, 2, 3])
-// ❌ 直接修改索引不会响应
-items.value[0] = 10</pre>
-          </div>
-          
-          <div class="flex gap-2">
-            <span class="text-sm font-bold">{{ lang === 'zh' ? '数组内容：' : 'Array:' }}</span>
-            <span class="font-mono">{{ wrongArray }}</span>
-          </div>
-          <button 
-            @click="wrongArray[0] = 999"
-            class="mt-3 px-4 py-2 bg-red-500 text-white rounded font-bold hover:bg-red-600"
-          >
-            {{ lang === 'zh' ? '尝试修改第一项' : 'Try to modify first item' }}
-          </button>
-        </div>
-
-        <!-- Correct Array Demo -->
+        <!-- Vue 3 Array Demo (works!) -->
         <div class="bg-green-50 dark:bg-green-900/20 rounded-xl p-6 border-2 border-green-300 dark:border-green-600">
-          <h4 class="font-bold text-green-700 dark:text-green-300 mb-4">✅ {{ lang === 'zh' ? '正确方式（会更新）' : 'Correct Way (Will Update)' }}</h4>
+          <h4 class="font-bold text-green-700 dark:text-green-300 mb-4">✅ {{ lang === 'zh' ? 'Vue 3 数组响应（直接修改索引有效）' : 'Vue 3 Array Reactivity (Index modification works!)' }}</h4>
           <div class="bg-green-900 text-green-200 p-4 rounded-lg font-mono text-xs mb-4 overflow-x-auto">
-            <pre>// ✅ 方法 1: 使用 .splice()
-items.value.splice(0, 1, 10)
+            <pre>// ✅ Vue 3 中直接修改索引是响应式的！
+const items = ref([1, 2, 3])
+items.value[0] = 999  // ✅ 会触发更新
 
-// ✅ 方法 2: 整体赋值
-items.value = [10, 2, 3]</pre>
+// ✅ 其他数组方法也正常工作
+items.value.push(4)
+items.value.splice(1, 1)</pre>
           </div>
 
           <div class="flex gap-2 mb-3">
             <span class="text-sm font-bold">{{ lang === 'zh' ? '数组内容：' : 'Array:' }}</span>
             <span class="font-mono text-green-600 dark:text-green-300">{{ correctArray }}</span>
           </div>
-          <div class="flex gap-2">
+          <div class="flex flex-wrap gap-2">
             <button 
-              @click="correctArray.splice(0, 1, 888)"
+              @click="correctArray[0] = Math.floor(Math.random() * 100)"
               class="px-4 py-2 bg-green-500 text-white rounded font-bold hover:bg-green-600"
             >
-              {{ lang === 'zh' ? '使用 splice' : 'Use splice' }}
+              {{ lang === 'zh' ? '修改索引 0' : 'Modify index 0' }}
             </button>
             <button 
-              @click="correctArray = [777, 2, 3]"
+              @click="correctArray.push(Math.floor(Math.random() * 100))"
               class="px-4 py-2 bg-green-500 text-white rounded font-bold hover:bg-green-600"
             >
-              {{ lang === 'zh' ? '整体赋值' : 'Reassign' }}
+              {{ lang === 'zh' ? 'push 新元素' : 'Push new' }}
+            </button>
+            <button 
+              @click="correctArray.pop()"
+              class="px-4 py-2 bg-green-500 text-white rounded font-bold hover:bg-green-600"
+            >
+              pop
             </button>
           </div>
         </div>
 
-        <!-- Object Demo -->
-        <div class="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-6 border-2 border-purple-300 dark:border-purple-600">
-          <h4 class="font-bold text-purple-700 dark:text-purple-300 mb-4">🔧 {{ lang === 'zh' ? '对象新增属性' : 'Adding New Object Properties' }}</h4>
-          <div class="bg-purple-900 text-purple-200 p-4 rounded-lg font-mono text-xs mb-4 overflow-x-auto">
-            <pre>const user = reactive({ name: 'Tom' })
-// ❌ 动态添加不会响应
-user.email = 'test@example.com'
+        <!-- Replacing reactive object -->
+        <div class="bg-red-50 dark:bg-red-900/20 rounded-xl p-6 border-2 border-red-300 dark:border-red-600">
+          <h4 class="font-bold text-red-700 dark:text-red-300 mb-4">❌ {{ lang === 'zh' ? '常见错误：替换整个 reactive 对象' : 'Common Mistake: Replacing entire reactive object' }}</h4>
+          <div class="bg-red-900 text-red-200 p-4 rounded-lg font-mono text-xs mb-4 overflow-x-auto">
+            <pre>// ❌ 错误：直接替换会丢失响应性
+let state = reactive({ count: 0 })
+state = { count: 1 }  // ❌ 不再是响应式的！
 
-// ✅ 应该这样
-user = Object.assign({}, user, { email: '...' })</pre>
+// ✅ 正确：修改属性
+state.count = 1
+
+// ✅ 或者使用 ref
+const state = ref({ count: 0 })
+state.value = { count: 1 }  // ✅ 整体替换 OK</pre>
           </div>
+        </div>
 
-          <div class="space-y-2 mb-4">
-            <div><span class="font-bold text-sm">{{ lang === 'zh' ? '姓名：' : 'Name:' }}</span> {{ objectUser.name }}</div>
-            <div><span class="font-bold text-sm">{{ lang === 'zh' ? '邮箱：' : 'Email:' }}</span> {{ objectUser.email || lang === 'zh' ? '（未添加）' : '(Not added)' }}</div>
+        <!-- Destructuring loses reactivity -->
+        <div class="bg-orange-50 dark:bg-orange-900/20 rounded-xl p-6 border-2 border-orange-300 dark:border-orange-600">
+          <h4 class="font-bold text-orange-700 dark:text-orange-300 mb-4">⚠️ {{ lang === 'zh' ? '解构会丢失响应性' : 'Destructuring Loses Reactivity' }}</h4>
+          <div class="bg-orange-900 text-orange-200 p-4 rounded-lg font-mono text-xs mb-4 overflow-x-auto">
+            <pre>const state = reactive({ name: 'Vue', version: 3 })
+
+// ❌ 解构后不再响应
+const { name } = state  // name 是普通变量
+
+// ✅ 使用 toRefs 保持响应性
+import { toRefs } from 'vue'
+const { name, version } = toRefs(state)
+// name.value 和 version.value 是响应式的</pre>
+          </div>
+          
+          <div class="space-y-2 mb-4 text-sm">
+            <div>{{ lang === 'zh' ? '解构值 (非响应):' : 'Destructured (not reactive):' }} <span class="font-mono">{{ destructuredName }}</span></div>
+            <div>{{ lang === 'zh' ? 'toRefs 值 (响应式):' : 'toRefs (reactive):' }} <span class="font-mono text-orange-600">{{ toRefsName }}</span></div>
           </div>
           <button 
-            @click="addUserProperty"
-            class="px-4 py-2 bg-purple-500 text-white rounded font-bold hover:bg-purple-600"
+            @click="updateDestructDemo"
+            class="px-4 py-2 bg-orange-500 text-white rounded font-bold hover:bg-orange-600"
           >
-            {{ lang === 'zh' ? '正确添加邮箱属性' : 'Correctly Add Email' }}
+            {{ lang === 'zh' ? '更新原对象' : 'Update original object' }}
           </button>
         </div>
       </div>
@@ -289,7 +296,7 @@ user = Object.assign({}, user, { email: '...' })</pre>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, onMounted } from 'vue';
+import { ref, computed, reactive, onMounted, toRefs } from 'vue';
 import { I18N } from '../constants';
 
 const props = defineProps<{
@@ -335,13 +342,16 @@ const updateReactive = () => {
   reactiveObj.city = 'Beijing';
 };
 
-// Deep reactivity demo
-const wrongArray = ref([1, 2, 3]);
+// Deep reactivity demo - Vue 3 array works correctly
 const correctArray = ref([1, 2, 3]);
-const objectUser = reactive({ name: 'Tom', email: '' });
 
-const addUserProperty = () => {
-  Object.assign(objectUser, { email: 'tom@example.com' });
+// Destructuring demo
+const destructState = reactive({ name: 'Vue', version: 3 });
+const { name: destructuredName } = destructState; // 非响应式
+const { name: toRefsName } = toRefs(destructState); // 响应式
+
+const updateDestructDemo = () => {
+  destructState.name = ['Vue', 'React', 'Angular'][Math.floor(Math.random() * 3)];
 };
 
 const initSimulation = async () => {
