@@ -1672,20 +1672,28 @@ const handleContentClick = async (e: MouseEvent) => {
  const link = target.closest('a');
   if (link) {
     const href = link.getAttribute('href');
-    
-    // 解码 href 以正确匹配扩展名
-    const decodedHref = href ? decodeURIComponent(href) : '';
     const normalized = href ? normalizeHref(href) : '';
     
     const isSupportedInternal = (raw?: string | null) => {
       if (!raw) return false;
-      // 检查原始和解码后的链接
-      const decoded = (() => {
-        try { return decodeURIComponent(raw); } catch { return raw; }
-      })();
-      if (decoded.startsWith('http') || decoded.startsWith('//')) return false;
-      if (raw.startsWith('http') || raw.startsWith('//')) return false;
-      const cleaned = stripHashQuery(decoded);
+      
+      // 处理完整 URL（可能是同源链接被渲染成绝对路径）
+      let pathToCheck = raw;
+      try {
+        const url = new URL(raw, window.location.origin);
+        // 如果是同源链接，提取路径部分
+        if (url.origin === window.location.origin) {
+          pathToCheck = url.pathname;
+        } else {
+          // 外部链接，不处理
+          return false;
+        }
+      } catch {
+        // 不是有效 URL，可能是相对路径，继续处理
+        if (raw.startsWith('http') || raw.startsWith('//')) return false;
+      }
+      
+      const cleaned = stripHashQuery(pathToCheck);
       if (!cleaned || cleaned.startsWith('#')) return false;
       const lower = cleaned.toLowerCase();
       const exts = ['.md', '.vue', '.ts', '.tsx', '.js', '.jsx', '.json', '.html', '.css', '.scss'];
@@ -1694,10 +1702,17 @@ const handleContentClick = async (e: MouseEvent) => {
 
     if (href && isSupportedInternal(href)) {
       e.preventDefault(); // Stop Browser Jump
-      e.stopPropagation(); // 阻止事件冒泡
       
       let targetPath = '';
-      const normalizedHref = normalized || normalizeHref(href);
+      // 从 href 中提取实际路径（处理可能被渲染成绝对 URL 的情况）
+      let normalizedHref = normalized || normalizeHref(href);
+      try {
+        const url = new URL(href, window.location.origin);
+        if (url.origin === window.location.origin) {
+          normalizedHref = decodeURIComponent(url.pathname);
+        }
+      } catch {}
+      
       const isCodeFile = !normalizedHref.toLowerCase().endsWith('.md');
 
       if (normalizedHref.startsWith('/')) {
