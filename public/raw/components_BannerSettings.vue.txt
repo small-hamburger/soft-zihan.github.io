@@ -55,15 +55,21 @@
           
           <div class="grid grid-cols-3 gap-2">
             <button 
-              v-for="(wp, idx) in wallpapers" 
-              :key="idx"
-              @click="selectWallpaper(idx)"
-              class="aspect-square rounded-lg overflow-hidden border-2 transition-all"
-              :class="selectedWallpaper === idx 
-                ? 'border-sakura-500 shadow-lg' 
+              v-for="(wp, idx) in currentThemeWallpapers" 
+              :key="wp.filename"
+              @click="selectWallpaper(wp.filename)"
+              class="aspect-square rounded-lg overflow-hidden border-2 transition-all relative group"
+              :class="appStore.currentWallpaperFilename === wp.filename 
+                ? 'border-sakura-500 shadow-lg ring-2 ring-sakura-200 dark:ring-sakura-800' 
                 : 'border-transparent hover:border-gray-300 dark:hover:border-gray-600'"
+              :title="wp.name"
             >
-              <img :src="wp.thumb" class="w-full h-full object-cover" :alt="wp.name" />
+              <img :src="wp.path" class="w-full h-full object-cover" :alt="wp.name" />
+              <div v-if="appStore.currentWallpaperFilename === wp.filename" class="absolute inset-0 bg-sakura-500/20 flex items-center justify-center">
+                <svg class="w-6 h-6 text-white drop-shadow-lg" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+                </svg>
+              </div>
             </button>
           </div>
         </div>
@@ -83,7 +89,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { useAppStore } from '../stores/appStore'
+import { useWallpapers } from '../composables/useWallpapers'
 
 const props = defineProps<{
   lang: 'en' | 'zh'
@@ -91,12 +99,13 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'change', mode: string): void
-  (e: 'wallpaper-change', index: number): void
 }>()
 
+const appStore = useAppStore()
+const { currentThemeWallpapers, setWallpaper } = useWallpapers()
+
 const showPanel = ref(false)
-const currentMode = ref('normal')
-const selectedWallpaper = ref(0)
+const currentMode = ref(appStore.userSettings.bannerMode)
 
 const modes = [
   { 
@@ -125,47 +134,23 @@ const modes = [
   }
 ]
 
-const wallpapers = [
-  { name: 'Default Light', thumb: '/image/wallpaper-light.jpg' },
-  { name: 'Default Dark', thumb: '/image/wallpaper-dark.jpg' },
-  { name: 'Sakura', thumb: '/image/banner-1.jpg' },
-  { name: 'Sky', thumb: '/image/banner-2.jpg' },
-  { name: 'Forest', thumb: '/image/banner-3.jpg' },
-  { name: 'Ocean', thumb: '/image/banner-4.jpg' }
-]
-
 const setMode = (mode: string) => {
-  currentMode.value = mode
-  localStorage.setItem('banner-mode', mode)
+  currentMode.value = mode as 'normal' | 'fullscreen' | 'background' | 'hide'
+  appStore.updateSettings('bannerMode', currentMode.value)
   document.documentElement.setAttribute('data-banner-mode', mode)
   emit('change', mode)
 }
 
-const selectWallpaper = (index: number) => {
-  selectedWallpaper.value = index
-  localStorage.setItem('selected-wallpaper', index.toString())
-  emit('wallpaper-change', index)
+const selectWallpaper = (filename: string) => {
+  setWallpaper(filename)
 }
 
 onMounted(() => {
-  currentMode.value = localStorage.getItem('banner-mode') || 'normal'
-  selectedWallpaper.value = parseInt(localStorage.getItem('selected-wallpaper') || '0')
+  currentMode.value = appStore.userSettings.bannerMode
   document.documentElement.setAttribute('data-banner-mode', currentMode.value)
-})
-
-// Close panel when clicking outside
-const handleClickOutside = (e: MouseEvent) => {
-  const target = e.target as HTMLElement
-  if (!target.closest('.banner-settings')) {
-    showPanel.value = false
-  }
-}
-
-onMounted(() => {
   document.addEventListener('click', handleClickOutside)
 })
 
-import { onUnmounted } from 'vue'
 onUnmounted(() => {
   document.removeEventListener('click', handleClickOutside)
 })

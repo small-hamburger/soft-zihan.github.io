@@ -383,7 +383,7 @@ import { useSearch } from './composables/useSearch';
 const appStore = useAppStore();
 const articleStore = useArticleStore();
 const musicStore = useMusicStore();
-const { initSearchIndex, search, highlightMatches, showSearchModal: searchModalOpen, rebuildSearchIndex, isLoadingContent, setFetchFunction } = useSearch();
+const { initSearchIndex, search, highlightMatches, showSearchModal: searchModalOpen, rebuildSearchIndex, isLoadingContent, setFetchFunction, updateLanguage } = useSearch();
 
 // i18n with Persistence (from store)
 const lang = computed({
@@ -396,6 +396,9 @@ const toggleLang = async () => {
   const oldLang = lang.value;
   const newLang = oldLang === 'en' ? 'zh' : 'en';
   appStore.setLang(newLang);
+  
+  // Update search language filter
+  updateLanguage(newLang);
   
   // Preserve current state during language switch
   // 1. If in lab mode, stay in lab mode (LabDashboard is language-aware)
@@ -712,12 +715,17 @@ const fetchFileContent = async (file: FileNode): Promise<string> => {
     if (file.isSource && file.fetchPath) {
         fetchPath = `./${file.fetchPath}`;
     } else {
-        // Use raw path directly - files are stored with actual characters, not encoded
-        fetchPath = `./notes/${file.path}`;
+        // Safe encoding for URL
+        const encodedPath = file.path.split('/').map(p => encodeURIComponent(p)).join('/');
+        fetchPath = `./notes/${encodedPath}`;
     }
     
     try {
-        const res = await fetch(fetchPath);
+        let res = await fetch(fetchPath);
+        if (!res.ok) {
+           console.warn(`Fetch failed for ${fetchPath}, trying fallback...`);
+           res = await fetch(`./notes/${file.path}`);
+        }
         
         if (res.ok) return await res.text();
         return `# Error ${res.status}\nCould not load file content.\nPath: ${file.path}`;
@@ -742,18 +750,8 @@ const openFile = async (file: FileNode) => {
   if (!file.content) {
     contentLoading.value = true;
     file.content = await fetchFileContent(file);
-    if (typeof file.wordCount !== 'number') file.wordCount = computeWordCount(file.content);
-    if (typeof file.lineCount !== 'number') file.lineCount = file.content ? file.content.split(/\r?\n/).length : 0;
     contentLoading.value = false;
-    currentFile.value = { ...file };
-    // Rebuild search index after loading new content
-    if (rebuildSearchIndex) rebuildSearchIndex();
-  }
-
-  // Ensure stats exist even when content was already cached
-  if (file.content) {
-    if (typeof file.wordCount !== 'number') file.wordCount = computeWordCount(file.content);
-    if (typeof file.lineCount !== 'number') file.lineCount = file.content.split(/\r?\n/).length;
+    currentFile.value = { ...file }; 
   }
   
   // Trigger rendering logic
@@ -1107,7 +1105,7 @@ onMounted(async () => {
     loading.value = false;
     // Initialize search index after file system is loaded
     if (fileSystem.value.length > 0) {
-      await initSearchIndex(fileSystem.value);
+      await initSearchIndex(fileSystem.value, lang.value);
     }
   }
 });

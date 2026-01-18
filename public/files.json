@@ -586,7 +586,7 @@
         "path": "components/BannerSettings.vue",
         "fetchPath": "raw/components_BannerSettings.vue.txt",
         "type": "file",
-        "lastModified": "2026-01-17T14:08:36.357Z",
+        "lastModified": "2026-01-18T10:25:46.169Z",
         "isSource": true
       },
       {
@@ -618,7 +618,7 @@
         "path": "components/GlobalAudio.vue",
         "fetchPath": "raw/components_GlobalAudio.vue.txt",
         "type": "file",
-        "lastModified": "2026-01-18T09:08:35.668Z",
+        "lastModified": "2026-01-18T10:22:27.876Z",
         "isSource": true
       },
       {
@@ -686,6 +686,14 @@
         "isSource": true
       },
       {
+        "name": "LabHtmlBasics.vue",
+        "path": "components/LabHtmlBasics.vue",
+        "fetchPath": "raw/components_LabHtmlBasics.vue.txt",
+        "type": "file",
+        "lastModified": "2026-01-18T09:51:53.708Z",
+        "isSource": true
+      },
+      {
         "name": "LabJs.vue",
         "path": "components/LabJs.vue",
         "fetchPath": "raw/components_LabJs.vue.txt",
@@ -746,7 +754,7 @@
         "path": "components/MusicPlayer.vue",
         "fetchPath": "raw/components_MusicPlayer.vue.txt",
         "type": "file",
-        "lastModified": "2026-01-18T09:41:13.753Z",
+        "lastModified": "2026-01-18T10:22:42.346Z",
         "isSource": true
       },
       {
@@ -778,7 +786,7 @@
         "path": "components/WallpaperLayer.vue",
         "fetchPath": "raw/components_WallpaperLayer.vue.txt",
         "type": "file",
-        "lastModified": "2026-01-17T15:42:30.416Z",
+        "lastModified": "2026-01-18T10:25:46.169Z",
         "isSource": true
       },
       {
@@ -809,7 +817,7 @@
         "path": "App.vue",
         "fetchPath": "raw/App.vue.txt",
         "type": "file",
-        "lastModified": "2026-01-18T09:44:00.074Z",
+        "lastModified": "2026-01-18T10:27:19.599Z",
         "isSource": true
       },
       {

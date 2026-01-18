@@ -216,36 +216,6 @@
               </div>
             </Transition>
           </div>
-          
-          <!-- Song Request Section -->
-          <div class="border-t border-gray-200 dark:border-gray-700 px-6 py-4">
-            <div class="flex items-center gap-2">
-              <input 
-                v-model="songRequestInput"
-                type="text"
-                :placeholder="lang === 'zh' ? '点歌：输入歌曲名...' : 'Request a song...'"
-                class="flex-1 px-3 py-2 text-sm bg-gray-100 dark:bg-gray-800 rounded-lg border-0 focus:ring-2 focus:ring-sakura-500"
-                @keyup.enter="submitRequest"
-              />
-              <button 
-                @click="submitRequest"
-                class="px-4 py-2 text-sm font-medium text-white bg-sakura-500 hover:bg-sakura-600 rounded-lg transition-colors"
-              >
-                {{ lang === 'zh' ? '点歌' : 'Request' }}
-              </button>
-            </div>
-            
-            <div v-if="musicStore.songRequests.length > 0" class="mt-3 max-h-20 overflow-y-auto">
-              <div class="text-xs text-gray-400 mb-1">{{ lang === 'zh' ? '点歌记录' : 'Requests' }}:</div>
-              <div 
-                v-for="(req, idx) in musicStore.songRequests.slice(-5)" 
-                :key="idx"
-                class="text-xs text-gray-500 dark:text-gray-400 py-0.5"
-              >
-                🎵 {{ req.name }}
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </Transition>
@@ -262,7 +232,6 @@ const props = defineProps<{
 
 const musicStore = useMusicStore()
 const showPlaylist = ref(false)
-const songRequestInput = ref('')
 
 const currentTrack = computed(() => musicStore.currentTrack)
 
@@ -275,13 +244,6 @@ const seekTo = (e: MouseEvent) => {
 
 const handleCoverError = (e: Event) => {
   (e.target as HTMLImageElement).src = '/image/music-default.jpg'
-}
-
-const submitRequest = () => {
-  if (songRequestInput.value.trim()) {
-    musicStore.requestSong(songRequestInput.value.trim())
-    songRequestInput.value = ''
-  }
 }
 </script>
 

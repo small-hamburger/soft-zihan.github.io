@@ -10,6 +10,9 @@ export const useAppStore = defineStore('app', () => {
   // Theme
   const isDark = ref(false)
   
+  // Wallpaper - persist filename only
+  const currentWallpaperFilename = ref('')
+  
   // User Settings
   const userSettings = ref({
     fontSize: 'normal' as 'small' | 'normal' | 'large',
@@ -70,6 +73,10 @@ export const useAppStore = defineStore('app', () => {
     isDark.value = dark
   }
   
+  function setWallpaper(filename: string) {
+    currentWallpaperFilename.value = filename
+  }
+  
   // Computed
   const fontSizeClass = computed(() => {
     switch (userSettings.value.fontSize) {
@@ -84,6 +91,7 @@ export const useAppStore = defineStore('app', () => {
     lang,
     t,
     isDark,
+    currentWallpaperFilename,
     userSettings,
     showParticles,
     showSettings,
@@ -95,6 +103,7 @@ export const useAppStore = defineStore('app', () => {
     setTheme,
     setLang,
     setDark,
+    setWallpaper,
     showToast,
     updateSettings,
     toggleSidebar,
@@ -103,6 +112,6 @@ export const useAppStore = defineStore('app', () => {
   }
 }, {
   persist: {
-    pick: ['lang', 'isDark', 'userSettings']
+    pick: ['lang', 'isDark', 'currentWallpaperFilename', 'userSettings', 'showParticles']
   }
 })

@@ -25,13 +25,10 @@ export const useMusicStore = defineStore('music', () => {
   const duration = ref(0)
   const volume = ref(0.7)
   const isMuted = ref(false)
-  const playMode = ref<'sequence' | 'loop' | 'single' | 'shuffle'>('sequence')
+  const playMode = ref<'sequence' | 'single' | 'shuffle'>('sequence') // Removed 'loop'
   const showMusicPlayer = ref(false)
   const lyrics = ref<LyricLine[]>([])
   const currentLyricIndex = ref(-1)
-  
-  // User requests (点歌)
-  const songRequests = ref<Array<{ name: string; requestedAt: Date }>>([])
   
   // Computed
   const currentTrack = computed(() => playlist.value[currentIndex.value] || null)
@@ -117,7 +114,7 @@ export const useMusicStore = defineStore('music', () => {
   }
   
   function cyclePlayMode() {
-    const modes: typeof playMode.value[] = ['sequence', 'loop', 'single', 'shuffle']
+    const modes: typeof playMode.value[] = ['sequence', 'single', 'shuffle'] // Removed 'loop'
     const currentIdx = modes.indexOf(playMode.value)
     playMode.value = modes[(currentIdx + 1) % modes.length]
   }
@@ -173,15 +170,6 @@ export const useMusicStore = defineStore('music', () => {
     currentLyricIndex.value = -1
   }
   
-  // Song Request (点歌)
-  function requestSong(name: string) {
-    songRequests.value.push({ name, requestedAt: new Date() })
-  }
-  
-  function clearRequests() {
-    songRequests.value = []
-  }
-  
   // Helper
   function formatTime(seconds: number): string {
     const mins = Math.floor(seconds / 60)
@@ -189,16 +177,47 @@ export const useMusicStore = defineStore('music', () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`
   }
   
-  // Load playlist from JSON
+  // Get filename from track URL for persistence matching
+  function getTrackFilename(track: MusicTrack | null): string {
+    if (!track || !track.url) return ''
+    const parts = track.url.split('/')
+    return parts[parts.length - 1]
+  }
+  
+  // Find track index by filename
+  function findTrackByFilename(filename: string): number {
+    if (!filename) return 0
+    const index = playlist.value.findIndex(track => getTrackFilename(track) === filename)
+    return index >= 0 ? index : 0
+  }
+  
+  // Load playlist from JSON and restore persisted track
   async function loadPlaylist() {
     try {
       const res = await fetch('./music.json')
       if (res.ok) {
         const data = await res.json()
         setPlaylist(data.tracks || [])
+        
+        // Restore persisted track by filename
+        const persisted = localStorage.getItem('music_currentTrackFilename')
+        if (persisted && playlist.value.length > 0) {
+          const index = findTrackByFilename(persisted)
+          currentIndex.value = index
+        }
+        
+        // Restore playing state
+        const playingState = localStorage.getItem('music_isPlaying')
+        if (playingState) {
+          isPlaying.value = playingState === 'true'
+        }
       }
     } catch (e) {
       console.warn('Failed to load music playlist:', e)
+      // Ensure we have at least one track
+      if (playlist.value.length === 0) {
+        currentIndex.value = 0
+      }
     }
   }
   
@@ -215,7 +234,6 @@ export const useMusicStore = defineStore('music', () => {
     showMusicPlayer,
     lyrics,
     currentLyricIndex,
-    songRequests,
     // Computed
     currentTrack,
     progress,
@@ -238,12 +256,12 @@ export const useMusicStore = defineStore('music', () => {
     setDuration,
     setLyrics,
     updateCurrentLyric,
-    requestSong,
-    clearRequests,
-    loadPlaylist
+    loadPlaylist,
+    getTrackFilename,
+    findTrackByFilename
   }
 }, {
   persist: {
-    pick: ['volume', 'playMode', 'songRequests']
+    pick: ['volume', 'playMode']
   }
 })

@@ -22,10 +22,12 @@ export function useSearch(fetchFileContentFn?: (file: FileNode) => Promise<strin
   const searchIndex = ref<MiniSearch<any> | null>(null)
   const fileSystem = ref<FileNode[]>([])
   const isFullIndexReady = ref(false)
+  const currentLang = ref<'en' | 'zh'>('zh')
   
   // Initialize search index - only create empty index, defer content loading
-  const initSearchIndex = async (fs: FileNode[]) => {
+  const initSearchIndex = async (fs: FileNode[], lang: 'en' | 'zh' = 'zh') => {
     fileSystem.value = fs
+    currentLang.value = lang
     // Create empty search index, will be populated on first search
     const miniSearch = new MiniSearch({
       fields: ['name', 'content'],
@@ -49,15 +51,22 @@ export function useSearch(fetchFileContentFn?: (file: FileNode) => Promise<strin
     }
     
     isLoadingContent.value = true
+    const langPrefix = currentLang.value === 'zh' ? 'zh/' : 'en/'
+    
     try {
-      // Recursively load all file contents
+      // Recursively load file contents (only for current language)
       const loadFileContents = async (nodes: FileNode[]) => {
         for (const node of nodes) {
           if (node.type === NodeType.FILE && !node.isSource && !node.content) {
-            try {
-              node.content = await fetchFileContentFn(node)
-            } catch (e) {
-              console.warn(`Failed to load content for ${node.path}:`, e)
+            // Only load files from current language directory
+            if (node.path.startsWith(langPrefix)) {
+              try {
+                node.content = await fetchFileContentFn(node)
+                // Rebuild index progressively as content loads
+                rebuildSearchIndex()
+              } catch (e) {
+                console.warn(`Failed to load content for ${node.path}:`, e)
+              }
             }
           }
           if (node.children) {
@@ -67,7 +76,6 @@ export function useSearch(fetchFileContentFn?: (file: FileNode) => Promise<strin
       }
       
       await loadFileContents(fileSystem.value)
-      rebuildSearchIndex()
       isFullIndexReady.value = true
     } finally {
       isLoadingContent.value = false
@@ -86,21 +94,25 @@ export function useSearch(fetchFileContentFn?: (file: FileNode) => Promise<strin
       }
     })
     
-    // Flatten files and add to index
+    // Flatten files and add to index - filter by language
     const flattenFiles = (nodes: FileNode[]): Array<{ id: string; name: string; path: string; content: string }> => {
       const files: Array<{ id: string; name: string; path: string; content: string }> = []
+      const langPrefix = currentLang.value === 'zh' ? 'zh/' : 'en/'
       
       for (const node of nodes) {
         if (node.type === NodeType.FILE && !node.isSource) {
-          const contentToIndex = (node.content || node.contentSnippet || '').trim()
-          const nameAndContent = node.name.replace('.md', '') + ' ' + contentToIndex
-          
-          files.push({
-            id: node.path,
-            name: node.name.replace('.md', ''),
-            path: node.path,
-            content: nameAndContent
-          })
+          // Filter by language: only include files from the current language directory
+          if (node.path.startsWith(langPrefix)) {
+            const contentToIndex = (node.content || node.contentSnippet || '').trim()
+            const nameAndContent = node.name.replace('.md', '') + ' ' + contentToIndex
+            
+            files.push({
+              id: node.path,
+              name: node.name.replace('.md', ''),
+              path: node.path,
+              content: nameAndContent
+            })
+          }
         }
         if (node.children) {
           files.push(...flattenFiles(node.children))
@@ -217,6 +229,15 @@ export function useSearch(fetchFileContentFn?: (file: FileNode) => Promise<strin
     fetchFileContentFn = fetchFn
   }
   
+  // Update language filter
+  const updateLanguage = (lang: 'en' | 'zh') => {
+    if (lang !== currentLang.value) {
+      currentLang.value = lang
+      isFullIndexReady.value = false // Reset to reload for new language
+      rebuildSearchIndex() // Rebuild with current content
+    }
+  }
+  
   onMounted(() => {
     document.addEventListener('keydown', handleKeydown)
   })
@@ -231,11 +252,13 @@ export function useSearch(fetchFileContentFn?: (file: FileNode) => Promise<strin
     isSearching,
     isLoadingContent,
     showSearchModal,
+    currentLang,
     initSearchIndex,
     rebuildSearchIndex,
     search,
     loadFullContentAndRebuild,
     setFetchFunction,
+    updateLanguage,
     highlightMatches,
     clearSearch
   }

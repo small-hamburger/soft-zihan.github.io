@@ -69,11 +69,12 @@
 
 <script setup lang="ts">
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
+import { useWallpapers } from '../composables/useWallpapers'
 
 const props = defineProps<{ 
   isDark: boolean
-  lightUrl: string
-  darkUrl: string
+  lightUrl?: string
+  darkUrl?: string
   bannerMode?: 'normal' | 'fullscreen' | 'background' | 'hide'
   wallpaperIndex?: number
   typewriterTexts?: string[]
@@ -81,16 +82,9 @@ const props = defineProps<{
   showWaves?: boolean
 }>()
 
-// Wallpaper cycling
-const wallpapers = [
-  { light: '/image/wallpaper-light.jpg', dark: '/image/wallpaper-dark.jpg' },
-  { light: '/image/banner-1.jpg', dark: '/image/banner-1.jpg' },
-  { light: '/image/banner-2.jpg', dark: '/image/banner-2.jpg' },
-  { light: '/image/banner-3.jpg', dark: '/image/banner-3.jpg' },
-  { light: '/image/banner-4.jpg', dark: '/image/banner-4.jpg' }
-]
+// Use wallpaper composable
+const { currentWallpaper } = useWallpapers()
 
-const currentWallpaperIdx = ref(props.wallpaperIndex ?? 0)
 const isTransitioning = ref(false)
 
 const bannerMode = computed(() => props.bannerMode || 'normal')
@@ -110,10 +104,8 @@ const containerStyle = computed(() => {
 })
 
 const currentBgStyle = computed(() => {
-  const wp = wallpapers[currentWallpaperIdx.value] || wallpapers[0]
-  const url = props.isDark ? (wp.dark || props.darkUrl) : (wp.light || props.lightUrl)
   return {
-    backgroundImage: `url(${url})`,
+    backgroundImage: `url(${currentWallpaper.value})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
@@ -122,11 +114,8 @@ const currentBgStyle = computed(() => {
 })
 
 const nextBgStyle = computed(() => {
-  const nextIdx = (currentWallpaperIdx.value + 1) % wallpapers.length
-  const wp = wallpapers[nextIdx] || wallpapers[0]
-  const url = props.isDark ? (wp.dark || props.darkUrl) : (wp.light || props.lightUrl)
   return {
-    backgroundImage: `url(${url})`,
+    backgroundImage: `url(${currentWallpaper.value})`,
     backgroundSize: 'cover',
     backgroundPosition: 'center',
     backgroundRepeat: 'no-repeat',
@@ -168,17 +157,6 @@ const typeWriter = () => {
   const speed = isDeleting ? 50 : 150
   typewriterInterval = setTimeout(typeWriter, speed)
 }
-
-// Watch wallpaper index change
-watch(() => props.wallpaperIndex, (newIdx) => {
-  if (newIdx !== undefined && newIdx !== currentWallpaperIdx.value) {
-    isTransitioning.value = true
-    setTimeout(() => {
-      currentWallpaperIdx.value = newIdx
-      isTransitioning.value = false
-    }, 1000)
-  }
-})
 
 onMounted(() => {
   if (props.showTypewriter !== false) {
