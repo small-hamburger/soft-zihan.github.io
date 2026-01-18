@@ -67,12 +67,18 @@
           <!-- Progress -->
           <div class="px-8 py-4">
             <div 
-              class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full cursor-pointer overflow-hidden"
+              ref="progressBar"
+              class="h-2 bg-gray-200 dark:bg-gray-700 rounded-full cursor-pointer overflow-hidden relative"
               @click="seekTo"
+              @pointerdown="startSeek"
             >
               <div 
                 class="h-full bg-gradient-to-r from-sakura-400 to-sakura-600 rounded-full transition-all"
                 :style="{ width: musicStore.progress + '%' }"
+              ></div>
+              <div
+                class="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white rounded-full shadow border border-sakura-300"
+                :style="{ left: `calc(${musicStore.progress}% - 6px)` }"
               ></div>
             </div>
             <div class="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-2">
@@ -223,7 +229,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useMusicStore } from '../stores/musicStore'
 
 const props = defineProps<{
@@ -232,15 +238,46 @@ const props = defineProps<{
 
 const musicStore = useMusicStore()
 const showPlaylist = ref(false)
+const progressBar = ref<HTMLElement | null>(null)
+const isSeeking = ref(false)
 
 const currentTrack = computed(() => musicStore.currentTrack)
 
-const seekTo = (e: MouseEvent) => {
-  const target = e.currentTarget as HTMLElement
+const updateSeek = (clientX: number) => {
+  const target = progressBar.value
+  if (!target) return
   const rect = target.getBoundingClientRect()
-  const percent = (e.clientX - rect.left) / rect.width
+  const percent = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width))
   musicStore.seek(percent * musicStore.duration)
 }
+
+const seekTo = (e: MouseEvent) => {
+  updateSeek(e.clientX)
+}
+
+const startSeek = (e: PointerEvent) => {
+  isSeeking.value = true
+  updateSeek(e.clientX)
+}
+
+const handlePointerMove = (e: PointerEvent) => {
+  if (!isSeeking.value) return
+  updateSeek(e.clientX)
+}
+
+const handlePointerUp = () => {
+  if (isSeeking.value) isSeeking.value = false
+}
+
+onMounted(() => {
+  window.addEventListener('pointermove', handlePointerMove)
+  window.addEventListener('pointerup', handlePointerUp)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('pointermove', handlePointerMove)
+  window.removeEventListener('pointerup', handlePointerUp)
+})
 
 const handleCoverError = (e: Event) => {
   (e.target as HTMLImageElement).src = '/image/music-default.jpg'

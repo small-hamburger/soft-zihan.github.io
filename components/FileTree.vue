@@ -9,6 +9,7 @@
         <div 
           class="flex items-center gap-1 px-2 py-1.5 rounded-lg transition-colors group"
           :class="currentPath === node.path ? 'bg-sakura-100 text-sakura-800 font-bold' : 'hover:bg-sakura-50 text-gray-700'"
+          @dblclick.stop="$emit('toggle-folder', node.path)"
         >
           <!-- Toggle Arrow -->
           <span 
@@ -18,10 +19,11 @@
           >▶</span>
           
           <!-- Folder Name (opens directory view) -->
-          <div 
+           <div 
              @click="$emit('select-folder', node)"
+             @dblclick.stop="$emit('toggle-folder', node.path)"
              class="flex-1 flex items-center gap-2 cursor-pointer"
-          >
+           >
             <span class="text-lg text-sakura-300">📁</span>
             <span class="truncate text-sm">{{ node.name }}</span>
           </div>

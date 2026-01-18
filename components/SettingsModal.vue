@@ -22,6 +22,23 @@
           </div>
       </div>
 
+      <!-- Wallpaper Switcher -->
+      <div class="mb-6">
+        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{{ t.banner_background || 'Wallpaper' }}</label>
+        <div class="grid grid-cols-3 gap-2">
+          <button
+            v-for="wp in currentThemeWallpapers"
+            :key="wp.filename"
+            @click="setWallpaper(wp.filename)"
+            class="relative rounded-xl overflow-hidden border transition-all"
+            :class="wp.filename === appStore.currentWallpaperFilename ? 'border-sakura-500 ring-2 ring-sakura-300' : 'border-gray-200 dark:border-gray-700'"
+          >
+            <img :src="wp.path" :alt="wp.name" class="w-full h-16 object-cover" />
+            <div class="absolute inset-0 bg-black/10"></div>
+          </button>
+        </div>
+      </div>
+
       <!-- Font Family -->
       <div class="mb-6">
           <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{{ t.font_style }}</label>
@@ -46,6 +63,9 @@
 </template>
 
 <script setup lang="ts">
+import { useWallpapers } from '../composables/useWallpapers'
+import { useAppStore } from '../stores/appStore'
+
 defineProps<{
   t: any;
   isDark: boolean;
@@ -60,4 +80,7 @@ defineProps<{
 const emit = defineEmits<{
   (e: 'close'): void;
 }>();
+
+const appStore = useAppStore()
+const { currentThemeWallpapers, setWallpaper } = useWallpapers()
 </script>

@@ -508,6 +508,7 @@ const codeModalContent = ref('');
 const codeModalTitle = ref('');
 
 const selectionMenu = ref({ show: false, x: 0, y: 0 });
+const lastSelectionRange = ref<Range | null>(null);
 
 // Wallpaper URLs (user to place files in project; hardcoded paths)
 const wallpaperLightUrl = '/image/wallpaper-light.jpg';
@@ -924,6 +925,8 @@ const handleSelection = () => {
       return;
   }
 
+  lastSelectionRange.value = range.cloneRange();
+
   const rect = (() => {
     const r = range.getBoundingClientRect();
     if (r && (r.width || r.height)) return r;
@@ -946,12 +949,13 @@ const handleSelection = () => {
 const handleSelectionContextMenu = (e: MouseEvent) => {
   if (currentFile.value?.isSource) return;
   const selection = window.getSelection();
-  if (!selection || selection.isCollapsed || selection.rangeCount === 0) {
+  const range = (!selection || selection.isCollapsed || selection.rangeCount === 0)
+    ? lastSelectionRange.value
+    : selection.getRangeAt(0);
+  if (!range) {
     selectionMenu.value.show = false;
     return;
   }
-
-  const range = selection.getRangeAt(0);
   const viewer = document.getElementById('markdown-viewer');
   if (!viewer || !viewer.contains(range.commonAncestorContainer)) {
     selectionMenu.value.show = false;
@@ -1171,12 +1175,14 @@ onMounted(async () => {
   // Keyboard shortcuts
   document.addEventListener('keydown', handleKeydown);
 
-  document.addEventListener('selectionchange', () => {
+    document.addEventListener('selectionchange', () => {
       const sel = window.getSelection();
-      if (!sel || sel.isCollapsed) {
-          selectionMenu.value.show = false;
+      if (sel && !sel.isCollapsed && sel.rangeCount > 0) {
+        lastSelectionRange.value = sel.getRangeAt(0).cloneRange();
+      } else {
+        selectionMenu.value.show = false;
       }
-  });
+    });
 
   if (appStore.isDark) document.documentElement.classList.add('dark');
   

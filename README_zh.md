@@ -11,13 +11,12 @@
 ## ✨ 特性 (Features)
 
 - **纯静态架构**：完全基于客户端渲染 (CSR)，通过 GitHub Actions 预生成元数据索引。
-- **动态获取**：Markdown 内容按需加载 (Lazy Load)，首屏加载速度极快。
+- **支持上传文章和评论**：启发来自[RyuChan](https://github.com/kobaridev/RyuChan)，技术采用[giscus](https://github.com/giscus/giscus).
 - **国际化支持**：内置中/英双语切换 (i18n)，切换时保持当前标签页和实验室位置不变（仅笔记刷新）。
-- **主题模式**：支持 "Day Sakura" (浅色) 和 "Night Sakura" (深色) 两种主题模式，自动切换壁纸。
-- **自定义壁纸**：浅/深色主题分别使用独立壁纸（cover 模式，不拉伸），仅作用于主内容区域（不覆盖侧边栏）。
-- **交互式花瓣效果**：优化的可拖拽樱花花瓣系统，稳定的指针事件、网格堆叠、移动端触控优化。
-- **Sakura Lab**: 内置 Vue 互动实验室，包含可视化教学组件（响应式原理、生命周期）。
-- **无后端个性化**：利用 `localStorage` 存储用户的字体、字号、主题和花瓣速度偏好。
+- **主题模式**：支持 "Day Sakura" (浅色) 和 "Night Sakura" (深色) 两种主题模式，支持不同主题下切换壁纸，支持音乐播放。
+- **交互式花瓣效果**：可拖拽樱花花瓣系统，稳定的指针事件、网格堆叠、移动端触控优化。
+- **Sakura Lab**: 内置互动实验室，包含可视化教学组件。
+- **无后端个性化**：利用 `localStorage` 存储用户选择的字体、字号、主题和花瓣速度偏好等。
 
 ---
 
@@ -29,7 +28,7 @@
 
 - [index.html](/index.html): 主 HTML 入口文件，包含樱花主题样式和 Tailwind CSS 配置
 - [index.tsx](/index.tsx): 应用程序引导文件，将 Vue 应用挂载到 DOM
-- [App.vue](/App.vue): 根 Vue 组件（886 行），协调整个应用程序：
+- [App.vue](/App.vue): 根 Vue 组件（1246 行），协调整个应用程序：
   - **状态管理**：语言 (`lang`)、主题 (`isDark`)、视图模式 (`viewMode`)、当前文件/文件夹、用户设置（字体、字号、花瓣速度）
   - **动态渲染**：条件渲染实验室仪表板、文件夹视图、Markdown 查看器或源代码模态框
   - **侧边栏集成**：向 `AppSidebar` 传递文件系统、展开的文件夹、面包屑导航和资源分类
@@ -54,7 +53,7 @@
 - [components/AppSidebar.vue](/components/AppSidebar.vue): 带有文件导航和视图模式切换的侧边栏
 - [components/FileTree.vue](/components/FileTree.vue): 用于显示目录结构的递归文件树组件
 - [components/FolderView.vue](/components/FolderView.vue): 用于显示文件夹内容的组件
-- [components/SettingsModal.vue](/components/SettingsModal.vue): 用户偏好设置模态框（主题、字体、花瓣速度等）
+- [components/SettingsModal.vue](/components/SettingsModal.vue): 用户偏好设置模态框（主题、字体、花瓣速度、壁纸等）
 - [components/PetalBackground.vue](/components/PetalBackground.vue): 优化的交互式樱花花瓣背景：
   - 稳定拖拽：全局 Pointer 事件监听（统一鼠标/触摸）
   - 网格堆叠：底部轻量网格系统，避免重叠，形成自然堆积效果
@@ -76,6 +75,11 @@
 - [components/LabQuizGame.vue](/components/LabQuizGame.vue): 交互式测验游戏实验室组件
 - [components/LabReactivity.vue](/components/LabReactivity.vue): 展示响应式原理的 Vue 实验室组件
 - [components/LabVueList.vue](/components/LabVueList.vue): 用于列表渲染的 Vue 实验室组件
+- [components/LabTypeScript.vue](/components/LabTypeScript.vue): TypeScript 基础实验室
+- [components/LabModuleSystem.vue](/components/LabModuleSystem.vue): ESM/CommonJS 模块实验室
+- [components/LabNpm.vue](/components/LabNpm.vue): NPM 包管理实验室
+- [components/LabBuildTools.vue](/components/LabBuildTools.vue): Vite 构建工具实验室
+- [components/LabTailwind.vue](/components/LabTailwind.vue): TailwindCSS 快速入门实验室
 
 ### 笔记 (Notes)
 

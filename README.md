@@ -14,14 +14,13 @@ A pure static personal blog system built with **Vue 3** + **Tailwind CSS**, desi
 
 ## ✨ Features
 
-- **Pure Static Architecture**: Fully client-side rendered (CSR), with metadata index pre-generated via GitHub Actions.
-- **Dynamic Fetching**: Markdown content is loaded on-demand (Lazy Load), ensuring extremely fast initial page load.
-- **Internationalization**: Built-in Chinese/English language switching (i18n) with state preservation.
-- **Theme Modes**: Supports both "Day Sakura" (light) and "Night Sakura" (dark) themes with automatic wallpaper switching.
-- **Custom Wallpaper**: Separate wallpapers for light/dark themes (cover mode, no stretching), applied only to main content area.
-- **Interactive Petal Effects**: Optimized draggable sakura petals with stable pointer events, grid-based stacking, and mobile touch support.
-- **Sakura Lab**: Built-in Vue interactive lab featuring visual teaching components (Reactivity, Lifecycle).
-- **Backend-free Personalization**: Uses `localStorage` to save user preferences for font, font size, theme, and petal speed.
+* **Purely Static Architecture** : Fully based on client-side rendering (CSR), with pre-generated metadata indexes via GitHub Actions.
+* **Article and Comment Upload Support** : Inspired by [RyuChan](https://github.com/kobaridev/RyuChan), implemented using [giscus](https://github.com/giscus/giscus) technology.
+* **Internationalization Support** : Built-in Chinese/English bilingual switching (i18n). Switching retains the current tab and lab position (only notes are refreshed).
+* **Theme Modes** : Supports "Day Sakura" (light) and "Night Sakura" (dark) themes, with wallpaper switching in different themes and music playback.
+* **Interactive Petal Effects** : A draggable cherry blossom petal system with stable pointer events, grid stacking, and mobile touch optimization.
+* **Sakura Lab** : Built-in interactive lab with visual teaching components.
+* **Backend-Free Personalization** : Uses `localStorage` to store user preferences for font, font size, theme, petal speed, and more.
 
 ---
 
@@ -30,9 +29,10 @@ A pure static personal blog system built with **Vue 3** + **Tailwind CSS**, desi
 This section describes the key files and directories in the project:
 
 ### Root Files
+
 - [index.html](/index.html): Main HTML entry point with Sakura-themed styling and Tailwind CSS configuration
 - [index.tsx](/index.tsx): Application bootstrap file that mounts the Vue app to the DOM
-- [App.vue](/App.vue): Root Vue component (886 lines) that orchestrates the entire application:
+- [App.vue](/App.vue): Root Vue component (1246 lines) that orchestrates the entire application:
   - **State Management**: Language (`lang`), theme (`isDark`), view mode (`viewMode`), current file/folder, user settings (font, size, petal speed)
   - **Dynamic Rendering**: Conditional rendering of Lab Dashboard, Folder View, Markdown Viewer, or Source Code Modal
   - **Sidebar Integration**: Passes file system, expanded folders, breadcrumbs, and resource categories to `AppSidebar`
@@ -52,11 +52,12 @@ This section describes the key files and directories in the project:
 - [env.d.ts](/env.d.ts): TypeScript declaration file for environment types
 
 ### Components
+
 - [components/AppHeader.vue](/components/AppHeader.vue): Header component with navigation controls and settings
 - [components/AppSidebar.vue](/components/AppSidebar.vue): Sidebar with file navigation and view mode toggles
 - [components/FileTree.vue](/components/FileTree.vue): Recursive file tree component for displaying the directory structure
 - [components/FolderView.vue](/components/FolderView.vue): Component for displaying folder contents
-- [components/SettingsModal.vue](/components/SettingsModal.vue): Modal for user preferences (theme, font, petal speed, etc.)
+- [components/SettingsModal.vue](/components/SettingsModal.vue): Modal for user preferences (theme, font, petal speed, wallpaper, etc.)
 - [components/PetalBackground.vue](/components/PetalBackground.vue): Optimized animated sakura petal background with:
   - Stable drag via global Pointer Events (mouse/touch unified)
   - Grid-based bottom stacking for natural piling effect
@@ -78,8 +79,14 @@ This section describes the key files and directories in the project:
 - [components/LabQuizGame.vue](/components/LabQuizGame.vue): Interactive quiz game lab component
 - [components/LabReactivity.vue](/components/LabReactivity.vue): Vue lab component demonstrating reactivity
 - [components/LabVueList.vue](/components/LabVueList.vue): Vue lab component for list rendering
+- [components/LabTypeScript.vue](/components/LabTypeScript.vue): TypeScript fundamentals lab
+- [components/LabModuleSystem.vue](/components/LabModuleSystem.vue): ESM vs CommonJS lab
+- [components/LabNpm.vue](/components/LabNpm.vue): NPM package management lab
+- [components/LabBuildTools.vue](/components/LabBuildTools.vue): Vite build tools lab
+- [components/LabTailwind.vue](/components/LabTailwind.vue): TailwindCSS quickstart lab
 
 ### Notes
+
 - [notes/](/notes/): Directory containing markdown notes in multiple languages
   - [notes/VUE Learning/](/notes/VUE Learning/): English Vue learning notes
   - [notes/VUE学习笔记/](/notes/VUE学习笔记/): Chinese Vue learning notes
@@ -87,6 +94,7 @@ This section describes the key files and directories in the project:
   - [notes/zh/](/notes/zh/): Chinese technical notes
 
 ### Scripts
+
 - [scripts/generate-tree.js](/scripts/generate-tree.js): Node.js script to scan notes directory and generate metadata index
 
 ---
