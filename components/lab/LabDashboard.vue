@@ -189,6 +189,14 @@
           <LabCssLayout :lang="lang" />
         </section>
 
+        <section>
+          <h2 class="text-xl font-bold text-pink-600 dark:text-pink-400 mb-4 flex items-center gap-2">
+            <span class="text-2xl">🌸</span> {{ isZh ? 'CSS 动画' : 'CSS Animation' }}
+            <span class="text-xs bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-300 px-2 py-0.5 rounded-full ml-2">{{ isZh ? '花瓣效果解析' : 'Petal Effect Analysis' }}</span>
+          </h2>
+          <LabCssAnimation :lang="lang" />
+        </section>
+
         <NextStageGuide 
           :is-zh="isZh" 
           :next-text="isZh ? '你已经可以构建精美的页面布局了！接下来学习 JS 进阶，实现复杂交互。' : 'You can now build beautiful layouts! Next, learn advanced JS for complex interactions.'"
@@ -217,6 +225,21 @@
             <span class="text-2xl">📡</span> {{ t.lab_ajax_title }}
           </h2>
           <LabAjax :lang="lang" />
+        </section>
+
+        <section>
+          <h2 class="text-xl font-bold text-yellow-600 dark:text-yellow-400 mb-4 flex items-center gap-2">
+            <span class="text-2xl">⚡</span> {{ isZh ? '异步编程' : 'Async Programming' }}
+            <span class="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-300 px-2 py-0.5 rounded-full ml-2">{{ isZh ? 'Promise & async/await' : 'Promise & async/await' }}</span>
+          </h2>
+          <LabAsync :lang="lang" />
+        </section>
+
+        <section>
+          <h2 class="text-xl font-bold text-orange-600 dark:text-orange-400 mb-4 flex items-center gap-2">
+            <span class="text-2xl">🧠</span> {{ isZh ? '闭包与作用域' : 'Closures & Scope' }}
+          </h2>
+          <LabJsAdvanced :lang="lang" />
         </section>
 
         <section>
@@ -348,6 +371,14 @@
           <LabPinia :lang="lang" />
         </section>
 
+        <!-- Provide/Inject (NEW) -->
+        <section>
+          <h2 class="text-xl font-bold text-teal-600 dark:text-teal-400 mb-4 flex items-center gap-2">
+            <span class="text-2xl">💉</span> {{ isZh ? '依赖注入' : 'Dependency Injection' }}
+          </h2>
+          <LabProvideInject :lang="lang" />
+        </section>
+
         <NextStageGuide 
           :is-zh="isZh" 
           :next-text="isZh ? '🎉 恭喜完成全部 Vue 学习！来挑战测验，检验你的综合能力吧！' : '🎉 Congratulations on completing Vue learning! Take the challenge quiz to test your skills!'"
@@ -357,12 +388,20 @@
       </div>
 
       <!-- Stage 8: Challenge -->
-      <div v-else-if="activeTab === 'challenge'" class="animate-fade-in">
+      <div v-else-if="activeTab === 'challenge'" class="animate-fade-in space-y-12">
          <section class="max-w-3xl mx-auto">
            <h2 class="text-xl font-bold text-orange-600 dark:text-orange-400 mb-4 flex items-center gap-2 justify-center">
              <span class="text-2xl">🥷</span> {{ t.lab_quiz }}
            </h2>
            <LabQuizGame :lang="lang" />
+        </section>
+
+        <section>
+          <h2 class="text-xl font-bold text-orange-600 dark:text-orange-400 mb-4 flex items-center gap-2">
+            <span class="text-2xl">🏆</span> {{ isZh ? '迷你项目挑战' : 'Mini Project Challenge' }}
+            <span class="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300 px-2 py-0.5 rounded-full ml-2">{{ isZh ? '综合实战' : 'Hands-on Practice' }}</span>
+          </h2>
+          <LabMiniProject :lang="lang" />
         </section>
       </div>
 
@@ -385,11 +424,14 @@ import LabJsBasics from './stage2-js-basics/LabJsBasics.vue'
 // Stage 3: CSS
 import LabCssBasics from './stage3-css/LabCssBasics.vue'
 import LabCssLayout from './stage3-css/LabCssLayout.vue'
+import LabCssAnimation from './stage3-css/LabCssAnimation.vue'
 
 // Stage 4: JS Advanced
 import LabJs from './stage4-js-advanced/LabJs.vue'
 import LabDom from './stage4-js-advanced/LabDom.vue'
 import LabAjax from './stage4-js-advanced/LabAjax.vue'
+import LabAsync from './stage4-js-advanced/LabAsync.vue'
+import LabJsAdvanced from './stage4-js-advanced/LabJsAdvanced.vue'
 import LabTypeScript from './stage4-js-advanced/LabTypeScript.vue'
 
 // Stage 5: Engineering
@@ -412,9 +454,11 @@ import LabPropsEmit from './stage7-vue-advanced/LabPropsEmit.vue'
 import LabSlot from './stage7-vue-advanced/LabSlot.vue'
 import LabComposables from './stage7-vue-advanced/LabComposables.vue'
 import LabPinia from './stage7-vue-advanced/LabPinia.vue'
+import LabProvideInject from './stage7-vue-advanced/LabProvideInject.vue'
 
 // Stage 8: Challenge
 import LabQuizGame from './stage8-challenge/LabQuizGame.vue'
+import LabMiniProject from './stage8-challenge/LabMiniProject.vue'
 
 // Helper component for next stage navigation
 const NextStageGuide = {

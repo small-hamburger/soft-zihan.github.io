@@ -206,6 +206,47 @@ export const I18N = {
     lab_vue_advanced: "Vue Advanced",
     lab_vue_advanced_desc: "Composables, Pinia, and component communication",
 
+    // Async Programming Lab (NEW)
+    lab_async: "Async Programming",
+    lab_async_desc: "Promise, async/await, and error handling",
+    lab_async_promise: "Promise Basics",
+    lab_async_await: "Async/Await",
+    lab_async_error: "Error Handling",
+    lab_async_real: "Real Examples",
+
+    // CSS Animation Lab (NEW)
+    lab_css_animation: "CSS Animation",
+    lab_css_animation_desc: "Transitions, keyframes, and performance",
+    lab_css_transition: "Transitions",
+    lab_css_keyframes: "Keyframes",
+    lab_css_petal: "Petal Analysis",
+    lab_css_performance: "Performance",
+
+    // JS Advanced Lab (NEW)
+    lab_js_advanced: "JavaScript Advanced",
+    lab_js_advanced_desc: "Closures, scope, and this binding",
+    lab_js_scope: "Scope Chain",
+    lab_js_closure: "Closures",
+    lab_js_this: "This Binding",
+    lab_js_real_examples: "Real Examples",
+
+    // Provide/Inject Lab (NEW)
+    lab_provide_inject: "Provide/Inject",
+    lab_provide_inject_desc: "Vue dependency injection pattern",
+    lab_provide: "Provide",
+    lab_inject: "Inject",
+    lab_vs_pinia: "vs Pinia",
+
+    // Mini Project Lab (NEW)
+    lab_mini_project: "Mini Projects",
+    lab_mini_project_desc: "Hands-on coding challenges",
+    lab_challenge_1: "Theme Toggler",
+    lab_challenge_2: "Search Component",
+    lab_challenge_3: "File Tree",
+    lab_hints: "Hints",
+    lab_solution: "Solution",
+    lab_requirements: "Requirements",
+
     // JS Basics Lab (NEW)
     lab_js_basics: "JavaScript Fundamentals",
     lab_js_basics_desc: "Variables, Functions, Arrays, Objects",
@@ -475,6 +516,47 @@ export const I18N = {
     lab_pinia_desc: "掌握 Vue 3 官方状态管理库",
     lab_vue_advanced: "Vue 进阶",
     lab_vue_advanced_desc: "Composables、Pinia、组件通信",
+
+    // Async Programming Lab (NEW)
+    lab_async: "异步编程",
+    lab_async_desc: "Promise、async/await、错误处理",
+    lab_async_promise: "Promise 基础",
+    lab_async_await: "Async/Await",
+    lab_async_error: "错误处理",
+    lab_async_real: "真实案例",
+
+    // CSS Animation Lab (NEW)
+    lab_css_animation: "CSS 动画",
+    lab_css_animation_desc: "过渡、关键帧动画、性能优化",
+    lab_css_transition: "过渡动画",
+    lab_css_keyframes: "关键帧",
+    lab_css_petal: "花瓣分析",
+    lab_css_performance: "性能优化",
+
+    // JS Advanced Lab (NEW)
+    lab_js_advanced: "JavaScript 进阶",
+    lab_js_advanced_desc: "闭包、作用域链、this 绑定",
+    lab_js_scope: "作用域链",
+    lab_js_closure: "闭包",
+    lab_js_this: "This 绑定",
+    lab_js_real_examples: "真实案例",
+
+    // Provide/Inject Lab (NEW)
+    lab_provide_inject: "Provide/Inject",
+    lab_provide_inject_desc: "Vue 依赖注入模式",
+    lab_provide: "Provide 提供",
+    lab_inject: "Inject 注入",
+    lab_vs_pinia: "对比 Pinia",
+
+    // Mini Project Lab (NEW)
+    lab_mini_project: "迷你项目",
+    lab_mini_project_desc: "动手实践挑战",
+    lab_challenge_1: "主题切换器",
+    lab_challenge_2: "搜索组件",
+    lab_challenge_3: "文件树",
+    lab_hints: "提示",
+    lab_solution: "参考方案",
+    lab_requirements: "需求清单",
 
     // JS Basics Lab (NEW)
     lab_js_basics: "JavaScript 基础语法",

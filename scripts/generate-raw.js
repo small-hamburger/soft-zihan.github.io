@@ -54,11 +54,14 @@ const FILES_TO_GENERATE = [
   // lab/stage3-css
   'components/lab/stage3-css/LabCssBasics.vue',
   'components/lab/stage3-css/LabCssLayout.vue',
+  'components/lab/stage3-css/LabCssAnimation.vue',
   
   // lab/stage4-js-advanced
   'components/lab/stage4-js-advanced/LabAjax.vue',
+  'components/lab/stage4-js-advanced/LabAsync.vue',
   'components/lab/stage4-js-advanced/LabDom.vue',
   'components/lab/stage4-js-advanced/LabJs.vue',
+  'components/lab/stage4-js-advanced/LabJsAdvanced.vue',
   'components/lab/stage4-js-advanced/LabTypeScript.vue',
   
   // lab/stage5-engineering
@@ -80,9 +83,11 @@ const FILES_TO_GENERATE = [
   'components/lab/stage7-vue-advanced/LabComposables.vue',
   'components/lab/stage7-vue-advanced/LabPinia.vue',
   'components/lab/stage7-vue-advanced/LabPropsEmit.vue',
+  'components/lab/stage7-vue-advanced/LabProvideInject.vue',
   'components/lab/stage7-vue-advanced/LabSlot.vue',
   
   // lab/stage8-challenge
+  'components/lab/stage8-challenge/LabMiniProject.vue',
   'components/lab/stage8-challenge/LabQuizGame.vue',
   
   // composables
@@ -99,6 +104,7 @@ const FILES_TO_GENERATE = [
   // stores
   'stores/appStore.ts',
   'stores/articleStore.ts',
+  'stores/learningStore.ts',
   'stores/musicStore.ts',
   'stores/index.ts',
 ];
