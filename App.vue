@@ -92,6 +92,7 @@
         @open-search="showSearch = true"
         @open-music="musicStore.showMusicPlayer = true"
         @open-write="showWriteEditor = true"
+        @open-download="showDownloadModal = true"
         @toggle-theme="toggleTheme(!appStore.isDark)"
         @update:petal-speed="handlePetalSpeedChange"
         @toggle-dual-column="dualColumnMode = !dualColumnMode; if(dualColumnMode && !currentTool) currentTool = 'dashboard'"
@@ -509,6 +510,15 @@
       :lab-folder="labFolder"
     />
 
+    <!-- Download Modal -->
+    <DownloadModal
+      v-if="showDownloadModal"
+      @close="showDownloadModal = false"
+      :lang="lang"
+      :file-system="fileSystem"
+      :lab-folder="labFolder"
+    />
+
     <!-- Search Modal -->
     <SearchModal
       :showSearchModal="showSearch"
@@ -547,6 +557,7 @@ import LabDashboard from './components/lab/LabDashboard.vue';
 import SourceCodeViewer from './components/lab/SourceCodeViewer.vue';
 import DualColumnView from './components/lab/DualColumnView.vue';
 import SettingsModal from './components/SettingsModal.vue';
+import DownloadModal from './components/DownloadModal.vue';
 import PetalBackground from './components/PetalBackground.vue';
 import WallpaperLayer from './components/WallpaperLayer.vue';
 import AppSidebar from './components/AppSidebar.vue';
@@ -610,6 +621,7 @@ const isRawMode = ref(false);
 
 // Modal States
 const showSettings = ref(false);
+const showDownloadModal = ref(false);
 const showSearch = searchModalOpen;
 const showWriteEditor = ref(false);
 const sidebarOpen = ref(false);

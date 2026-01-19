@@ -86,25 +86,25 @@
           <template v-for="(line, idx) in fileLines" :key="idx">
             <!-- Drop indicator line -->
             <div 
-              v-if="showNotes && dragOverLine === idx && draggingNoteLine !== idx"
+              v-if="showNotes && dragOverLine === idx + 1 && draggingNoteLine !== idx + 1"
               class="h-1 mx-4 bg-sakura-400 rounded-full animate-pulse"
             ></div>
             
             <!-- Code Line -->
             <div 
               class="flex hover:bg-[#2a2d2e] group"
-              :class="{ 'bg-sakura-900/20': hasNonEmptyNoteAtLine(idx) && !isLineCollapsed(idx) }"
-              @dragover.prevent="onDragOver($event, idx)"
+              :class="{ 'bg-sakura-900/20': hasNonEmptyNoteAtLine(idx + 1) && !isLineCollapsed(idx + 1) }"
+              @dragover.prevent="onDragOver($event, idx + 1)"
               @dragleave="onDragLeave"
-              @drop.prevent="onDrop($event, idx)"
+              @drop.prevent="onDrop($event, idx + 1)"
             >
               <!-- Line Number - click to toggle notes -->
               <div 
                 class="flex-shrink-0 w-12 pl-4 pr-2 text-right select-none font-mono text-xs leading-6 cursor-pointer transition-colors"
-                :class="getLineNumberClass(idx)"
-                @click="toggleNoteAtLine(idx)"
+                :class="getLineNumberClass(idx + 1)"
+                @click="toggleNoteAtLine(idx + 1)"
               >
-                {{ idx }}</div>
+                {{ idx + 1 }}</div>
               <!-- Code Content -->
               <pre 
                 class="flex-1 pr-4 text-sm font-mono leading-6 whitespace-pre-wrap break-all"
@@ -113,21 +113,21 @@
             
             <!-- Preset Note (below the line) - Blue/Cyan theme -->
             <div 
-              v-if="showNotes && hasPresetNoteAtLine(idx) && !isLineCollapsed(idx)"
+              v-if="showNotes && hasPresetNoteAtLine(idx + 1) && !isLineCollapsed(idx + 1)"
               class="flex mx-4 my-1"
             >
               <div class="w-8"></div>
               <div class="flex-1 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/30 dark:to-blue-900/20 rounded-lg p-3 border border-cyan-200 dark:border-cyan-700/50 shadow-sm">
-                <div class="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{{ getPresetNoteContent(idx) }}</div>
+                <div class="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{{ getPresetNoteContent(idx + 1) }}</div>
               </div>
             </div>
             
             <!-- User Note (below the line) - Pink/Sakura theme -->
             <div 
-              v-if="showNotes && hasUserNoteAtLine(idx) && !isLineCollapsed(idx)"
+              v-if="showNotes && hasUserNoteAtLine(idx + 1) && !isLineCollapsed(idx + 1)"
               class="flex mx-4 my-1"
               draggable="true"
-              @dragstart="onDragStart($event, idx)"
+              @dragstart="onDragStart($event, idx + 1)"
               @dragend="onDragEnd"
             >
               <div class="w-8"></div>
@@ -138,15 +138,15 @@
                 </div>
                 <div class="flex items-end justify-end gap-2 mb-1">
                   <button 
-                    @click="deleteUserNote(idx)"
+                    @click="deleteUserNote(idx + 1)"
                     class="text-gray-400 hover:text-red-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     🗑️
                   </button>
                 </div>
                 <textarea
-                  :value="getUserNoteContent(idx)"
-                  @input="handleNoteInput($event, idx)"
+                  :value="getUserNoteContent(idx + 1)"
+                  @input="handleNoteInput($event, idx + 1)"
                   class="w-full text-sm bg-transparent border-none outline-none resize-none text-gray-700 dark:text-gray-200 placeholder-gray-400 overflow-hidden"
                   :placeholder="isZh ? '在此输入笔记...' : 'Type your note here...'"
                   rows="1"
@@ -157,7 +157,7 @@
           
           <!-- Drop indicator at the end -->
           <div 
-            v-if="showNotes && dragOverLine === fileLines.length"
+            v-if="showNotes && dragOverLine === fileLines.length + 1"
             class="h-1 mx-4 bg-sakura-400 rounded-full animate-pulse"
           ></div>
         </div>
