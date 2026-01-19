@@ -27,11 +27,7 @@
         <div v-else class="text-gray-500 dark:text-gray-400 text-sm italic">
           {{ isZh ? '选择文件查看源码' : 'Select a file to view source' }}
         </div>
-        <div class="ml-auto flex items-center gap-2">
-          <label class="text-xs text-gray-400 flex items-center gap-1 cursor-pointer">
-            <input type="checkbox" v-model="wordWrap" class="accent-sakura-500" />
-            {{ isZh ? '换行' : 'Wrap' }}
-          </label>
+        <div class="ml-auto flex items-center gap-3">
           <button 
             @click="showNotes = !showNotes"
             class="text-xs px-2 py-1 rounded transition-colors flex items-center gap-1"
@@ -39,6 +35,17 @@
           >
             <span>📝</span>
             {{ isZh ? '笔记' : 'Notes' }}
+          </button>
+          <!-- Submit Notes to GitHub -->
+          <button 
+            v-if="hasUserNotes && hasToken"
+            @click="submitNotesToGitHub"
+            :disabled="isSubmitting"
+            class="text-xs px-2 py-1 rounded transition-colors flex items-center gap-1 bg-green-600 hover:bg-green-700 text-white disabled:bg-gray-600"
+          >
+            <span v-if="isSubmitting" class="animate-spin">⏳</span>
+            <span v-else>📤</span>
+            {{ isZh ? '提交笔记' : 'Submit' }}
           </button>
         </div>
       </div>
@@ -48,31 +55,53 @@
         <div v-if="selectedFile && fileContent" class="py-4">
           <!-- Render each line with possible inline note -->
           <template v-for="(line, idx) in fileLines" :key="idx">
+            <!-- Drop indicator line -->
+            <div 
+              v-if="showNotes && dragOverLine === idx + 1 && draggingNoteLine !== idx + 1"
+              class="h-1 mx-4 bg-sakura-400 rounded-full animate-pulse"
+            ></div>
+            
             <!-- Code Line -->
             <div 
-              class="flex hover:bg-[#2a2d2e]"
-              :class="{ 'bg-sakura-900/20': hasNoteAtLine(idx + 1) }"
+              class="flex hover:bg-[#2a2d2e] group"
+              :class="{ 'bg-sakura-900/20': hasAnyNoteAtLine(idx + 1) && !isLineCollapsed(idx + 1) }"
               @dragover.prevent="onDragOver($event, idx + 1)"
+              @dragleave="onDragLeave"
               @drop.prevent="onDrop($event, idx + 1)"
             >
-              <!-- Line Number -->
+              <!-- Line Number - click to toggle notes -->
               <div 
                 class="flex-shrink-0 w-12 pl-4 pr-2 text-right select-none font-mono text-xs leading-6 cursor-pointer transition-colors"
-                :class="hasNoteAtLine(idx + 1) ? 'text-sakura-400 font-bold' : 'text-gray-600 hover:text-gray-400'"
+                :class="getLineNumberClass(idx + 1)"
                 @click="toggleNoteAtLine(idx + 1)"
               >
                 {{ idx + 1 }}
               </div>
               <!-- Code Content -->
               <pre 
-                class="flex-1 pr-4 text-sm font-mono leading-6"
-                :class="wordWrap ? 'whitespace-pre-wrap break-all' : 'whitespace-pre'"
+                class="flex-1 pr-4 text-sm font-mono leading-6 whitespace-pre-wrap break-all"
               ><code v-html="highlightLine(line)" class="hljs"></code></pre>
             </div>
             
-            <!-- Inline Note (below the line) -->
+            <!-- Preset Note (below the line) - Blue/Cyan theme -->
             <div 
-              v-if="showNotes && hasNoteAtLine(idx + 1)"
+              v-if="showNotes && hasPresetNoteAtLine(idx + 1) && !isLineCollapsed(idx + 1)"
+              class="flex mx-4 my-1"
+            >
+              <div class="w-8"></div>
+              <div class="flex-1 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/30 dark:to-blue-900/20 rounded-lg p-3 border border-cyan-200 dark:border-cyan-700/50 shadow-sm">
+                <div class="flex items-start justify-between gap-2 mb-1">
+                  <span class="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 bg-cyan-100 dark:bg-cyan-900/50 px-1.5 py-0.5 rounded flex items-center gap-1">
+                    📚 {{ isZh ? '预置' : 'Preset' }}
+                  </span>
+                </div>
+                <div class="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{{ getPresetNoteContent(idx + 1) }}</div>
+              </div>
+            </div>
+            
+            <!-- User Note (below the line) - Pink/Sakura theme -->
+            <div 
+              v-if="showNotes && hasUserNoteAtLine(idx + 1) && !isLineCollapsed(idx + 1)"
               class="flex mx-4 my-1"
               draggable="true"
               @dragstart="onDragStart($event, idx + 1)"
@@ -85,26 +114,32 @@
                   ⋮⋮
                 </div>
                 <div class="flex items-start justify-between gap-2 mb-1">
-                  <span class="text-[10px] font-mono text-sakura-600 dark:text-sakura-400 bg-sakura-100 dark:bg-sakura-900/50 px-1.5 py-0.5 rounded">
-                    L{{ idx + 1 }}
+                  <span class="text-[10px] font-mono text-sakura-600 dark:text-sakura-400 bg-sakura-100 dark:bg-sakura-900/50 px-1.5 py-0.5 rounded flex items-center gap-1">
+                    ✏️ {{ isZh ? '我的笔记' : 'My Note' }}
                   </span>
                   <button 
-                    @click="deleteNote(idx + 1)"
+                    @click="deleteUserNote(idx + 1)"
                     class="text-gray-400 hover:text-red-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
                   >
                     🗑️
                   </button>
                 </div>
                 <textarea
-                  :value="getNoteContent(idx + 1)"
-                  @input="updateNoteContent(idx + 1, ($event.target as HTMLTextAreaElement).value)"
-                  class="w-full text-sm bg-transparent border-none outline-none resize-none text-gray-700 dark:text-gray-200 min-h-[40px] placeholder-gray-400"
+                  :value="getUserNoteContent(idx + 1)"
+                  @input="handleNoteInput($event, idx + 1)"
+                  class="w-full text-sm bg-transparent border-none outline-none resize-none text-gray-700 dark:text-gray-200 placeholder-gray-400 overflow-hidden"
                   :placeholder="isZh ? '在此输入笔记...' : 'Type your note here...'"
-                  rows="2"
+                  rows="1"
                 ></textarea>
               </div>
             </div>
           </template>
+          
+          <!-- Drop indicator at the end -->
+          <div 
+            v-if="showNotes && dragOverLine === fileLines.length + 1"
+            class="h-1 mx-4 bg-sakura-400 rounded-full animate-pulse"
+          ></div>
         </div>
         <div v-else class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
           <div class="text-center">
@@ -116,15 +151,37 @@
       
       <!-- Bottom hint -->
       <div v-if="selectedFile && showNotes" class="px-4 py-2 bg-[#252526] border-t border-gray-700 text-xs text-gray-500 flex items-center justify-between">
-        <span>💡 {{ isZh ? '点击行号添加笔记，拖拽笔记可移动位置' : 'Click line numbers to add notes, drag notes to move' }}</span>
-        <span>{{ isZh ? '笔记自动保存' : 'Auto-saved' }}</span>
+        <div class="flex items-center gap-4">
+          <span class="flex items-center gap-1">
+            <span class="w-3 h-3 rounded bg-cyan-400/50"></span>
+            {{ isZh ? '预置笔记' : 'Preset' }}
+          </span>
+          <span class="flex items-center gap-1">
+            <span class="w-3 h-3 rounded bg-sakura-400/50"></span>
+            {{ isZh ? '我的笔记' : 'My Notes' }}
+          </span>
+        </div>
+        <span>💡 {{ isZh ? '点击行号展开/折叠笔记，拖拽可移动' : 'Click line number to toggle, drag to move' }}</span>
       </div>
     </div>
   </div>
+  
+  <!-- Submit Result Toast -->
+  <Teleport to="body">
+    <Transition name="toast">
+      <div 
+        v-if="submitMessage" 
+        class="fixed bottom-8 left-1/2 -translate-x-1/2 z-[200] px-6 py-3 rounded-xl shadow-xl text-sm font-medium"
+        :class="submitSuccess ? 'bg-green-500 text-white' : 'bg-red-500 text-white'"
+      >
+        {{ submitMessage }}
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, nextTick } from 'vue'
 import hljs from 'highlight.js/lib/core'
 import typescript from 'highlight.js/lib/languages/typescript'
 import javascript from 'highlight.js/lib/languages/javascript'
@@ -132,6 +189,7 @@ import xml from 'highlight.js/lib/languages/xml'
 import css from 'highlight.js/lib/languages/css'
 import json from 'highlight.js/lib/languages/json'
 import bash from 'highlight.js/lib/languages/bash'
+import { useGitHubPublish } from '../../composables/useGitHubPublish'
 
 // Register languages
 hljs.registerLanguage('typescript', typescript)
@@ -162,11 +220,26 @@ interface FileNotes {
   [filePath: string]: CodeNote[]
 }
 
+interface CollapsedState {
+  [filePath: string]: number[] // array of collapsed line numbers
+}
+
 const props = defineProps<{
   lang: 'en' | 'zh'
 }>()
 
 const isZh = computed(() => props.lang === 'zh')
+
+// GitHub API
+const { hasToken: checkHasToken, uploadFile, getToken } = useGitHubPublish()
+const hasToken = ref(false)
+const isSubmitting = ref(false)
+const submitMessage = ref('')
+const submitSuccess = ref(false)
+
+onMounted(() => {
+  hasToken.value = checkHasToken()
+})
 
 // Project file tree (hardcoded for this project)
 const projectTree = ref<SourceFile[]>([
@@ -208,6 +281,7 @@ const projectTree = ref<SourceFile[]>([
               { name: 'index.ts', path: 'components/lab/index.ts', type: 'file' },
               { name: 'LabDashboard.vue', path: 'components/lab/LabDashboard.vue', type: 'file' },
               { name: 'LabProjectTour.vue', path: 'components/lab/LabProjectTour.vue', type: 'file' },
+              { name: 'SourceCodeViewer.vue', path: 'components/lab/SourceCodeViewer.vue', type: 'file' },
             ]
           },
           {
@@ -239,6 +313,7 @@ const projectTree = ref<SourceFile[]>([
           { name: 'useSearch.ts', path: 'composables/useSearch.ts', type: 'file' },
           { name: 'useSelectionMenu.ts', path: 'composables/useSelectionMenu.ts', type: 'file' },
           { name: 'useWallpapers.ts', path: 'composables/useWallpapers.ts', type: 'file' },
+          { name: 'useTokenSecurity.ts', path: 'composables/useTokenSecurity.ts', type: 'file' },
         ]
       },
       {
@@ -271,32 +346,110 @@ const projectTree = ref<SourceFile[]>([
 const selectedFile = ref<SourceFile | null>(null)
 const fileContent = ref<string>('')
 const showNotes = ref(true)
-const wordWrap = ref(false)
 const codeContainer = ref<HTMLElement | null>(null)
 
 // Drag state
 const draggingNoteLine = ref<number | null>(null)
+const dragOverLine = ref<number | null>(null)
 
-// Notes stored in localStorage
-const NOTES_STORAGE_KEY = 'sakura_source_code_notes'
-const allNotes = ref<FileNotes>({})
+// Notes storage keys
+const USER_NOTES_KEY = 'sakura_source_code_notes_user'
+const COLLAPSED_KEY = 'sakura_source_code_notes_collapsed'
+const PRESET_VERSION_KEY = 'sakura_source_code_notes_preset_version'
 
-// Load notes from localStorage
-onMounted(() => {
-  const saved = localStorage.getItem(NOTES_STORAGE_KEY)
+// Preset notes (from server)
+const presetNotes = ref<FileNotes>({})
+
+// User notes (from localStorage)
+const userNotes = ref<FileNotes>({})
+
+// Collapsed state (from localStorage)
+const collapsedState = ref<CollapsedState>({})
+
+// Load preset notes from server
+const loadPresetNotes = async () => {
+  try {
+    const baseUrl = (import.meta as any).env?.BASE_URL || '/'
+    let res = await fetch(`${baseUrl}source-notes-preset.json`)
+    if (!res.ok) {
+      res = await fetch('./source-notes-preset.json')
+    }
+    if (res.ok) {
+      const data = await res.json()
+      const serverVersion = data.version || '1.0.0'
+      const localVersion = localStorage.getItem(PRESET_VERSION_KEY)
+      
+      // Store preset notes
+      presetNotes.value = data.notes || {}
+      
+      // Update version marker
+      localStorage.setItem(PRESET_VERSION_KEY, serverVersion)
+    }
+  } catch (e) {
+    console.error('Failed to load preset notes:', e)
+  }
+}
+
+// Load user notes from localStorage
+const loadUserNotes = () => {
+  const saved = localStorage.getItem(USER_NOTES_KEY)
   if (saved) {
     try {
-      allNotes.value = JSON.parse(saved)
+      userNotes.value = JSON.parse(saved)
     } catch (e) {
-      console.error('Failed to parse saved notes:', e)
+      console.error('Failed to parse user notes:', e)
     }
   }
+}
+
+// Load collapsed state from localStorage
+const loadCollapsedState = () => {
+  const saved = localStorage.getItem(COLLAPSED_KEY)
+  if (saved) {
+    try {
+      collapsedState.value = JSON.parse(saved)
+    } catch (e) {
+      console.error('Failed to parse collapsed state:', e)
+    }
+  }
+}
+
+// Save user notes
+const saveUserNotes = () => {
+  localStorage.setItem(USER_NOTES_KEY, JSON.stringify(userNotes.value))
+}
+
+// Save collapsed state
+const saveCollapsedState = () => {
+  localStorage.setItem(COLLAPSED_KEY, JSON.stringify(collapsedState.value))
+}
+
+// Initialize
+onMounted(async () => {
+  await loadPresetNotes()
+  loadUserNotes()
+  loadCollapsedState()
 })
 
 // Current file notes
-const currentFileNotes = computed(() => {
+const currentPresetNotes = computed(() => {
   if (!selectedFile.value) return []
-  return allNotes.value[selectedFile.value.path] || []
+  return presetNotes.value[selectedFile.value.path] || []
+})
+
+const currentUserNotes = computed(() => {
+  if (!selectedFile.value) return []
+  return userNotes.value[selectedFile.value.path] || []
+})
+
+const currentCollapsedLines = computed(() => {
+  if (!selectedFile.value) return []
+  return collapsedState.value[selectedFile.value.path] || []
+})
+
+// Check if user has any notes
+const hasUserNotes = computed(() => {
+  return Object.values(userNotes.value).some(notes => notes.length > 0)
 })
 
 // File lines
@@ -337,72 +490,127 @@ const highlightLine = (line: string) => {
   }
 }
 
-// Syntax highlighted code (kept for compatibility)
-const highlightedCode = computed(() => {
-  if (!fileContent.value || !selectedFile.value) return ''
-  const language = getLanguage()
-  try {
-    return hljs.highlight(fileContent.value, { language }).value
-  } catch {
-    return fileContent.value
-  }
-})
+// Check if line has preset note
+const hasPresetNoteAtLine = (line: number) => {
+  return currentPresetNotes.value.some(n => n.line === line)
+}
 
-// Check if line has a note
-const hasNoteAtLine = (line: number) => {
-  return currentFileNotes.value.some(n => n.line === line)
+// Check if line has user note
+const hasUserNoteAtLine = (line: number) => {
+  return currentUserNotes.value.some(n => n.line === line)
+}
+
+// Check if line has any note
+const hasAnyNoteAtLine = (line: number) => {
+  return hasPresetNoteAtLine(line) || hasUserNoteAtLine(line)
+}
+
+// Check if line is collapsed
+const isLineCollapsed = (line: number) => {
+  return currentCollapsedLines.value.includes(line)
+}
+
+// Get line number class
+const getLineNumberClass = (line: number) => {
+  const hasNote = hasAnyNoteAtLine(line)
+  const isCollapsed = isLineCollapsed(line)
+  
+  if (hasNote) {
+    if (hasPresetNoteAtLine(line) && hasUserNoteAtLine(line)) {
+      // Both types - purple highlight
+      return 'text-purple-400 font-bold bg-purple-900/20'
+    } else if (hasPresetNoteAtLine(line)) {
+      // Preset only - cyan highlight
+      return 'text-cyan-400 font-bold bg-cyan-900/20'
+    } else {
+      // User only - sakura highlight  
+      return 'text-sakura-400 font-bold bg-sakura-900/20'
+    }
+  }
+  return 'text-gray-600 hover:text-gray-400'
 }
 
 // Toggle note at line
 const toggleNoteAtLine = (line: number) => {
   if (!selectedFile.value) return
-  
   const path = selectedFile.value.path
-  if (!allNotes.value[path]) {
-    allNotes.value[path] = []
-  }
   
-  const existingIdx = allNotes.value[path].findIndex(n => n.line === line)
-  if (existingIdx >= 0) {
-    // If note exists and empty, remove it
-    if (!allNotes.value[path][existingIdx].content.trim()) {
-      allNotes.value[path].splice(existingIdx, 1)
+  const hasPreset = hasPresetNoteAtLine(line)
+  const hasUser = hasUserNoteAtLine(line)
+  const isCollapsed = isLineCollapsed(line)
+  
+  if (hasPreset || hasUser) {
+    // Has note(s) - toggle collapse
+    if (!collapsedState.value[path]) {
+      collapsedState.value[path] = []
     }
+    
+    if (isCollapsed) {
+      // Expand
+      collapsedState.value[path] = collapsedState.value[path].filter(l => l !== line)
+    } else {
+      // Collapse
+      collapsedState.value[path].push(line)
+    }
+    saveCollapsedState()
   } else {
-    // Add new note
-    allNotes.value[path].push({ line, content: '' })
-    allNotes.value[path].sort((a, b) => a.line - b.line)
+    // No note - create new user note
+    if (!userNotes.value[path]) {
+      userNotes.value[path] = []
+    }
+    userNotes.value[path].push({ line, content: '' })
+    userNotes.value[path].sort((a, b) => a.line - b.line)
+    saveUserNotes()
+    
+    // Make sure it's not collapsed
+    if (collapsedState.value[path]) {
+      collapsedState.value[path] = collapsedState.value[path].filter(l => l !== line)
+      saveCollapsedState()
+    }
   }
-  
-  saveNotes()
 }
 
-// Delete note
-const deleteNote = (line: number) => {
+// Delete user note
+const deleteUserNote = (line: number) => {
   if (!selectedFile.value) return
   const path = selectedFile.value.path
-  if (allNotes.value[path]) {
-    allNotes.value[path] = allNotes.value[path].filter(n => n.line !== line)
-    saveNotes()
+  if (userNotes.value[path]) {
+    userNotes.value[path] = userNotes.value[path].filter(n => n.line !== line)
+    saveUserNotes()
   }
 }
 
-// Get note content
-const getNoteContent = (line: number): string => {
-  const note = currentFileNotes.value.find(n => n.line === line)
+// Get preset note content
+const getPresetNoteContent = (line: number): string => {
+  const note = currentPresetNotes.value.find(n => n.line === line)
   return note?.content || ''
 }
 
-// Update note content
-const updateNoteContent = (line: number, content: string) => {
+// Get user note content
+const getUserNoteContent = (line: number): string => {
+  const note = currentUserNotes.value.find(n => n.line === line)
+  return note?.content || ''
+}
+
+// Update user note content
+const updateUserNoteContent = (line: number, content: string) => {
   if (!selectedFile.value) return
   const path = selectedFile.value.path
-  if (!allNotes.value[path]) return
-  const note = allNotes.value[path].find(n => n.line === line)
+  if (!userNotes.value[path]) return
+  const note = userNotes.value[path].find(n => n.line === line)
   if (note) {
     note.content = content
-    saveNotes()
+    saveUserNotes()
   }
+}
+
+// Handle note input with auto-resize
+const handleNoteInput = (event: Event, line: number) => {
+  const textarea = event.target as HTMLTextAreaElement
+  updateUserNoteContent(line, textarea.value)
+  // Auto resize
+  textarea.style.height = 'auto'
+  textarea.style.height = textarea.scrollHeight + 'px'
 }
 
 // Drag and drop handlers
@@ -416,35 +624,63 @@ const onDragStart = (e: DragEvent, line: number) => {
 
 const onDragEnd = () => {
   draggingNoteLine.value = null
+  dragOverLine.value = null
 }
 
 const onDragOver = (e: DragEvent, targetLine: number) => {
   if (draggingNoteLine.value === null) return
   e.preventDefault()
+  dragOverLine.value = targetLine
+}
+
+const onDragLeave = () => {
+  // Small delay to prevent flicker when moving between lines
+  setTimeout(() => {
+    if (dragOverLine.value !== null) {
+      // Will be updated by next dragover
+    }
+  }, 50)
 }
 
 const onDrop = (e: DragEvent, targetLine: number) => {
   if (!selectedFile.value || draggingNoteLine.value === null) return
   const sourceLine = draggingNoteLine.value
-  if (sourceLine === targetLine) return
+  if (sourceLine === targetLine) {
+    dragOverLine.value = null
+    draggingNoteLine.value = null
+    return
+  }
   
   const path = selectedFile.value.path
-  if (!allNotes.value[path]) return
+  if (!userNotes.value[path]) {
+    dragOverLine.value = null
+    draggingNoteLine.value = null
+    return
+  }
   
-  const noteIdx = allNotes.value[path].findIndex(n => n.line === sourceLine)
-  if (noteIdx < 0) return
+  const noteIdx = userNotes.value[path].findIndex(n => n.line === sourceLine)
+  if (noteIdx < 0) {
+    dragOverLine.value = null
+    draggingNoteLine.value = null
+    return
+  }
   
   // Move note to new line
-  allNotes.value[path][noteIdx].line = targetLine
-  allNotes.value[path].sort((a, b) => a.line - b.line)
-  saveNotes()
+  userNotes.value[path][noteIdx].line = targetLine
+  userNotes.value[path].sort((a, b) => a.line - b.line)
+  saveUserNotes()
   
+  // Also update collapsed state if needed
+  if (collapsedState.value[path]) {
+    const collapsedIdx = collapsedState.value[path].indexOf(sourceLine)
+    if (collapsedIdx >= 0) {
+      collapsedState.value[path][collapsedIdx] = targetLine
+      saveCollapsedState()
+    }
+  }
+  
+  dragOverLine.value = null
   draggingNoteLine.value = null
-}
-
-// Save notes to localStorage
-const saveNotes = () => {
-  localStorage.setItem(NOTES_STORAGE_KEY, JSON.stringify(allNotes.value))
 }
 
 // Get file icon
@@ -470,30 +706,20 @@ const selectFile = async (file: SourceFile) => {
   selectedFile.value = file
   
   try {
-    // Generate the raw file path: replace / with _ and append .txt
-    // e.g., "components/AppHeader.vue" -> "components_AppHeader.vue.txt"
-    // e.g., "App.vue" -> "App.vue.txt"
     const rawFileName = file.path.replace(/\//g, '_') + '.txt'
-    
-    // Get base URL for production deployment (e.g., GitHub Pages)
-    // @ts-ignore - Vite injects this at build time
     const baseUrl = (import.meta as any).env?.BASE_URL || '/'
     
-    // Try to fetch from raw folder with base URL first (for deployed site)
     let res = await fetch(`${baseUrl}raw/${rawFileName}`)
     
     if (!res.ok) {
-      // Try relative path for local development
       res = await fetch(`./raw/${rawFileName}`)
     }
     
     if (!res.ok) {
-      // Fallback to direct file path with base URL
       res = await fetch(`${baseUrl}${file.path}`)
     }
     
     if (!res.ok) {
-      // Try relative direct file path
       res = await fetch(`./${file.path}`)
     }
     
@@ -507,9 +733,89 @@ const selectFile = async (file: SourceFile) => {
   }
 }
 
+// Submit notes to GitHub via PR
+const submitNotesToGitHub = async () => {
+  if (!hasUserNotes.value || isSubmitting.value) return
+  
+  isSubmitting.value = true
+  submitMessage.value = ''
+  
+  try {
+    const token = await getToken()
+    if (!token) {
+      submitMessage.value = isZh.value ? '请先配置 GitHub Token' : 'Please configure GitHub Token first'
+      submitSuccess.value = false
+      return
+    }
+    
+    const repoOwner = localStorage.getItem('github_repo_owner') || 'soft-zihan'
+    const repoName = localStorage.getItem('github_repo_name') || 'soft-zihan.github.io'
+    const authorName = localStorage.getItem('author_name') || 'Anonymous'
+    
+    // Merge user notes into preset format for PR
+    const mergedNotes: FileNotes = { ...presetNotes.value }
+    
+    for (const [filePath, notes] of Object.entries(userNotes.value)) {
+      if (!mergedNotes[filePath]) {
+        mergedNotes[filePath] = []
+      }
+      for (const note of notes) {
+        if (note.content.trim()) {
+          // Check if there's already a note at this line
+          const existingIdx = mergedNotes[filePath].findIndex(n => n.line === note.line)
+          if (existingIdx >= 0) {
+            // Append to existing note
+            mergedNotes[filePath][existingIdx].content += '\n\n---\n' + note.content
+          } else {
+            mergedNotes[filePath].push({ line: note.line, content: note.content })
+          }
+        }
+      }
+      mergedNotes[filePath].sort((a, b) => a.line - b.line)
+    }
+    
+    const presetData = {
+      version: new Date().toISOString().split('T')[0].replace(/-/g, '.'),
+      lastUpdated: new Date().toISOString().split('T')[0],
+      notes: mergedNotes
+    }
+    
+    const content = JSON.stringify(presetData, null, 2)
+    
+    const result = await uploadFile(
+      { owner: repoOwner, repo: repoName, branch: 'main', token },
+      'public/source-notes-preset.json',
+      content,
+      `docs: add source code notes by ${authorName}`
+    )
+    
+    if (result.success) {
+      submitMessage.value = isZh.value 
+        ? `笔记已提交！${result.isPR ? 'PR 已创建' : '已直接合并'}`
+        : `Notes submitted! ${result.isPR ? 'PR created' : 'Merged directly'}`
+      submitSuccess.value = true
+    } else {
+      submitMessage.value = result.message
+      submitSuccess.value = false
+    }
+  } catch (e) {
+    submitMessage.value = isZh.value ? '提交失败，请稍后重试' : 'Submit failed, please try again'
+    submitSuccess.value = false
+  } finally {
+    isSubmitting.value = false
+    setTimeout(() => {
+      submitMessage.value = ''
+    }, 5000)
+  }
+}
+
 // Export notes for backup
 const exportNotes = () => {
-  const blob = new Blob([JSON.stringify(allNotes.value, null, 2)], { type: 'application/json' })
+  const data = {
+    userNotes: userNotes.value,
+    collapsedState: collapsedState.value
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
   const url = URL.createObjectURL(blob)
   const a = document.createElement('a')
   a.href = url
@@ -528,8 +834,14 @@ const importNotes = (event: Event) => {
   reader.onload = (e) => {
     try {
       const imported = JSON.parse(e.target?.result as string)
-      allNotes.value = { ...allNotes.value, ...imported }
-      saveNotes()
+      if (imported.userNotes) {
+        userNotes.value = { ...userNotes.value, ...imported.userNotes }
+        saveUserNotes()
+      }
+      if (imported.collapsedState) {
+        collapsedState.value = { ...collapsedState.value, ...imported.collapsedState }
+        saveCollapsedState()
+      }
     } catch (err) {
       console.error('Failed to import notes:', err)
     }
@@ -541,7 +853,8 @@ const importNotes = (event: Event) => {
 defineExpose({
   exportNotes,
   importNotes,
-  allNotes
+  userNotes,
+  presetNotes
 })
 </script>
 
@@ -559,5 +872,15 @@ defineExpose({
 }
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
   background: #6b7280;
+}
+
+.toast-enter-active,
+.toast-leave-active {
+  transition: all 0.3s ease;
+}
+.toast-enter-from,
+.toast-leave-to {
+  opacity: 0;
+  transform: translate(-50%, 20px);
 }
 </style>

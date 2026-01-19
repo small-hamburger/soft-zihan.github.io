@@ -11,35 +11,48 @@
 
     <!-- Tab Navigation - 4 Main Stages aligned with Notes 1-4 -->
     <div class="flex justify-center mb-8 px-4">
-      <div class="bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl flex flex-wrap justify-center gap-2 shadow-inner">
+      <div class="bg-gradient-to-r from-gray-100 via-white to-gray-100 dark:from-gray-800 dark:via-gray-750 dark:to-gray-800 p-2 rounded-2xl flex flex-wrap justify-center gap-2 shadow-lg border border-gray-200/50 dark:border-gray-700/50">
         <button 
           v-for="tab in tabs" 
           :key="tab.id"
           @click="activeTab = tab.id"
-          class="px-3 md:px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300 flex flex-col items-center gap-0.5 min-w-[70px] md:min-w-[100px]"
-          :class="activeTab === tab.id ? 'bg-white dark:bg-gray-700 text-sakura-600 dark:text-sakura-300 shadow-md transform scale-105' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
+          class="group px-4 md:px-6 py-2.5 rounded-xl text-sm font-bold transition-all duration-300 flex flex-col items-center gap-1 min-w-[80px] md:min-w-[110px] relative overflow-hidden"
+          :class="activeTab === tab.id 
+            ? 'bg-gradient-to-br from-sakura-400 to-sakura-500 text-white shadow-lg shadow-sakura-500/30 transform scale-105' 
+            : 'text-gray-500 hover:text-sakura-600 hover:bg-sakura-50 dark:hover:bg-gray-700/50'"
         >
-          <span class="text-lg md:text-xl">{{ tab.icon }}</span>
-          <span class="text-[10px] md:text-xs">{{ tab.shortLabel }}</span>
-          <span class="text-[8px] text-gray-400 hidden md:block">{{ isZh ? `笔记${tab.noteNum}` : `Note ${tab.noteNum}` }}</span>
+          <span class="text-xl md:text-2xl transition-transform group-hover:scale-110" :class="{ 'animate-bounce': activeTab === tab.id }">{{ tab.icon }}</span>
+          <span class="text-xs md:text-sm">{{ tab.shortLabel }}</span>
+          <span v-if="tab.noteNum" class="text-[9px] md:text-[10px] opacity-70">{{ isZh ? `笔记${tab.noteNum}` : `Note ${tab.noteNum}` }}</span>
+          <!-- Active indicator dot -->
+          <span v-if="activeTab === tab.id" class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-white"></span>
         </button>
       </div>
     </div>
 
     <!-- Learning Progress Indicator -->
     <div class="max-w-3xl mx-auto mb-8 px-4">
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-2 p-1 bg-gray-100 dark:bg-gray-800 rounded-full">
         <template v-for="(tab, index) in tabs" :key="tab.id">
           <div 
-            class="flex-1 h-2 rounded-full transition-all duration-300 cursor-pointer"
-            :class="activeTabIndex >= index ? 'bg-sakura-400' : 'bg-gray-200 dark:bg-gray-700'"
+            class="flex-1 h-2.5 rounded-full transition-all duration-500 cursor-pointer relative overflow-hidden group"
+            :class="activeTabIndex >= index 
+              ? 'bg-gradient-to-r from-sakura-400 to-sakura-500 shadow-sm' 
+              : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'"
             @click="activeTab = tab.id"
-          ></div>
+          >
+            <!-- Shimmer effect for completed stages -->
+            <div 
+              v-if="activeTabIndex >= index" 
+              class="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000"
+            ></div>
+          </div>
         </template>
       </div>
-      <div class="flex justify-between mt-2 text-[10px] text-gray-400">
-        <span>{{ isZh ? '入门' : 'Beginner' }}</span>
-        <span>{{ isZh ? '进阶' : 'Advanced' }}</span>
+      <div class="flex justify-between mt-2 text-[10px] font-medium">
+        <span class="text-gray-400">🌱 {{ isZh ? '入门' : 'Beginner' }}</span>
+        <span class="text-sakura-500">🌸 {{ isZh ? `第 ${activeTabIndex + 1}/${tabs.length} 阶段` : `Stage ${activeTabIndex + 1}/${tabs.length}` }}</span>
+        <span class="text-gray-400">🏆 {{ isZh ? '进阶' : 'Advanced' }}</span>
       </div>
     </div>
 

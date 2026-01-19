@@ -1,6 +1,6 @@
 <template>
   <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm" @click.self="$emit('close')">
-    <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-2xl max-w-md w-full animate-fade-in border border-white/50 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
+    <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-2xl max-w-lg w-full animate-fade-in border border-white/50 dark:border-gray-700 max-h-[90vh] overflow-y-auto">
       <h3 class="text-xl font-bold text-gray-800 dark:text-white mb-6">{{ t.settings_title }}</h3>
       
       <!-- Banner Mode -->
