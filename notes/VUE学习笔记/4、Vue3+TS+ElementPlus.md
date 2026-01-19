@@ -1,11 +1,16 @@
 ## 1. Vue工程化
 
-> 本项目联动：工程化配置可以直接对照源码阅读。
+> 📚 **本项目联动**：工程化配置可以直接对照源码阅读。建议同时打开 [🧪 可视化学习中心](lab:dashboard?tab=note4-vue-engineering) 对照学习。
 
-- 构建配置：[vite.config.ts](code://vite.config.ts#L1-L120)
-- 依赖与脚本：[package.json](code://package.json#L1-L120)
-- TS 配置：[tsconfig.json](code://tsconfig.json#L1-L120)
-- 全局类型与常量：[types.ts](code://types.ts#L1-L120)、[constants.ts](code://constants.ts#L1-L120)
+**与本项目对应的工程化配置**
+
+| 功能 | 项目文件 | 关键内容 |
+|------|----------|----------|
+| 构建配置 | [vite.config.ts](code://vite.config.ts) | Vue 插件、路径别名、构建输出 |
+| 依赖与脚本 | [package.json](code://package.json) | 依赖版本、npm scripts |
+| TS 配置 | [tsconfig.json](code://tsconfig.json) | 编译选项、模块解析 |
+| 全局类型 | [types.ts](code://types.ts) | FileNode、NodeType 等类型定义 |
+| 全局常量 | [constants.ts](code://constants.ts) | I18N、配置常量 |
 
 前面我们在介绍Vue的时候，我们讲到Vue是一款用于构建用户界面的渐进式JavaScript框架 。（官方：https://cn.vuejs.org/）
 
@@ -378,6 +383,16 @@ import UserList from './views/user/UserList.vue'
 
 
 ## 2. TS
+
+---
+
+> 🔗 **本项目实例**：查看本项目中的 TypeScript 应用：
+> - [types.ts](code://types.ts) - 全局类型定义（FileNode、NodeType 等）
+> - [env.d.ts](code://env.d.ts) - 环境变量类型声明
+> - [composables/useFile.ts](code://composables/useFile.ts) - 带类型注解的组合式函数
+> - [stores/appStore.ts](code://stores/appStore.ts) - Pinia Store 类型定义
+
+---
 
 ### 2.1 概述
 

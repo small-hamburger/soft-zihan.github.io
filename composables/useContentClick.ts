@@ -92,6 +92,7 @@ export function useContentClick(
     path: string
     startLine?: number
     endLine?: number
+    anchor?: string  // 函数名/锚点定位
   }
 
   const parseLineRangeToken = (raw?: string | null) => {
@@ -106,19 +107,177 @@ export function useContentClick(
     }
   }
 
+  /**
+   * 解析 code:// 链接
+   * 支持格式：
+   * - code://path/to/file                    整个文件
+   * - code://path/to/file#functionName       定位到函数/变量/组件区块
+   * - code://path/to/file?fn=functionName    定位到函数（备选格式）
+   * - code://path/to/file#L10-L20            行号定位（兼容旧格式）
+   */
   const parseCodeLink = (href: string): CodeLinkInfo | null => {
     if (!href.startsWith(CODE_PROTOCOL)) return null
     const raw = href.slice(CODE_PROTOCOL.length)
     const [beforeHash, hash] = raw.split('#', 2)
     const [pathPart, query] = beforeHash.split('?', 2)
     const params = new URLSearchParams(query || '')
-    const rangeToken = params.get('lines') || params.get('line') || params.get('L') || hash
-    const { startLine, endLine } = parseLineRangeToken(rangeToken)
+    
+    // 优先使用函数名定位
+    const fnName = params.get('fn') || params.get('func') || params.get('function')
+    
+    // 检查 hash 是否是行号格式还是锚点格式
+    let anchor: string | undefined
+    let startLine: number | undefined
+    let endLine: number | undefined
+    
+    if (hash) {
+      // 如果 hash 匹配行号格式 L10 或 L10-L20
+      if (/^L?\d+(-L?\d+)?$/i.test(hash)) {
+        const range = parseLineRangeToken(hash)
+        startLine = range.startLine
+        endLine = range.endLine
+      } else {
+        // 否则视为锚点（函数名等）
+        anchor = hash
+      }
+    }
+    
+    // 如果 query 中有行号参数
+    if (!startLine) {
+      const rangeToken = params.get('lines') || params.get('line') || params.get('L')
+      if (rangeToken) {
+        const range = parseLineRangeToken(rangeToken)
+        startLine = range.startLine
+        endLine = range.endLine
+      }
+    }
+    
     return {
       path: decodeURIComponent(pathPart || ''),
       startLine,
-      endLine
+      endLine,
+      anchor: fnName || anchor
     }
+  }
+
+  /**
+   * 根据锚点（函数名/变量名/组件区块）在代码中定位
+   * 返回起始行和结束行（尽量包含完整的函数/区块）
+   */
+  const findAnchorInCode = (content: string, anchor: string): { startLine: number; endLine: number } | null => {
+    const lines = content.split(/\r?\n/)
+    const anchorLower = anchor.toLowerCase()
+    
+    // 常见的定义模式
+    const patterns = [
+      // Vue SFC 区块
+      new RegExp(`^<(script|template|style)\\b`, 'i'),
+      // export function / export const / export default
+      new RegExp(`^export\\s+(default\\s+)?(function|const|let|var|class|interface|type)\\s+${anchor}\\b`, 'i'),
+      new RegExp(`^export\\s+\\{[^}]*\\b${anchor}\\b`, 'i'),
+      // function declaration
+      new RegExp(`^(async\\s+)?function\\s+${anchor}\\s*[(<]`, 'i'),
+      // const/let/var = function/arrow
+      new RegExp(`^(export\\s+)?(const|let|var)\\s+${anchor}\\s*=`, 'i'),
+      // class
+      new RegExp(`^(export\\s+)?(abstract\\s+)?class\\s+${anchor}\\b`, 'i'),
+      // interface/type
+      new RegExp(`^(export\\s+)?(interface|type)\\s+${anchor}\\b`, 'i'),
+      // Vue defineProps/defineEmits/computed/watch etc
+      new RegExp(`^const\\s+${anchor}\\s*=\\s*(ref|reactive|computed|watch|defineProps|defineEmits)`, 'i'),
+      // 对象方法
+      new RegExp(`^\\s*${anchor}\\s*[:(]`, 'i'),
+    ]
+    
+    // 特殊处理 Vue SFC 区块
+    if (['script', 'template', 'style', 'setup'].includes(anchorLower)) {
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim()
+        if (anchorLower === 'setup' && /^<script[^>]*\bsetup\b/.test(line)) {
+          return findBlockEnd(lines, i, '</script>')
+        }
+        if (line.toLowerCase().startsWith(`<${anchorLower}`)) {
+          const closeTag = `</${anchorLower}>`
+          return findBlockEnd(lines, i, closeTag)
+        }
+      }
+    }
+    
+    // 搜索匹配的定义
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i]
+      const trimmed = line.trim()
+      
+      for (const pattern of patterns) {
+        if (pattern.test(trimmed)) {
+          // 找到匹配，尝试找到完整的代码块结束位置
+          return findCodeBlockEnd(lines, i)
+        }
+      }
+      
+      // 宽松匹配：行中包含锚点名且看起来像定义
+      if (trimmed.includes(anchor) && /^(export|const|let|var|function|class|interface|type|async)\b/.test(trimmed)) {
+        return findCodeBlockEnd(lines, i)
+      }
+    }
+    
+    return null
+  }
+  
+  /**
+   * 查找 Vue SFC 区块的结束位置
+   */
+  const findBlockEnd = (lines: string[], startIdx: number, closeTag: string): { startLine: number; endLine: number } => {
+    for (let i = startIdx + 1; i < lines.length; i++) {
+      if (lines[i].trim().toLowerCase().startsWith(closeTag.toLowerCase())) {
+        return { startLine: startIdx + 1, endLine: i + 1 }
+      }
+    }
+    return { startLine: startIdx + 1, endLine: Math.min(startIdx + 50, lines.length) }
+  }
+  
+  /**
+   * 尝试找到代码块的结束位置（基于括号匹配和缩进）
+   */
+  const findCodeBlockEnd = (lines: string[], startIdx: number): { startLine: number; endLine: number } => {
+    let braceCount = 0
+    let parenCount = 0
+    let bracketCount = 0
+    let foundFirstBrace = false
+    let endIdx = startIdx
+    
+    // 向前展示几行上下文
+    const contextBefore = Math.max(0, startIdx - 2)
+    
+    for (let i = startIdx; i < lines.length && i < startIdx + 200; i++) {
+      const line = lines[i]
+      for (const char of line) {
+        if (char === '{') { braceCount++; foundFirstBrace = true }
+        else if (char === '}') braceCount--
+        else if (char === '(') parenCount++
+        else if (char === ')') parenCount--
+        else if (char === '[') bracketCount++
+        else if (char === ']') bracketCount--
+      }
+      
+      endIdx = i
+      
+      // 如果括号都闭合了，找到结束
+      if (foundFirstBrace && braceCount === 0 && parenCount <= 0) {
+        break
+      }
+      
+      // 如果遇到空行且不在括号内，可能是函数结束
+      if (i > startIdx + 3 && !foundFirstBrace && line.trim() === '' && braceCount === 0) {
+        endIdx = i - 1
+        break
+      }
+    }
+    
+    // 向后展示几行上下文
+    const contextAfter = Math.min(lines.length, endIdx + 3)
+    
+    return { startLine: contextBefore + 1, endLine: contextAfter }
   }
 
   const buildLineSnippet = (content: string, startLine?: number, endLine?: number) => {
@@ -201,7 +360,7 @@ export function useContentClick(
           return
         }
 
-        // 0.1 代码深链接：code://path/to/file#L10-L20
+        // 0.1 代码深链接：code://path/to/file#functionName 或 code://path/to/file#L10-L20
         if (href && href.startsWith(CODE_PROTOCOL)) {
           const info = parseCodeLink(href)
           if (!info?.path) {
@@ -210,11 +369,11 @@ export function useContentClick(
             return
           }
 
-          const { path, startLine, endLine } = info
+          const { path, anchor } = info
+          let { startLine, endLine } = info
           const fileName = path.split('/').pop() || path
-          const rangeLabel = startLine ? ` (L${startLine}${endLine && endLine !== startLine ? `-L${endLine}` : ''})` : ''
 
-          await openCodeModal(`${fileName}${rangeLabel}`, 'Loading...', path)
+          await openCodeModal(`${fileName}${anchor ? ` → ${anchor}` : ''}`, 'Loading...', path)
 
           let node = findNodeByPath(fileSystem.value, path)
           let content = ''
@@ -226,6 +385,15 @@ export function useContentClick(
             content = node.content
           } else {
             content = await fetchSourceCodeFile(path)
+          }
+
+          // 如果有锚点，尝试定位到对应的函数/区块
+          if (anchor && !startLine) {
+            const anchorRange = findAnchorInCode(content, anchor)
+            if (anchorRange) {
+              startLine = anchorRange.startLine
+              endLine = anchorRange.endLine
+            }
           }
 
           const finalContent = startLine ? buildLineSnippet(content, startLine, endLine) : content

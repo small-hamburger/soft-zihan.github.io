@@ -5,23 +5,23 @@
       <h1 class="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-2">{{ t.lab_dashboard }}</h1>
       <p class="text-sakura-500">{{ t.lab_dashboard_desc }}</p>
       <p class="text-xs text-gray-400 mt-2">
-        {{ isZh ? '🌸 所有示例均来自 Sakura Notes 真实源码' : '🌸 All examples from Sakura Notes real source code' }}
+        {{ isZh ? '🌸 所有示例均来自 Sakura Notes 真实源码，与学习笔记1-4对应' : '🌸 All examples from Sakura Notes real source code, aligned with Notes 1-4' }}
       </p>
     </div>
 
-    <!-- Tab Navigation -->
+    <!-- Tab Navigation - 4 Main Stages aligned with Notes 1-4 -->
     <div class="flex justify-center mb-8 px-4">
       <div class="bg-gray-100 dark:bg-gray-800 p-1.5 rounded-2xl flex flex-wrap justify-center gap-2 shadow-inner">
         <button 
           v-for="tab in tabs" 
           :key="tab.id"
           @click="activeTab = tab.id"
-          class="px-3 md:px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300 flex flex-col items-center gap-0.5 min-w-[60px] md:min-w-[90px]"
+          class="px-3 md:px-5 py-2 rounded-xl text-sm font-bold transition-all duration-300 flex flex-col items-center gap-0.5 min-w-[70px] md:min-w-[100px]"
           :class="activeTab === tab.id ? 'bg-white dark:bg-gray-700 text-sakura-600 dark:text-sakura-300 shadow-md transform scale-105' : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'"
         >
           <span class="text-lg md:text-xl">{{ tab.icon }}</span>
-          <span class="text-[10px] md:text-xs">{{ tab.label.split(' ').pop() }}</span>
-          <span class="text-[8px] text-gray-400 hidden md:block">{{ isZh ? `第${tab.stage}阶段` : `Stage ${tab.stage}` }}</span>
+          <span class="text-[10px] md:text-xs">{{ tab.shortLabel }}</span>
+          <span class="text-[8px] text-gray-400 hidden md:block">{{ isZh ? `笔记${tab.noteNum}` : `Note ${tab.noteNum}` }}</span>
         </button>
       </div>
     </div>
@@ -53,8 +53,8 @@
             <div class="text-4xl">{{ activeTabInfo?.icon }}</div>
             <div class="flex-1">
               <h3 class="font-bold text-gray-800 dark:text-gray-100 text-lg">
-                {{ isZh ? `第${activeTabInfo?.stage}阶段：` : `Stage ${activeTabInfo?.stage}: ` }}
-                {{ activeTabInfo?.label.replace(/^[^\s]+\s/, '') }}
+                {{ isZh ? `笔记${activeTabInfo?.noteNum}：` : `Note ${activeTabInfo?.noteNum}: ` }}
+                {{ activeTabInfo?.label }}
               </h3>
               <p class="text-sm text-sakura-600 dark:text-sakura-400 mt-1">
                 🎯 {{ activeTabInfo?.goal }}
@@ -62,26 +62,28 @@
               <p class="text-xs text-gray-500 mt-2">
                 {{ activeTabInfo?.desc }}
               </p>
+              <!-- Note Link -->
+              <a 
+                :href="activeTabInfo?.noteLink" 
+                class="inline-flex items-center gap-1.5 mt-3 text-xs bg-white dark:bg-gray-800 px-3 py-1.5 rounded-lg text-sakura-600 dark:text-sakura-400 hover:bg-sakura-50 dark:hover:bg-sakura-900/20 transition-colors border border-sakura-100 dark:border-sakura-800"
+              >
+                <span>📖</span>
+                {{ isZh ? '阅读配套笔记' : 'Read Companion Note' }}
+              </a>
             </div>
             <div class="hidden md:block text-right">
               <span class="text-xs text-gray-400">{{ isZh ? '关联本站代码' : 'Related Code' }}</span>
               <div class="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                <template v-if="activeTab === 'foundation'">index.html, App.vue</template>
-                <template v-else-if="activeTab === 'js-basics'">useSearch.ts, appStore.ts</template>
-                <template v-else-if="activeTab === 'css-layout'">WallpaperLayer.vue, AppSidebar.vue</template>
-                <template v-else-if="activeTab === 'js-advanced'">useFile.ts, useContentClick.ts</template>
-                <template v-else-if="activeTab === 'engineering'">vite.config.ts, package.json</template>
-                <template v-else-if="activeTab === 'vue-core'">appStore.ts, FileTree.vue</template>
-                <template v-else-if="activeTab === 'vue-advanced'">composables/*.ts, stores/*.ts</template>
-                <template v-else>{{ isZh ? '综合应用' : 'Comprehensive' }}</template>
+                {{ activeTabInfo?.relatedCode }}
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- Stage 1: Web Foundation -->
-      <div v-if="activeTab === 'foundation'" class="space-y-12 animate-fade-in">
+      <!-- Note 1: HTML & CSS -->
+      <div v-if="activeTab === 'note1-html-css'" class="space-y-12 animate-fade-in">
+        <!-- Section: Web Standards -->
         <section>
           <LabCodeEvolution :lang="lang" />
         </section>
@@ -148,6 +150,7 @@
           </div>
         </section>
 
+        <!-- Section: HTML Basics -->
         <section>
           <h2 class="text-xl font-bold text-indigo-600 dark:text-indigo-400 mb-4 flex items-center gap-2">
             <span class="text-2xl">🧱</span> {{ t.lab_html_title }}
@@ -159,6 +162,25 @@
           <LabHtmlBasics :lang="lang" />
         </section>
 
+        <!-- Section: CSS Basics & Layout -->
+        <section>
+          <LabCssBasics :lang="lang" />
+        </section>
+
+        <section>
+          <LabCssLayout :lang="lang" />
+        </section>
+
+        <!-- Section: CSS Animation (Extension) -->
+        <section>
+          <h2 class="text-xl font-bold text-pink-600 dark:text-pink-400 mb-4 flex items-center gap-2">
+            <span class="text-2xl">🌸</span> {{ isZh ? 'CSS 动画' : 'CSS Animation' }}
+            <span class="text-xs bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-300 px-2 py-0.5 rounded-full ml-2">{{ isZh ? '扩展：花瓣效果' : 'Extension: Petal Effect' }}</span>
+          </h2>
+          <LabCssAnimation :lang="lang" />
+        </section>
+
+        <!-- Section: Browser Pipeline -->
         <section>
           <h2 class="text-xl font-bold text-indigo-600 dark:text-indigo-400 mb-4 flex items-center gap-2">
             <span class="text-2xl">🧠</span> {{ isZh ? '浏览器渲染流水线' : 'Rendering Pipeline' }}
@@ -168,59 +190,19 @@
 
         <NextStageGuide 
           :is-zh="isZh" 
-          :next-text="isZh ? '你已经理解了网页的基本结构！接下来学习 JavaScript 基础语法。' : 'You now understand web page structure! Next, learn JavaScript fundamentals.'"
-          @next="activeTab = 'js-basics'"
+          :next-text="isZh ? '你已经理解了网页的基本结构与样式！接下来深入学习 JavaScript。' : 'You understand web structure and styling! Next, dive into JavaScript.'"
+          @next="activeTab = 'note2-javascript'"
         />
       </div>
 
-      <!-- Stage 2: JS Basics -->
-      <div v-else-if="activeTab === 'js-basics'" class="space-y-12 animate-fade-in">
+      <!-- Note 2: JavaScript -->
+      <div v-else-if="activeTab === 'note2-javascript'" class="space-y-12 animate-fade-in">
+        <!-- JS Basics -->
         <section>
           <LabJsBasics :lang="lang" />
         </section>
 
-        <NextStageGuide 
-          :is-zh="isZh" 
-          :next-text="isZh ? '你已掌握 JS 核心语法！接下来学习 CSS 布局，让页面更美观。' : 'You\'ve mastered JS core syntax! Next, learn CSS layout to make pages beautiful.'"
-          @next="activeTab = 'css-layout'"
-        />
-      </div>
-
-      <!-- Stage 3: CSS Layout -->
-      <div v-else-if="activeTab === 'css-layout'" class="space-y-12 animate-fade-in">
-        <section>
-          <LabCssBasics :lang="lang" />
-        </section>
-
-        <section>
-          <LabCssLayout :lang="lang" />
-        </section>
-
-        <section>
-          <h2 class="text-xl font-bold text-pink-600 dark:text-pink-400 mb-4 flex items-center gap-2">
-            <span class="text-2xl">🌸</span> {{ isZh ? 'CSS 动画' : 'CSS Animation' }}
-            <span class="text-xs bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-300 px-2 py-0.5 rounded-full ml-2">{{ isZh ? '花瓣效果解析' : 'Petal Effect Analysis' }}</span>
-          </h2>
-          <LabCssAnimation :lang="lang" />
-        </section>
-
-        <section>
-          <h2 class="text-xl font-bold text-pink-600 dark:text-pink-400 mb-4 flex items-center gap-2">
-            <span class="text-2xl">🧩</span> {{ isZh ? 'CSS 性能与渲染成本' : 'CSS Performance' }}
-            <span class="text-xs bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-300 px-2 py-0.5 rounded-full ml-2">{{ isZh ? '回流/重绘/合成' : 'reflow/paint/composite' }}</span>
-          </h2>
-          <LabCssPerformance :lang="lang" />
-        </section>
-
-        <NextStageGuide 
-          :is-zh="isZh" 
-          :next-text="isZh ? '你已经可以构建精美的页面布局了！接下来学习 JS 进阶，实现复杂交互。' : 'You can now build beautiful layouts! Next, learn advanced JS for complex interactions.'"
-          @next="activeTab = 'js-advanced'"
-        />
-      </div>
-
-      <!-- Stage 4: JS Advanced -->
-      <div v-else-if="activeTab === 'js-advanced'" class="space-y-12 animate-fade-in">
+        <!-- JS Core Mechanics -->
         <section>
           <h2 class="text-xl font-bold text-yellow-600 dark:text-yellow-400 mb-4 flex items-center gap-2">
             <span class="text-2xl">⚡</span> {{ isZh ? 'JavaScript 核心机制' : 'JavaScript Core Mechanics' }}
@@ -228,6 +210,7 @@
           <LabJs :lang="lang" />
         </section>
 
+        <!-- DOM -->
         <section>
           <h2 class="text-xl font-bold text-blue-600 dark:text-blue-400 mb-4 flex items-center gap-2">
             <span class="text-2xl">🎮</span> {{ t.lab_dom_title }}
@@ -235,70 +218,25 @@
           <LabDom :lang="lang" />
         </section>
 
-        <section class="max-w-4xl mx-auto">
-          <h2 class="text-xl font-bold text-green-600 dark:text-green-400 mb-4 flex items-center gap-2 justify-center">
-            <span class="text-2xl">📡</span> {{ t.lab_ajax_title }}
-          </h2>
-          <LabAjax :lang="lang" />
-        </section>
-
-        <section>
-          <h2 class="text-xl font-bold text-yellow-600 dark:text-yellow-400 mb-4 flex items-center gap-2">
-            <span class="text-2xl">⚡</span> {{ isZh ? '异步编程' : 'Async Programming' }}
-            <span class="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-300 px-2 py-0.5 rounded-full ml-2">{{ isZh ? 'Promise & async/await' : 'Promise & async/await' }}</span>
-          </h2>
-          <LabAsync :lang="lang" />
-        </section>
-
+        <!-- Closures & Scope -->
         <section>
           <h2 class="text-xl font-bold text-orange-600 dark:text-orange-400 mb-4 flex items-center gap-2">
             <span class="text-2xl">🧠</span> {{ isZh ? '闭包与作用域' : 'Closures & Scope' }}
+            <span class="text-xs bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-300 px-2 py-0.5 rounded-full ml-2">{{ isZh ? '扩展' : 'Extension' }}</span>
           </h2>
           <LabJsAdvanced :lang="lang" />
         </section>
 
-        <section>
-          <LabTypeScript :lang="lang" />
-        </section>
-
         <NextStageGuide 
           :is-zh="isZh" 
-          :next-text="isZh ? '你已掌握 JS 高级特性！接下来学习前端工程化，掌握专业开发流程。' : 'You\'ve mastered advanced JS! Next, learn frontend engineering for professional workflow.'"
-          @next="activeTab = 'engineering'"
+          :next-text="isZh ? '你已掌握 JavaScript 核心！接下来学习 Vue 3 框架基础。' : 'You\'ve mastered JavaScript core! Next, learn Vue 3 framework basics.'"
+          @next="activeTab = 'note3-vue-basics'"
         />
       </div>
 
-      <!-- Stage 5: Engineering -->
-      <div v-else-if="activeTab === 'engineering'" class="space-y-12 animate-fade-in">
-        <section>
-          <LabModuleSystem :lang="lang" />
-        </section>
-
-        <section>
-          <LabNpm :lang="lang" />
-        </section>
-
-        <section>
-          <LabBuildTools :lang="lang" />
-        </section>
-
-        <section>
-          <LabTailwind :lang="lang" />
-        </section>
-
-        <section>
-          <LabCssFrameworks :lang="lang" />
-        </section>
-
-        <NextStageGuide 
-          :is-zh="isZh" 
-          :next-text="isZh ? '你已掌握前端工程化！接下来学习 Vue 3 核心，构建现代化 Web 应用。' : 'You\'ve mastered frontend engineering! Next, learn Vue 3 core to build modern web apps.'"
-          @next="activeTab = 'vue-core'"
-        />
-      </div>
-
-      <!-- Stage 6: Vue Core -->
-      <div v-else-if="activeTab === 'vue-core'" class="space-y-12 animate-fade-in">
+      <!-- Note 3: Vue Basics -->
+      <div v-else-if="activeTab === 'note3-vue-basics'" class="space-y-12 animate-fade-in">
+        <!-- Project Tour -->
         <section>
           <h2 class="text-xl font-bold text-sakura-600 dark:text-sakura-400 mb-4 flex items-center gap-2">
             <span class="text-2xl">🧭</span> {{ isZh ? '项目实战导览' : 'Project Tour' }}
@@ -306,6 +244,7 @@
           <LabProjectTour :lang="lang" />
         </section>
 
+        <!-- Reactivity -->
         <section>
            <h2 class="text-xl font-bold text-purple-600 dark:text-purple-400 mb-4 flex items-center gap-2">
              <span class="text-2xl">🧪</span> {{ t.lab_reactivity }}
@@ -313,6 +252,7 @@
            <LabReactivity :lang="lang" />
         </section>
 
+        <!-- Directives & Class Binding -->
         <div class="grid grid-cols-1 xl:grid-cols-2 gap-8">
           <section>
             <h2 class="text-xl font-bold text-teal-600 dark:text-teal-400 mb-4 flex items-center gap-2">
@@ -329,6 +269,7 @@
           </section>
         </div>
 
+        <!-- Event Handling -->
         <section>
           <h2 class="text-xl font-bold text-blue-600 dark:text-blue-400 mb-4 flex items-center gap-2">
             <span class="text-2xl">🖱️</span> {{ isZh ? '事件处理' : 'Event Handling' }}
@@ -336,6 +277,7 @@
           <LabEventHandling :lang="lang" />
         </section>
 
+        <!-- List Rendering -->
         <section>
             <h2 class="text-xl font-bold text-teal-600 dark:text-teal-400 mb-4 flex items-center gap-2">
               <span class="text-2xl">📋</span> {{ t.lab_vue_list_title }}
@@ -343,6 +285,24 @@
             <LabVueList :lang="lang" />
         </section>
 
+        <!-- Ajax -->
+        <section class="max-w-4xl mx-auto">
+          <h2 class="text-xl font-bold text-green-600 dark:text-green-400 mb-4 flex items-center gap-2 justify-center">
+            <span class="text-2xl">📡</span> {{ t.lab_ajax_title }}
+          </h2>
+          <LabAjax :lang="lang" />
+        </section>
+
+        <!-- Async Programming -->
+        <section>
+          <h2 class="text-xl font-bold text-yellow-600 dark:text-yellow-400 mb-4 flex items-center gap-2">
+            <span class="text-2xl">⚡</span> {{ isZh ? '异步编程' : 'Async Programming' }}
+            <span class="text-xs bg-yellow-100 dark:bg-yellow-900/30 text-yellow-600 dark:text-yellow-300 px-2 py-0.5 rounded-full ml-2">Promise & async/await</span>
+          </h2>
+          <LabAsync :lang="lang" />
+        </section>
+
+        <!-- Lifecycle -->
         <section>
           <h2 class="text-xl font-bold text-blue-600 dark:text-blue-400 mb-4 flex items-center gap-2">
             <span class="text-2xl">🎢</span> {{ t.lab_lifecycle }}
@@ -352,13 +312,42 @@
 
         <NextStageGuide 
           :is-zh="isZh" 
-          :next-text="isZh ? '你已掌握 Vue 3 核心！接下来学习 Vue 进阶，包括组件通信、Composables 和 Pinia。' : 'You\'ve mastered Vue 3 core! Next, learn advanced Vue including component communication, Composables and Pinia.'"
-          @next="activeTab = 'vue-advanced'"
+          :next-text="isZh ? '你已掌握 Vue 3 核心！接下来学习 Vue 工程化与 TypeScript。' : 'You\'ve mastered Vue 3 core! Next, learn Vue Engineering and TypeScript.'"
+          @next="activeTab = 'note4-vue-engineering'"
         />
       </div>
 
-      <!-- Stage 7: Vue Advanced (NEW) -->
-      <div v-else-if="activeTab === 'vue-advanced'" class="space-y-12 animate-fade-in">
+      <!-- Note 4: Vue Engineering & TS -->
+      <div v-else-if="activeTab === 'note4-vue-engineering'" class="space-y-12 animate-fade-in">
+        <!-- TypeScript -->
+        <section>
+          <LabTypeScript :lang="lang" />
+        </section>
+
+        <!-- Module System -->
+        <section>
+          <LabModuleSystem :lang="lang" />
+        </section>
+
+        <!-- NPM -->
+        <section>
+          <LabNpm :lang="lang" />
+        </section>
+
+        <!-- Build Tools -->
+        <section>
+          <LabBuildTools :lang="lang" />
+        </section>
+
+        <!-- Tailwind & CSS Frameworks -->
+        <section>
+          <LabTailwind :lang="lang" />
+        </section>
+
+        <section>
+          <LabCssFrameworks :lang="lang" />
+        </section>
+
         <!-- Props & Emit -->
         <section>
             <h2 class="text-xl font-bold text-indigo-600 dark:text-indigo-400 mb-4 flex items-center gap-2">
@@ -375,7 +364,7 @@
           <LabSlot :lang="lang" />
         </section>
 
-        <!-- Composables (NEW) -->
+        <!-- Composables -->
         <section>
           <h2 class="text-xl font-bold text-green-600 dark:text-green-400 mb-4 flex items-center gap-2">
             <span class="text-2xl">🧩</span> {{ isZh ? 'Composables 组合式函数' : 'Composables' }}
@@ -384,7 +373,7 @@
           <LabComposables :lang="lang" />
         </section>
 
-        <!-- Pinia (NEW) -->
+        <!-- Pinia -->
         <section>
           <h2 class="text-xl font-bold text-indigo-600 dark:text-indigo-400 mb-4 flex items-center gap-2">
             <span class="text-2xl">🍍</span> {{ isZh ? 'Pinia 状态管理' : 'Pinia State Management' }}
@@ -393,23 +382,33 @@
           <LabPinia :lang="lang" />
         </section>
 
-        <!-- Provide/Inject (NEW) -->
+        <!-- Provide/Inject -->
         <section>
           <h2 class="text-xl font-bold text-teal-600 dark:text-teal-400 mb-4 flex items-center gap-2">
             <span class="text-2xl">💉</span> {{ isZh ? '依赖注入' : 'Dependency Injection' }}
+            <span class="text-xs bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-300 px-2 py-0.5 rounded-full ml-2">{{ isZh ? '扩展' : 'Extension' }}</span>
           </h2>
           <LabProvideInject :lang="lang" />
         </section>
 
+        <!-- CSS Performance -->
+        <section>
+          <h2 class="text-xl font-bold text-pink-600 dark:text-pink-400 mb-4 flex items-center gap-2">
+            <span class="text-2xl">🧩</span> {{ isZh ? 'CSS 性能与渲染成本' : 'CSS Performance' }}
+            <span class="text-xs bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-300 px-2 py-0.5 rounded-full ml-2">{{ isZh ? '扩展' : 'Extension' }}</span>
+          </h2>
+          <LabCssPerformance :lang="lang" />
+        </section>
+
         <NextStageGuide 
           :is-zh="isZh" 
-          :next-text="isZh ? '🎉 恭喜完成全部 Vue 学习！来挑战测验，检验你的综合能力吧！' : '🎉 Congratulations on completing Vue learning! Take the challenge quiz to test your skills!'"
+          :next-text="isZh ? '🎉 恭喜完成全部学习！来挑战测验，检验你的综合能力吧！' : '🎉 Congratulations! Take the challenge quiz to test your skills!'"
           :button-text="isZh ? '进入挑战赛 🏆' : 'Take the Challenge 🏆'"
           @next="activeTab = 'challenge'"
         />
       </div>
 
-      <!-- Stage 8: Challenge -->
+      <!-- Challenge -->
       <div v-else-if="activeTab === 'challenge'" class="animate-fade-in space-y-12">
          <section class="max-w-3xl mx-auto">
            <h2 class="text-xl font-bold text-orange-600 dark:text-orange-400 mb-4 flex items-center gap-2 justify-center">
@@ -523,83 +522,77 @@ const emit = defineEmits<{
 const t = computed(() => I18N[props.lang as 'en' | 'zh'])
 const isZh = computed(() => props.lang === 'zh')
 
-const activeTab = ref('foundation')
+const activeTab = ref('note1-html-css')
 const labTabStorageKey = computed(() => `lab_active_tab_${props.lang}`)
 
 type LabTab = {
   id: string
   label: string
+  shortLabel: string
   icon: string
-  stage: number
+  noteNum: number
   desc: string
   goal: string
+  noteLink: string
+  relatedCode: string
 }
 
-// 8 Learning Stages (as per 实验室修改方案2)
+// 5 Learning Stages aligned with Notes 1-4 + Challenge
 const tabs = computed<LabTab[]>(() => [
   { 
-    id: 'foundation', 
-    label: isZh.value ? '🌐 Web基础' : '🌐 Web Basics', 
-    icon: '🌐',
-    stage: 1,
-    desc: isZh.value ? 'HTML/CSS/JS 概念入门' : 'HTML/CSS/JS Intro',
-    goal: isZh.value ? '理解网页的组成结构' : 'Understand web page structure'
-  },
-  { 
-    id: 'js-basics', 
-    label: isZh.value ? '🟨 JS基础' : '🟨 JS Basics', 
-    icon: '🟨',
-    stage: 2,
-    desc: isZh.value ? '变量/函数/数组/对象' : 'Variables/Functions/Arrays',
-    goal: isZh.value ? '掌握 JS 核心语法' : 'Master JS core syntax'
-  },
-  { 
-    id: 'css-layout', 
-    label: isZh.value ? '🎨 CSS布局' : '🎨 CSS Layout', 
+    id: 'note1-html-css', 
+    label: isZh.value ? 'HTML & CSS 基础' : 'HTML & CSS Basics', 
+    shortLabel: isZh.value ? 'HTML/CSS' : 'HTML/CSS',
     icon: '🎨',
-    stage: 3,
-    desc: isZh.value ? '盒模型/Flex/Grid/响应式' : 'Box Model/Flex/Grid',
-    goal: isZh.value ? '构建任意页面布局' : 'Build any page layout'
+    noteNum: 1,
+    desc: isZh.value ? 'Web标准三剑客：HTML结构、CSS样式、JS行为' : 'Web Standards: HTML Structure, CSS Style, JS Behavior',
+    goal: isZh.value ? '理解网页的组成结构与基本样式' : 'Understand web page structure and basic styling',
+    noteLink: '/notes/VUE学习笔记/1、HTML-CSS.md',
+    relatedCode: 'index.html, App.vue, styles'
   },
   { 
-    id: 'js-advanced', 
-    label: isZh.value ? '⚡ JS进阶' : '⚡ JS Advanced', 
+    id: 'note2-javascript', 
+    label: isZh.value ? 'JavaScript 核心' : 'JavaScript Core', 
+    shortLabel: 'JavaScript',
     icon: '⚡',
-    stage: 4,
-    desc: isZh.value ? 'DOM/异步/TypeScript' : 'DOM/Async/TypeScript',
-    goal: isZh.value ? '实现复杂交互逻辑' : 'Implement complex interactions'
+    noteNum: 2,
+    desc: isZh.value ? '引入方式、基础语法、DOM操作、事件、对象、函数' : 'Syntax, Variables, Functions, DOM, Events, Objects',
+    goal: isZh.value ? '掌握 JavaScript 核心语法与DOM操作' : 'Master JavaScript core syntax and DOM manipulation',
+    noteLink: '/notes/VUE学习笔记/2、JavaScript.md',
+    relatedCode: 'useSearch.ts, useFile.ts, appStore.ts'
   },
   { 
-    id: 'engineering', 
-    label: isZh.value ? '🔧 工程化' : '🔧 Engineering', 
-    icon: '🔧',
-    stage: 5,
-    desc: isZh.value ? '模块化/NPM/构建/Tailwind' : 'Modules/NPM/Build/Tailwind',
-    goal: isZh.value ? '专业项目开发流程' : 'Professional dev workflow'
-  },
-  { 
-    id: 'vue-core', 
-    label: isZh.value ? '🥝 Vue核心' : '🥝 Vue Core', 
+    id: 'note3-vue-basics', 
+    label: isZh.value ? 'Vue 3 基础' : 'Vue 3 Basics', 
+    shortLabel: 'Vue基础',
     icon: '🥝',
-    stage: 6,
-    desc: isZh.value ? '响应式/指令/事件/列表' : 'Reactivity/Directives/Events/List',
-    goal: isZh.value ? '掌握 Vue 3 基础' : 'Master Vue 3 basics'
+    noteNum: 3,
+    desc: isZh.value ? 'Vue概述、指令系统、Ajax、生命周期' : 'Vue Overview, Directives, Ajax, Lifecycle',
+    goal: isZh.value ? '掌握 Vue 3 核心概念与指令' : 'Master Vue 3 core concepts and directives',
+    noteLink: '/notes/VUE学习笔记/3、Vue基础.md',
+    relatedCode: 'App.vue, FileTree.vue, composables/*.ts'
   },
   { 
-    id: 'vue-advanced', 
-    label: isZh.value ? '🚀 Vue进阶' : '🚀 Vue Advanced', 
+    id: 'note4-vue-engineering', 
+    label: isZh.value ? 'Vue 工程化 & TS' : 'Vue Engineering & TS', 
+    shortLabel: isZh.value ? '工程化' : 'Engineering',
     icon: '🚀',
-    stage: 7,
-    desc: isZh.value ? 'Composables/Pinia/组件通信' : 'Composables/Pinia/Communication',
-    goal: isZh.value ? '构建复杂应用架构' : 'Build complex app architecture'
+    noteNum: 4,
+    desc: isZh.value ? 'Vue工程化、TypeScript、ElementPlus' : 'Vue Engineering, TypeScript, ElementPlus',
+    goal: isZh.value ? '构建专业的 Vue 项目架构' : 'Build professional Vue project architecture',
+    noteLink: '/notes/VUE学习笔记/4、Vue3+TS+ElementPlus.md',
+    relatedCode: 'vite.config.ts, tsconfig.json, stores/*.ts'
   },
   { 
     id: 'challenge', 
-    label: isZh.value ? '🏆 挑战赛' : '🏆 Challenge', 
+    label: isZh.value ? '综合挑战' : 'Challenge', 
+    shortLabel: isZh.value ? '挑战' : 'Challenge',
     icon: '🏆',
-    stage: 8,
-    desc: isZh.value ? '综合测验' : 'Quiz',
-    goal: isZh.value ? '检验综合能力' : 'Test your skills'
+    noteNum: 0,
+    desc: isZh.value ? '综合测验与迷你项目' : 'Quiz & Mini Projects',
+    goal: isZh.value ? '检验综合能力' : 'Test your skills',
+    noteLink: '',
+    relatedCode: isZh.value ? '综合应用' : 'Comprehensive'
   },
 ])
 
