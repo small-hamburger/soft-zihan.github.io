@@ -414,10 +414,14 @@ export function useBackup() {
   
   /**
    * 获取用户 Fork 中的备份文件列表
+   * @param owner 上游仓库 owner（如 soft-zihan）
+   * @param repo 仓库名（如 soft-zihan.github.io）
+   * @param authorName 用户的 GitHub 用户名，用于直接定位 fork 仓库
    */
   const listBackups = async (
     owner: string,
-    repo: string
+    repo: string,
+    authorName?: string
   ): Promise<BackupFile[]> => {
     const token = await getToken()
     if (!token) {
@@ -425,8 +429,11 @@ export function useBackup() {
     }
     
     try {
-      // 获取当前用户名
-      const username = await getUsername(token)
+      // 优先使用传入的 authorName，否则通过 token 获取用户名
+      let username = authorName?.trim()
+      if (!username) {
+        username = await getUsername(token) || undefined
+      }
       if (!username) {
         return []
       }
@@ -484,10 +491,19 @@ export function useBackup() {
   }
   
   /**
+   * 获取云端备份的 URL（基于作者名推算）
+   */
+  const getCloudBackupUrl = (authorName: string, repo: string = 'soft-zihan.github.io'): string => {
+    if (!authorName.trim()) return ''
+    return `https://github.com/${authorName.trim()}/${repo}/tree/backup/backups`
+  }
+  
+  /**
    * 从用户 Fork 的 GitHub 恢复备份
+   * @param authorName 用户的 GitHub 用户名（fork owner）
    */
   const restoreFromGitHub = async (
-    owner: string,
+    authorName: string,
     repo: string,
     filename: string
   ): Promise<BackupResult> => {
@@ -496,15 +512,15 @@ export function useBackup() {
       return { success: false, message: '请先设置 GitHub Token' }
     }
     
+    if (!authorName?.trim()) {
+      return { success: false, message: '请先设置作者名称（GitHub用户名）' }
+    }
+    
     isRestoring.value = true
     backupError.value = ''
     
     try {
-      // 获取当前用户名
-      const username = await getUsername(token)
-      if (!username) {
-        throw new Error('无法获取用户信息')
-      }
+      const username = authorName.trim()
       
       // 从用户的 fork 获取备份文件内容
       const response = await fetch(
@@ -568,9 +584,10 @@ export function useBackup() {
   
   /**
    * 删除用户 Fork 中的备份文件
+   * @param authorName 用户的 GitHub 用户名（fork owner）
    */
   const deleteBackup = async (
-    owner: string,
+    authorName: string,
     repo: string,
     filename: string,
     sha: string
@@ -580,12 +597,12 @@ export function useBackup() {
       return { success: false, message: '请先设置 GitHub Token' }
     }
     
+    if (!authorName?.trim()) {
+      return { success: false, message: '请先设置作者名称（GitHub用户名）' }
+    }
+    
     try {
-      // 获取当前用户名
-      const username = await getUsername(token)
-      if (!username) {
-        throw new Error('无法获取用户信息')
-      }
+      const username = authorName.trim()
       
       // 从用户的 fork 删除备份文件
       const response = await fetch(
@@ -752,6 +769,7 @@ export function useBackup() {
     deleteBackup,
     parseBackupFilename,
     collectBackupData,
+    getCloudBackupUrl,
     // 本地备份
     backupToLocal,
     importBackupFromFile

@@ -28,6 +28,15 @@
           {{ isZh ? '选择文件查看源码' : 'Select a file to view source' }}
         </div>
         <div class="ml-auto flex items-center gap-3">
+          <!-- Fold/Unfold All -->
+          <button 
+            v-if="selectedFile && foldableRanges.length > 0"
+            @click="toggleAllFolds"
+            class="text-xs px-2 py-1 rounded transition-colors flex items-center gap-1 bg-gray-700 text-gray-400 hover:bg-gray-600"
+          >
+            <span>{{ allFolded ? '▶' : '▼' }}</span>
+            {{ isZh ? (allFolded ? '展开全部' : '折叠全部') : (allFolded ? 'Expand All' : 'Fold All') }}
+          </button>
           <button 
             @click="showNotes = !showNotes"
             class="text-xs px-2 py-1 rounded transition-colors flex items-center gap-1"
@@ -50,122 +59,148 @@
         </div>
       </div>
 
+      <!-- File Introduction Bar -->
+      <div 
+        v-if="selectedFile && currentFileIntro" 
+        class="px-4 py-2 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/30 dark:to-blue-900/20 border-b border-cyan-200 dark:border-cyan-700/50"
+      >
+        <p class="text-sm text-gray-700 dark:text-gray-200">
+          <span class="mr-2">💡</span>{{ currentFileIntro }}
+        </p>
+      </div>
+
       <!-- Code Content with Inline Notes -->
-      <div class="flex-1 overflow-auto bg-[#1e1e1e] custom-scrollbar relative" ref="codeContainer">
-        <div v-if="selectedFile && fileContent" class="py-4">
-          <!-- Line 0 note (before first line) -->
-          <template v-if="showNotes && hasAnyNoteAtLine(0) && !isLineCollapsed(0)">
-            <div 
-              v-if="hasPresetNoteAtLine(0)"
-              class="flex mx-4 my-1"
-            >
-              <div class="w-12"></div>
-              <div class="flex-1 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/30 dark:to-blue-900/20 rounded-lg p-3 border border-cyan-200 dark:border-cyan-700/50 shadow-sm">
-                <div class="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{{ getPresetNoteContent(0) }}</div>
-              </div>
-            </div>
-            <div 
-              v-if="hasUserNoteAtLine(0)"
-              class="flex mx-4 my-1"
-              draggable="true"
-              @dragstart="onDragStart($event, 0)"
-              @dragend="onDragEnd"
-            >
-              <div class="w-12"></div>
-              <div class="flex-1 bg-gradient-to-r from-sakura-50 to-amber-50 dark:from-sakura-900/30 dark:to-amber-900/20 rounded-lg p-3 border border-sakura-200 dark:border-sakura-700/50 shadow-sm group relative">
-                <div class="absolute -left-6 top-1/2 -translate-y-1/2 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-sakura-400">⋮⋮</div>
-                <div class="flex items-end justify-end gap-2 mb-1">
-                  <button @click="deleteUserNote(0)" class="text-gray-400 hover:text-red-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity">🗑️</button>
+      <div class="flex-1 flex overflow-hidden">
+        <!-- Main Code Area -->
+        <div class="flex-1 overflow-auto bg-[#1e1e1e] custom-scrollbar relative" ref="codeContainer" @scroll="syncMinimapScroll">
+          <div v-if="selectedFile && fileContent" class="py-4">
+            <!-- Render each line with possible inline note -->
+            <template v-for="(line, idx) in fileLines" :key="idx">
+              <!-- Skip lines that are inside a folded range -->
+              <template v-if="!isLineHiddenByFold(idx + 1)">
+                <!-- Drop indicator line -->
+                <div 
+                  v-if="showNotes && dragOverLine === idx + 1 && draggingNoteLine !== idx + 1"
+                  class="h-1 mx-4 bg-sakura-400 rounded-full animate-pulse"
+                ></div>
+                
+                <!-- Code Line -->
+                <div 
+                  class="flex hover:bg-[#2a2d2e] group"
+                  :class="{ 'bg-sakura-900/20': hasNonEmptyNoteAtLine(idx + 1) && !isLineCollapsed(idx + 1) }"
+                  @dragover.prevent="onDragOver($event, idx + 1)"
+                  @dragleave="onDragLeave"
+                  @drop.prevent="onDrop($event, idx + 1)"
+                >
+                  <!-- Fold Toggle Button -->
+                  <div class="flex-shrink-0 w-4 flex items-center justify-center">
+                    <button 
+                      v-if="isFoldStartLine(idx + 1)"
+                      @click="toggleFoldAtLine(idx + 1)"
+                      class="text-gray-500 hover:text-gray-300 text-xs font-mono"
+                    >
+                      {{ isLineFolded(idx + 1) ? '▶' : '▼' }}
+                    </button>
+                  </div>
+                  <!-- Line Number - click to toggle notes -->
+                  <div 
+                    class="flex-shrink-0 w-10 pr-2 text-right select-none font-mono text-xs leading-6 cursor-pointer transition-colors"
+                    :class="getLineNumberClass(idx + 1)"
+                    @click="toggleNoteAtLine(idx + 1)"
+                  >
+                    {{ idx + 1 }}</div>
+                  <!-- Code Content -->
+                  <pre 
+                    class="flex-1 pr-4 text-sm font-mono leading-6 whitespace-pre-wrap break-all"
+                  ><code v-html="highlightLine(line)" class="hljs"></code><span v-if="isLineFolded(idx + 1)" class="ml-2 text-gray-500 bg-gray-700 px-2 py-0.5 rounded text-xs">{{ getFoldedLinesCount(idx + 1) }} {{ isZh ? '行已折叠' : 'lines folded' }}</span></pre>
                 </div>
-                <textarea :value="getUserNoteContent(0)" @input="handleNoteInput($event, 0)" class="w-full text-sm bg-transparent border-none outline-none resize-none text-gray-700 dark:text-gray-200 placeholder-gray-400 overflow-hidden" :placeholder="isZh ? '在此输入笔记...' : 'Type your note here...'" rows="1"></textarea>
-              </div>
-            </div>
-          </template>
-          
-          <!-- Render each line with possible inline note -->
-          <template v-for="(line, idx) in fileLines" :key="idx">
-            <!-- Drop indicator line -->
+                
+                <!-- Preset Note (below the line) - Blue/Cyan theme -->
+                <div 
+                  v-if="showNotes && hasPresetNoteAtLine(idx + 1) && !isLineCollapsed(idx + 1)"
+                  class="flex mx-4 my-1"
+                >
+                  <div class="w-14"></div>
+                  <div class="flex-1 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/30 dark:to-blue-900/20 rounded-lg p-3 border border-cyan-200 dark:border-cyan-700/50 shadow-sm">
+                    <div class="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{{ getPresetNoteContent(idx + 1) }}</div>
+                  </div>
+                </div>
+                
+                <!-- User Note (below the line) - Pink/Sakura theme -->
+                <div 
+                  v-if="showNotes && hasUserNoteAtLine(idx + 1) && !isLineCollapsed(idx + 1)"
+                  class="flex mx-4 my-1"
+                  draggable="true"
+                  @dragstart="onDragStart($event, idx + 1)"
+                  @dragend="onDragEnd"
+                >
+                  <div class="w-14"></div>
+                  <div class="flex-1 bg-gradient-to-r from-sakura-50 to-amber-50 dark:from-sakura-900/30 dark:to-amber-900/20 rounded-lg p-3 border border-sakura-200 dark:border-sakura-700/50 shadow-sm group relative">
+                    <!-- Drag Handle -->
+                    <div class="absolute -left-6 top-1/2 -translate-y-1/2 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-sakura-400">
+                      ⋮⋮
+                    </div>
+                    <div class="flex items-end justify-end gap-2 mb-1">
+                      <button 
+                        @click="deleteUserNote(idx + 1)"
+                        class="text-gray-400 hover:text-red-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        🗑️
+                      </button>
+                    </div>
+                    <textarea
+                      :value="getUserNoteContent(idx + 1)"
+                      @input="handleNoteInput($event, idx + 1)"
+                      class="w-full text-sm bg-transparent border-none outline-none resize-none text-gray-700 dark:text-gray-200 placeholder-gray-400 overflow-hidden"
+                      :placeholder="isZh ? '在此输入笔记...' : 'Type your note here...'"
+                      rows="1"
+                    ></textarea>
+                  </div>
+                </div>
+              </template>
+            </template>
+            
+            <!-- Drop indicator at the end -->
             <div 
-              v-if="showNotes && dragOverLine === idx + 1 && draggingNoteLine !== idx + 1"
+              v-if="showNotes && dragOverLine === fileLines.length + 1"
               class="h-1 mx-4 bg-sakura-400 rounded-full animate-pulse"
             ></div>
-            
-            <!-- Code Line -->
-            <div 
-              class="flex hover:bg-[#2a2d2e] group"
-              :class="{ 'bg-sakura-900/20': hasNonEmptyNoteAtLine(idx + 1) && !isLineCollapsed(idx + 1) }"
-              @dragover.prevent="onDragOver($event, idx + 1)"
-              @dragleave="onDragLeave"
-              @drop.prevent="onDrop($event, idx + 1)"
-            >
-              <!-- Line Number - click to toggle notes -->
-              <div 
-                class="flex-shrink-0 w-12 pl-4 pr-2 text-right select-none font-mono text-xs leading-6 cursor-pointer transition-colors"
-                :class="getLineNumberClass(idx + 1)"
-                @click="toggleNoteAtLine(idx + 1)"
-              >
-                {{ idx + 1 }}</div>
-              <!-- Code Content -->
-              <pre 
-                class="flex-1 pr-4 text-sm font-mono leading-6 whitespace-pre-wrap break-all"
-              ><code v-html="highlightLine(line)" class="hljs"></code></pre>
-            </div>
-            
-            <!-- Preset Note (below the line) - Blue/Cyan theme -->
-            <div 
-              v-if="showNotes && hasPresetNoteAtLine(idx + 1) && !isLineCollapsed(idx + 1)"
-              class="flex mx-4 my-1"
-            >
-              <div class="w-8"></div>
-              <div class="flex-1 bg-gradient-to-r from-cyan-50 to-blue-50 dark:from-cyan-900/30 dark:to-blue-900/20 rounded-lg p-3 border border-cyan-200 dark:border-cyan-700/50 shadow-sm">
-                <div class="text-sm text-gray-700 dark:text-gray-200 whitespace-pre-wrap">{{ getPresetNoteContent(idx + 1) }}</div>
-              </div>
-            </div>
-            
-            <!-- User Note (below the line) - Pink/Sakura theme -->
-            <div 
-              v-if="showNotes && hasUserNoteAtLine(idx + 1) && !isLineCollapsed(idx + 1)"
-              class="flex mx-4 my-1"
-              draggable="true"
-              @dragstart="onDragStart($event, idx + 1)"
-              @dragend="onDragEnd"
-            >
-              <div class="w-8"></div>
-              <div class="flex-1 bg-gradient-to-r from-sakura-50 to-amber-50 dark:from-sakura-900/30 dark:to-amber-900/20 rounded-lg p-3 border border-sakura-200 dark:border-sakura-700/50 shadow-sm group relative">
-                <!-- Drag Handle -->
-                <div class="absolute -left-6 top-1/2 -translate-y-1/2 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-sakura-400">
-                  ⋮⋮
-                </div>
-                <div class="flex items-end justify-end gap-2 mb-1">
-                  <button 
-                    @click="deleteUserNote(idx + 1)"
-                    class="text-gray-400 hover:text-red-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
-                  >
-                    🗑️
-                  </button>
-                </div>
-                <textarea
-                  :value="getUserNoteContent(idx + 1)"
-                  @input="handleNoteInput($event, idx + 1)"
-                  class="w-full text-sm bg-transparent border-none outline-none resize-none text-gray-700 dark:text-gray-200 placeholder-gray-400 overflow-hidden"
-                  :placeholder="isZh ? '在此输入笔记...' : 'Type your note here...'"
-                  rows="1"
-                ></textarea>
-              </div>
-            </div>
-          </template>
-          
-          <!-- Drop indicator at the end -->
-          <div 
-            v-if="showNotes && dragOverLine === fileLines.length + 1"
-            class="h-1 mx-4 bg-sakura-400 rounded-full animate-pulse"
-          ></div>
-        </div>
-        <div v-else class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-          <div class="text-center">
-            <div class="text-4xl mb-4">📂</div>
-            <p>{{ isZh ? '从左侧选择文件开始阅读' : 'Select a file from the left to start reading' }}</p>
           </div>
+          <div v-else class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+            <div class="text-center">
+              <div class="text-4xl mb-4">📂</div>
+              <p>{{ isZh ? '从左侧选择文件开始阅读' : 'Select a file from the left to start reading' }}</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right: Minimap -->
+        <div 
+          v-if="selectedFile && fileContent && fileLines.length > 20"
+          class="w-24 flex-shrink-0 bg-[#1e1e1e] border-l border-gray-700 overflow-hidden relative cursor-pointer"
+          ref="minimapContainer"
+          @click="handleMinimapClick"
+          @mousedown="startMinimapDrag"
+        >
+          <!-- Minimap Content -->
+          <div class="minimap-content" :style="{ transform: `scale(${minimapScale})`, transformOrigin: 'top left' }">
+            <div 
+              v-for="(line, idx) in fileLines" 
+              :key="'mini-' + idx"
+              class="h-[3px] mx-1 my-[1px] rounded-sm overflow-hidden"
+              :class="getMinimapLineClass(idx + 1)"
+            >
+              <div 
+                class="h-full"
+                :style="{ width: Math.min(line.length * 0.5, 100) + '%', backgroundColor: getMinimapLineColor(line, idx + 1) }"
+              ></div>
+            </div>
+          </div>
+          <!-- Viewport Indicator -->
+          <div 
+            class="absolute left-0 right-0 bg-white/10 border border-white/20 pointer-events-none transition-transform"
+            :style="viewportIndicatorStyle"
+          ></div>
         </div>
       </div>
       
@@ -209,6 +244,8 @@ import xml from 'highlight.js/lib/languages/xml'
 import css from 'highlight.js/lib/languages/css'
 import json from 'highlight.js/lib/languages/json'
 import bash from 'highlight.js/lib/languages/bash'
+import python from 'highlight.js/lib/languages/python'
+import java from 'highlight.js/lib/languages/java'
 import { useGitHubPublish } from '../../composables/useGitHubPublish'
 
 // Register languages
@@ -220,6 +257,8 @@ hljs.registerLanguage('html', xml)
 hljs.registerLanguage('css', css)
 hljs.registerLanguage('json', json)
 hljs.registerLanguage('bash', bash)
+hljs.registerLanguage('python', python)
+hljs.registerLanguage('java', java)
 
 // Child component for file tree
 import SourceFileTree from './SourceFileTree.vue'
@@ -240,8 +279,22 @@ interface FileNotes {
   [filePath: string]: CodeNote[]
 }
 
+interface FileIntros {
+  [filePath: string]: string
+}
+
 interface CollapsedState {
   [filePath: string]: number[] // array of collapsed line numbers
+}
+
+interface FoldRange {
+  start: number
+  end: number
+  type: string // 'function' | 'class' | 'block' etc.
+}
+
+interface FoldedState {
+  [filePath: string]: number[] // array of folded start line numbers
 }
 
 const props = defineProps<{
@@ -360,6 +413,7 @@ const selectedFile = ref<SourceFile | null>(null)
 const fileContent = ref<string>('')
 const showNotes = ref(true)
 const codeContainer = ref<HTMLElement | null>(null)
+const minimapContainer = ref<HTMLElement | null>(null)
 
 // Drag state
 const draggingNoteLine = ref<number | null>(null)
@@ -368,16 +422,21 @@ const dragOverLine = ref<number | null>(null)
 // Notes storage keys
 const USER_NOTES_KEY = 'sakura_source_code_notes_user'
 const COLLAPSED_KEY = 'sakura_source_code_notes_collapsed'
+const FOLDED_KEY = 'sakura_source_code_folded'
 const PRESET_VERSION_KEY = 'sakura_source_code_notes_preset_version'
 
 // Preset notes (from server)
 const presetNotes = ref<FileNotes>({})
+const presetIntros = ref<FileIntros>({})
 
 // User notes (from localStorage)
 const userNotes = ref<FileNotes>({})
 
-// Collapsed state (from localStorage)
+// Collapsed state (from localStorage) - for notes visibility
 const collapsedState = ref<CollapsedState>({})
+
+// Folded state (from localStorage) - for code folding
+const foldedState = ref<FoldedState>({})
 
 // Load preset notes from server
 const loadPresetNotes = async () => {
@@ -392,8 +451,19 @@ const loadPresetNotes = async () => {
       const serverVersion = data.version || '1.0.0'
       const localVersion = localStorage.getItem(PRESET_VERSION_KEY)
       
-      // Store preset notes
-      presetNotes.value = data.notes || {}
+      // Store preset notes and intros
+      presetNotes.value = {}
+      presetIntros.value = data.intros || {}
+      
+      // Convert notes format: filter out line 0 (now stored as intro)
+      if (data.notes) {
+        for (const [filePath, notes] of Object.entries(data.notes)) {
+          const filteredNotes = (notes as CodeNote[]).filter(n => n.line !== 0)
+          if (filteredNotes.length > 0) {
+            presetNotes.value[filePath] = filteredNotes
+          }
+        }
+      }
       
       // Update version marker
       localStorage.setItem(PRESET_VERSION_KEY, serverVersion)
@@ -427,6 +497,18 @@ const loadCollapsedState = () => {
   }
 }
 
+// Load folded state from localStorage
+const loadFoldedState = () => {
+  const saved = localStorage.getItem(FOLDED_KEY)
+  if (saved) {
+    try {
+      foldedState.value = JSON.parse(saved)
+    } catch (e) {
+      console.error('Failed to parse folded state:', e)
+    }
+  }
+}
+
 // Save user notes
 const saveUserNotes = () => {
   localStorage.setItem(USER_NOTES_KEY, JSON.stringify(userNotes.value))
@@ -437,11 +519,23 @@ const saveCollapsedState = () => {
   localStorage.setItem(COLLAPSED_KEY, JSON.stringify(collapsedState.value))
 }
 
+// Save folded state
+const saveFoldedState = () => {
+  localStorage.setItem(FOLDED_KEY, JSON.stringify(foldedState.value))
+}
+
 // Initialize
 onMounted(async () => {
   await loadPresetNotes()
   loadUserNotes()
   loadCollapsedState()
+  loadFoldedState()
+})
+
+// Current file intro
+const currentFileIntro = computed(() => {
+  if (!selectedFile.value) return ''
+  return presetIntros.value[selectedFile.value.path] || ''
 })
 
 // Current file notes
@@ -458,6 +552,11 @@ const currentUserNotes = computed(() => {
 const currentCollapsedLines = computed(() => {
   if (!selectedFile.value) return []
   return collapsedState.value[selectedFile.value.path] || []
+})
+
+const currentFoldedLines = computed(() => {
+  if (!selectedFile.value) return []
+  return foldedState.value[selectedFile.value.path] || []
 })
 
 // Check if user has any notes
@@ -488,12 +587,341 @@ const getLanguage = () => {
       return 'json'
     case 'sh':
       return 'bash'
+    case 'py':
+      return 'python'
+    case 'java':
+      return 'java'
     default:
       return 'plaintext'
   }
 }
 
-// Highlight a single line
+// ==================== Code Folding Logic ====================
+
+// Detect foldable ranges based on file type and content
+const foldableRanges = computed((): FoldRange[] => {
+  if (!fileContent.value || !selectedFile.value) return []
+  
+  const lines = fileLines.value
+  const ranges: FoldRange[] = []
+  const ext = selectedFile.value.name.split('.').pop()?.toLowerCase()
+  
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]
+    const lineNum = i + 1
+    const trimmed = line.trim()
+    
+    // Vue SFC sections: <template>, <script>, <style>
+    if (ext === 'vue') {
+      if (/^<(template|script|style)/.test(trimmed)) {
+        const tag = trimmed.match(/^<(template|script|style)/)?.[1]
+        for (let j = i + 1; j < lines.length; j++) {
+          if (lines[j].trim().startsWith(`</${tag}>`)) {
+            ranges.push({ start: lineNum, end: j + 1, type: 'vue-section' })
+            break
+          }
+        }
+      }
+    }
+    
+    // TypeScript/JavaScript/Java patterns
+    if (['ts', 'tsx', 'js', 'jsx', 'java', 'vue'].includes(ext || '')) {
+      // Function declarations
+      if (/^(export\s+)?(async\s+)?function\s+\w+/.test(trimmed) ||
+          /^(export\s+)?(const|let|var)\s+\w+\s*=\s*(async\s+)?\(/.test(trimmed) ||
+          /^(export\s+)?(const|let|var)\s+\w+\s*=\s*(async\s+)?function/.test(trimmed) ||
+          /^(public|private|protected)?\s*(static)?\s*(async)?\s*\w+\s*\([^)]*\)\s*[:{]/.test(trimmed)) {
+        let braceCount = 0
+        let foundOpen = false
+        for (let j = i; j < lines.length; j++) {
+          const checkLine = lines[j]
+          for (const char of checkLine) {
+            if (char === '{') {
+              braceCount++
+              foundOpen = true
+            } else if (char === '}') {
+              braceCount--
+              if (foundOpen && braceCount === 0) {
+                if (j > i) {
+                  ranges.push({ start: lineNum, end: j + 1, type: 'function' })
+                }
+                break
+              }
+            }
+          }
+          if (foundOpen && braceCount === 0) break
+        }
+      }
+      
+      // Class declarations
+      if (/^(export\s+)?(abstract\s+)?class\s+\w+/.test(trimmed)) {
+        let braceCount = 0
+        let foundOpen = false
+        for (let j = i; j < lines.length; j++) {
+          const checkLine = lines[j]
+          for (const char of checkLine) {
+            if (char === '{') {
+              braceCount++
+              foundOpen = true
+            } else if (char === '}') {
+              braceCount--
+              if (foundOpen && braceCount === 0) {
+                if (j > i) {
+                  ranges.push({ start: lineNum, end: j + 1, type: 'class' })
+                }
+                break
+              }
+            }
+          }
+          if (foundOpen && braceCount === 0) break
+        }
+      }
+      
+      // Interface/Type declarations
+      if (/^(export\s+)?(interface|type)\s+\w+/.test(trimmed) && trimmed.includes('{')) {
+        let braceCount = 0
+        let foundOpen = false
+        for (let j = i; j < lines.length; j++) {
+          const checkLine = lines[j]
+          for (const char of checkLine) {
+            if (char === '{') {
+              braceCount++
+              foundOpen = true
+            } else if (char === '}') {
+              braceCount--
+              if (foundOpen && braceCount === 0) {
+                if (j > i) {
+                  ranges.push({ start: lineNum, end: j + 1, type: 'interface' })
+                }
+                break
+              }
+            }
+          }
+          if (foundOpen && braceCount === 0) break
+        }
+      }
+    }
+    
+    // Python patterns
+    if (ext === 'py') {
+      if (/^(async\s+)?def\s+\w+/.test(trimmed) || /^class\s+\w+/.test(trimmed)) {
+        const indent = line.search(/\S/)
+        for (let j = i + 1; j < lines.length; j++) {
+          const nextLine = lines[j]
+          const nextTrimmed = nextLine.trim()
+          if (nextTrimmed && nextLine.search(/\S/) <= indent) {
+            ranges.push({ start: lineNum, end: j, type: trimmed.startsWith('class') ? 'class' : 'function' })
+            break
+          }
+          if (j === lines.length - 1) {
+            ranges.push({ start: lineNum, end: j + 1, type: trimmed.startsWith('class') ? 'class' : 'function' })
+          }
+        }
+      }
+    }
+    
+    // CSS patterns
+    if (ext === 'css') {
+      if ((trimmed.endsWith('{') && !trimmed.startsWith('@')) || (trimmed.startsWith('@') && trimmed.endsWith('{'))) {
+        let braceCount = 1
+        for (let j = i + 1; j < lines.length; j++) {
+          const checkLine = lines[j]
+          for (const char of checkLine) {
+            if (char === '{') braceCount++
+            else if (char === '}') braceCount--
+          }
+          if (braceCount === 0) {
+            ranges.push({ start: lineNum, end: j + 1, type: 'css-rule' })
+            break
+          }
+        }
+      }
+    }
+  }
+  
+  // Remove duplicates
+  const uniqueRanges: FoldRange[] = []
+  for (const range of ranges) {
+    const isDuplicate = uniqueRanges.some(r => r.start === range.start && r.end === range.end)
+    if (!isDuplicate) {
+      uniqueRanges.push(range)
+    }
+  }
+  
+  return uniqueRanges.sort((a, b) => a.start - b.start)
+})
+
+// Check if a line is the start of a foldable range
+const isFoldStartLine = (line: number): boolean => {
+  return foldableRanges.value.some(r => r.start === line)
+}
+
+// Check if a line is currently folded
+const isLineFolded = (line: number): boolean => {
+  return currentFoldedLines.value.includes(line)
+}
+
+// Get the fold range for a start line
+const getFoldRange = (startLine: number): FoldRange | undefined => {
+  return foldableRanges.value.find(r => r.start === startLine)
+}
+
+// Get count of folded lines
+const getFoldedLinesCount = (startLine: number): number => {
+  const range = getFoldRange(startLine)
+  if (!range) return 0
+  return range.end - range.start
+}
+
+// Check if a line is hidden by a fold
+const isLineHiddenByFold = (line: number): boolean => {
+  for (const foldedLine of currentFoldedLines.value) {
+    const range = getFoldRange(foldedLine)
+    if (range && line > range.start && line <= range.end) {
+      return true
+    }
+  }
+  return false
+}
+
+// Toggle fold at a specific line
+const toggleFoldAtLine = (line: number) => {
+  if (!selectedFile.value) return
+  const path = selectedFile.value.path
+  
+  if (!foldedState.value[path]) {
+    foldedState.value[path] = []
+  }
+  
+  const idx = foldedState.value[path].indexOf(line)
+  if (idx >= 0) {
+    foldedState.value[path].splice(idx, 1)
+  } else {
+    foldedState.value[path].push(line)
+  }
+  saveFoldedState()
+}
+
+// Check if all foldable ranges are folded
+const allFolded = computed(() => {
+  if (foldableRanges.value.length === 0) return false
+  return foldableRanges.value.every(r => currentFoldedLines.value.includes(r.start))
+})
+
+// Toggle all folds
+const toggleAllFolds = () => {
+  if (!selectedFile.value) return
+  const path = selectedFile.value.path
+  
+  if (allFolded.value) {
+    foldedState.value[path] = []
+  } else {
+    foldedState.value[path] = foldableRanges.value.map(r => r.start)
+  }
+  saveFoldedState()
+}
+
+// ==================== Minimap Logic ====================
+
+const minimapScale = computed(() => {
+  const totalLines = fileLines.value.length
+  if (totalLines < 100) return 1
+  if (totalLines < 500) return 0.8
+  return 0.6
+})
+
+const viewportIndicatorStyle = computed(() => {
+  if (!codeContainer.value) return {}
+  const container = codeContainer.value
+  const scrollTop = container.scrollTop
+  const scrollHeight = container.scrollHeight
+  const clientHeight = container.clientHeight
+  
+  const totalLines = fileLines.value.length
+  const lineHeight = 4
+  const minimapHeight = totalLines * lineHeight * minimapScale.value
+  
+  const ratio = clientHeight / scrollHeight
+  const top = (scrollTop / scrollHeight) * minimapHeight
+  const height = Math.max(20, ratio * minimapHeight)
+  
+  return {
+    top: `${top}px`,
+    height: `${height}px`
+  }
+})
+
+const syncMinimapScroll = () => {
+  // Trigger reactivity update for viewport indicator
+}
+
+const handleMinimapClick = (e: MouseEvent) => {
+  if (!codeContainer.value || !minimapContainer.value) return
+  
+  const rect = minimapContainer.value.getBoundingClientRect()
+  const clickY = e.clientY - rect.top
+  const totalLines = fileLines.value.length
+  const lineHeight = 4 * minimapScale.value
+  const minimapHeight = totalLines * lineHeight
+  
+  const ratio = clickY / minimapHeight
+  const scrollTarget = ratio * codeContainer.value.scrollHeight
+  
+  codeContainer.value.scrollTo({
+    top: scrollTarget - codeContainer.value.clientHeight / 2,
+    behavior: 'smooth'
+  })
+}
+
+let isDraggingMinimap = false
+
+const startMinimapDrag = (e: MouseEvent) => {
+  isDraggingMinimap = true
+  handleMinimapClick(e)
+  
+  const onMove = (e: MouseEvent) => {
+    if (isDraggingMinimap) {
+      handleMinimapClick(e)
+    }
+  }
+  
+  const onUp = () => {
+    isDraggingMinimap = false
+    window.removeEventListener('mousemove', onMove)
+    window.removeEventListener('mouseup', onUp)
+  }
+  
+  window.addEventListener('mousemove', onMove)
+  window.addEventListener('mouseup', onUp)
+}
+
+const getMinimapLineClass = (line: number) => {
+  if (hasNonEmptyNoteAtLine(line)) {
+    return 'bg-sakura-500/30'
+  }
+  return ''
+}
+
+const getMinimapLineColor = (line: string, lineNum: number) => {
+  const trimmed = line.trim()
+  
+  if (trimmed.startsWith('//') || trimmed.startsWith('#') || trimmed.startsWith('/*') || trimmed.startsWith('*')) {
+    return '#6a9955'
+  }
+  
+  if (/^(import|export|const|let|var|function|class|if|else|for|while|return|async|await)/.test(trimmed)) {
+    return '#569cd6'
+  }
+  
+  if (trimmed.includes('"') || trimmed.includes("'") || trimmed.includes('`')) {
+    return '#ce9178'
+  }
+  
+  return '#9cdcfe'
+}
+
+// ==================== Note Functions ====================
+
 const highlightLine = (line: string) => {
   const language = getLanguage()
   try {
@@ -503,54 +931,44 @@ const highlightLine = (line: string) => {
   }
 }
 
-// Check if line has preset note
 const hasPresetNoteAtLine = (line: number) => {
   return currentPresetNotes.value.some(n => n.line === line)
 }
 
-// Check if line has user note
 const hasUserNoteAtLine = (line: number) => {
   return currentUserNotes.value.some(n => n.line === line)
 }
 
-// Check if line has any note
 const hasAnyNoteAtLine = (line: number) => {
   return hasPresetNoteAtLine(line) || hasUserNoteAtLine(line)
 }
 
-// Check if line has non-empty note (for highlighting)
 const hasNonEmptyNoteAtLine = (line: number) => {
   const hasPreset = currentPresetNotes.value.some(n => n.line === line && n.content.trim())
   const hasUser = currentUserNotes.value.some(n => n.line === line && n.content.trim())
   return hasPreset || hasUser
 }
 
-// Check if line is collapsed
 const isLineCollapsed = (line: number) => {
   return currentCollapsedLines.value.includes(line)
 }
 
-// Get line number class - only highlight if note has content
 const getLineNumberClass = (line: number) => {
   const hasPreset = currentPresetNotes.value.some(n => n.line === line && n.content.trim())
   const hasUser = currentUserNotes.value.some(n => n.line === line && n.content.trim())
   
   if (hasPreset || hasUser) {
     if (hasPreset && hasUser) {
-      // Both types - purple highlight
       return 'text-purple-400 font-bold bg-purple-900/20'
     } else if (hasPreset) {
-      // Preset only - cyan highlight
       return 'text-cyan-400 font-bold bg-cyan-900/20'
     } else {
-      // User only - sakura highlight  
       return 'text-sakura-400 font-bold bg-sakura-900/20'
     }
   }
   return 'text-gray-600 hover:text-gray-400'
 }
 
-// Toggle note at line
 const toggleNoteAtLine = (line: number) => {
   if (!selectedFile.value) return
   const path = selectedFile.value.path
@@ -560,20 +978,16 @@ const toggleNoteAtLine = (line: number) => {
   const isCollapsed = isLineCollapsed(line)
   
   if (hasPreset || hasUser) {
-    // Has note(s) - toggle collapse
     if (!collapsedState.value[path]) {
       collapsedState.value[path] = []
     }
     
     if (isCollapsed) {
-      // Expand
       collapsedState.value[path] = collapsedState.value[path].filter(l => l !== line)
     } else {
-      // Collapse - if user note is empty, delete it instead
       if (hasUser) {
         const userNote = currentUserNotes.value.find(n => n.line === line)
         if (userNote && !userNote.content.trim()) {
-          // Empty user note - delete it
           userNotes.value[path] = userNotes.value[path].filter(n => n.line !== line)
           saveUserNotes()
           return
@@ -583,7 +997,6 @@ const toggleNoteAtLine = (line: number) => {
     }
     saveCollapsedState()
   } else {
-    // No note - create new user note
     if (!userNotes.value[path]) {
       userNotes.value[path] = []
     }
@@ -591,7 +1004,6 @@ const toggleNoteAtLine = (line: number) => {
     userNotes.value[path].sort((a, b) => a.line - b.line)
     saveUserNotes()
     
-    // Make sure it's not collapsed
     if (collapsedState.value[path]) {
       collapsedState.value[path] = collapsedState.value[path].filter(l => l !== line)
       saveCollapsedState()
@@ -599,7 +1011,6 @@ const toggleNoteAtLine = (line: number) => {
   }
 }
 
-// Delete user note
 const deleteUserNote = (line: number) => {
   if (!selectedFile.value) return
   const path = selectedFile.value.path
@@ -609,19 +1020,16 @@ const deleteUserNote = (line: number) => {
   }
 }
 
-// Get preset note content
 const getPresetNoteContent = (line: number): string => {
   const note = currentPresetNotes.value.find(n => n.line === line)
   return note?.content || ''
 }
 
-// Get user note content
 const getUserNoteContent = (line: number): string => {
   const note = currentUserNotes.value.find(n => n.line === line)
   return note?.content || ''
 }
 
-// Update user note content
 const updateUserNoteContent = (line: number, content: string) => {
   if (!selectedFile.value) return
   const path = selectedFile.value.path
@@ -633,11 +1041,9 @@ const updateUserNoteContent = (line: number, content: string) => {
   }
 }
 
-// Handle note input with auto-resize
 const handleNoteInput = (event: Event, line: number) => {
   const textarea = event.target as HTMLTextAreaElement
   updateUserNoteContent(line, textarea.value)
-  // Auto resize
   textarea.style.height = 'auto'
   textarea.style.height = textarea.scrollHeight + 'px'
 }
@@ -663,10 +1069,8 @@ const onDragOver = (e: DragEvent, targetLine: number) => {
 }
 
 const onDragLeave = () => {
-  // Small delay to prevent flicker when moving between lines
   setTimeout(() => {
     if (dragOverLine.value !== null) {
-      // Will be updated by next dragover
     }
   }, 50)
 }
@@ -694,12 +1098,10 @@ const onDrop = (e: DragEvent, targetLine: number) => {
     return
   }
   
-  // Move note to new line
   userNotes.value[path][noteIdx].line = targetLine
   userNotes.value[path].sort((a, b) => a.line - b.line)
   saveUserNotes()
   
-  // Also update collapsed state if needed
   if (collapsedState.value[path]) {
     const collapsedIdx = collapsedState.value[path].indexOf(sourceLine)
     if (collapsedIdx >= 0) {
@@ -712,7 +1114,6 @@ const onDrop = (e: DragEvent, targetLine: number) => {
   draggingNoteLine.value = null
 }
 
-// Get file icon
 const getFileIcon = (name: string) => {
   const ext = name.split('.').pop()?.toLowerCase()
   switch (ext) {
@@ -725,11 +1126,12 @@ const getFileIcon = (name: string) => {
     case 'html': return '🌐'
     case 'json': return '📋'
     case 'md': return '📝'
+    case 'py': return '🐍'
+    case 'java': return '☕'
     default: return '📄'
   }
 }
 
-// Select file and load content
 const selectFile = async (file: SourceFile) => {
   if (file.type !== 'file') return
   selectedFile.value = file
@@ -762,7 +1164,6 @@ const selectFile = async (file: SourceFile) => {
   }
 }
 
-// Submit notes to GitHub via PR
 const submitNotesToGitHub = async () => {
   if (!hasUserNotes.value || isSubmitting.value) return
   
@@ -777,11 +1178,10 @@ const submitNotesToGitHub = async () => {
       return
     }
     
-    const repoOwner = localStorage.getItem('github_repo_owner') || 'soft-zihan'
-    const repoName = localStorage.getItem('github_repo_name') || 'soft-zihan.github.io'
+    const repoOwner = 'soft-zihan'
+    const repoName = 'soft-zihan.github.io'
     const authorName = localStorage.getItem('author_name') || 'Anonymous'
     
-    // Merge user notes into preset format for PR
     const mergedNotes: FileNotes = { ...presetNotes.value }
     
     for (const [filePath, notes] of Object.entries(userNotes.value)) {
@@ -790,10 +1190,8 @@ const submitNotesToGitHub = async () => {
       }
       for (const note of notes) {
         if (note.content.trim()) {
-          // Check if there's already a note at this line
           const existingIdx = mergedNotes[filePath].findIndex(n => n.line === note.line)
           if (existingIdx >= 0) {
-            // Append to existing note
             mergedNotes[filePath][existingIdx].content += '\n\n---\n' + note.content
           } else {
             mergedNotes[filePath].push({ line: note.line, content: note.content })
@@ -806,6 +1204,7 @@ const submitNotesToGitHub = async () => {
     const presetData = {
       version: new Date().toISOString().split('T')[0].replace(/-/g, '.'),
       lastUpdated: new Date().toISOString().split('T')[0],
+      intros: presetIntros.value,
       notes: mergedNotes
     }
     
@@ -838,7 +1237,6 @@ const submitNotesToGitHub = async () => {
   }
 }
 
-// Export notes for backup
 const exportNotes = () => {
   const data = {
     userNotes: userNotes.value,
@@ -853,7 +1251,6 @@ const exportNotes = () => {
   URL.revokeObjectURL(url)
 }
 
-// Import notes from backup
 const importNotes = (event: Event) => {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
@@ -878,7 +1275,6 @@ const importNotes = (event: Event) => {
   reader.readAsText(file)
 }
 
-// Expose for parent backup functionality
 defineExpose({
   exportNotes,
   importNotes,
@@ -911,5 +1307,9 @@ defineExpose({
 .toast-leave-to {
   opacity: 0;
   transform: translate(-50%, 20px);
+}
+
+.minimap-content {
+  pointer-events: none;
 }
 </style>
