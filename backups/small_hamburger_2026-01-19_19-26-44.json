@@ -1,0 +1,39 @@
+{
+  "_meta": {
+    "author": "small-hamburger",
+    "timestamp": "2026-01-19T19:26:44.745Z",
+    "version": "1.0",
+    "note": "此备份存储在您的 Fork 仓库中，不包含 GitHub Token"
+  },
+  "data": {
+    "app": {
+      "lang": "zh",
+      "isDark": false,
+      "currentWallpaperFilename": "wallpaper-light.jpg",
+      "userSettings": {
+        "fontSize": "normal",
+        "fontFamily": "sans",
+        "petalSpeed": "slow",
+        "bannerMode": "normal",
+        "petalLayer": "back"
+      },
+      "showParticles": true
+    },
+    "music_currentTrackFilename": "回马枪-兰音Reine.mp3",
+    "author_name": "small-hamburger",
+    "article": {
+      "likedArticles": [],
+      "favorites": [],
+      "articleStats": {},
+      "userFingerprint": "",
+      "selectedTags": [
+        "notag"
+      ],
+      "showFavoritesOnly": false
+    },
+    "music": {
+      "volume": 0.7,
+      "playMode": "sequence"
+    }
+  }
+}
