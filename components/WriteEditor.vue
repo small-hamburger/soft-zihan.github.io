@@ -33,7 +33,7 @@
                 :class="hasToken ? 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400' : 'bg-yellow-50 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400'"
               >
                 <div class="w-2 h-2 rounded-full" :class="hasToken ? 'bg-green-500' : 'bg-yellow-500'"></div>
-                {{ hasToken ? (lang === 'zh' ? 'GitHub 已连接' : 'GitHub Connected') : (lang === 'zh' ? '请在设置中配置' : 'Configure in Settings') }}
+                {{ hasToken ? (lang === 'zh' ? 'GitHub 已连接' : 'GitHub Connected') : (lang === 'zh' ? '请在设置中配置Token' : 'Configure Token in Settings') }}
               </div>
               
               <button 
@@ -546,11 +546,10 @@ const createNewFolder = () => {
   // 基于当前选择的文件夹创建子文件夹
   const newPath = `${targetFolder.value}/${name}`.replace(/\/+/g, '/')
   
-  // 添加到自定义文件夹列表
+  // 添加到自定义文件夹列表（仅当前会话有效，不持久化）
   const langKey = props.lang as 'zh' | 'en'
   if (!customFoldersByLang.value[langKey].includes(newPath)) {
     customFoldersByLang.value[langKey].push(newPath)
-    localStorage.setItem(`custom_folders_${langKey}`, JSON.stringify(customFoldersByLang.value[langKey]))
   }
   
   // 选择新创建的文件夹
@@ -1664,16 +1663,7 @@ onMounted(() => {
     } catch {}
   }
   
-  // 加载自定义文件夹
-  (['zh', 'en'] as Array<'zh' | 'en'>).forEach((langKey: 'zh' | 'en') => {
-    const customFolders = localStorage.getItem(`custom_folders_${langKey}`)
-    if (customFolders) {
-      try {
-        const folders = JSON.parse(customFolders)
-        customFoldersByLang.value[langKey] = Array.isArray(folders) ? folders : []
-      } catch {}
-    }
-  })
+  // 不再从 localStorage 加载自定义文件夹（每次会话从头开始）
 
   const rootFolder = getRootFolder()
   if (!targetFolder.value.startsWith(rootFolder)) {

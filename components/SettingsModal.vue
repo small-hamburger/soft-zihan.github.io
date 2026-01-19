@@ -160,9 +160,9 @@
         <!-- Backup Button -->
         <button 
           @click="handleBackup"
-          :disabled="isBackingUp || (backupTarget === 'cloud' && !hasToken) || !authorName.trim()"
+          :disabled="isBackingUp || (backupTarget === 'cloud' && (!hasToken || !authorName.trim()))"
           class="w-full py-2 mb-2 border rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
-          :class="(backupTarget === 'local' || hasToken) && authorName.trim() ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30' : 'border-gray-300 dark:border-gray-600 text-gray-400 cursor-not-allowed'"
+          :class="(backupTarget === 'local' || (hasToken && authorName.trim())) ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30' : 'border-gray-300 dark:border-gray-600 text-gray-400 cursor-not-allowed'"
         >
           <span v-if="isBackingUp" class="animate-spin">⏳</span>
           <span v-else>{{ backupTarget === 'local' ? '📥' : '☁️' }}</span>
@@ -172,7 +172,7 @@
         <p v-if="backupTarget === 'cloud' && !hasToken" class="text-xs text-amber-500 mb-2">
           {{ t.backup_need_token || '请先配置 GitHub Token' }}
         </p>
-        <p v-else-if="!authorName.trim()" class="text-xs text-amber-500 mb-2">
+        <p v-else-if="backupTarget === 'cloud' && !authorName.trim()" class="text-xs text-amber-500 mb-2">
           {{ t.backup_need_author || '请先填写作者名称' }}
         </p>
         
@@ -399,16 +399,17 @@ const fileInputRef = ref<HTMLInputElement | null>(null)
 const showDataInfo = ref(false)
 
 const handleBackup = async () => {
-  if (!authorName.value.trim()) {
-    backupMessage.value = '请填写作者名称'
-    backupSuccess.value = false
-    return
-  }
-  
   let result
   if (backupTarget.value === 'local') {
-    result = await backupToLocal(authorName.value)
+    // 本地备份不需要作者名
+    result = await backupToLocal()
   } else {
+    // 云端备份需要作者名
+    if (!authorName.value.trim()) {
+      backupMessage.value = '云端备份请填写作者名称'
+      backupSuccess.value = false
+      return
+    }
     result = await backupToGitHub(repoOwner.value, repoName.value, authorName.value)
   }
   

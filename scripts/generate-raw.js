@@ -23,6 +23,9 @@ const FILES_TO_GENERATE = [
   'types.ts',
   'vite.config.ts',
   'index.tsx',
+  'index.html',
+  'package.json',
+  'tsconfig.json',
   
   // components 目录下的核心 Vue 文件
   'components/AppHeader.vue',

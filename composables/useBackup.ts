@@ -29,6 +29,15 @@ const EXCLUDED_KEYS = [
   'github_pat_iv',  // 加密 IV 不备份
   'github_pat_salt',  // 加密盐值不备份
   'local_backups',  // 本地备份列表不要循环备份
+  // 临时/编辑状态数据（不需要持久化跨设备）
+  'custom_folders_zh',  // 临时自定义文件夹
+  'custom_folders_en',
+  'publish_tags_zh',  // 发布标签缓存
+  'publish_tags_en',
+  'article_content',  // 文章编辑临时内容
+  'article_title',
+  'article_desc',
+  'article_path',
 ]
 
 export function useBackup() {
@@ -75,14 +84,18 @@ export function useBackup() {
   
   /**
    * 生成备份文件名
+   * @param authorName 可选，用于云端备份标识作者
    */
-  const generateBackupFilename = (authorName: string): string => {
+  const generateBackupFilename = (authorName?: string): string => {
     const timestamp = new Date().toISOString()
       .replace(/[:.]/g, '-')
       .replace('T', '_')
       .slice(0, 19)
-    const safeName = authorName.replace(/[^\w\u4e00-\u9fa5]/g, '_') || 'anonymous'
-    return `${safeName}_${timestamp}.json`
+    if (authorName) {
+      const safeName = authorName.replace(/[^\w\u4e00-\u9fa5]/g, '_') || 'anonymous'
+      return `${safeName}_${timestamp}.json`
+    }
+    return `sakura_backup_${timestamp}.json`
   }
   
   /**
@@ -630,18 +643,18 @@ export function useBackup() {
   
   /**
    * 备份到本地（直接下载文件）
+   * 本地备份不需要作者名，直接备份现有数据
    */
-  const backupToLocal = async (authorName: string): Promise<BackupResult> => {
+  const backupToLocal = async (): Promise<BackupResult> => {
     isBackingUp.value = true
     backupError.value = ''
     
     try {
       const backupData = collectBackupData()
-      const filename = generateBackupFilename(authorName)
+      const filename = generateBackupFilename()
       
       const fullBackupData = {
         _meta: {
-          author: authorName,
           timestamp: new Date().toISOString(),
           version: '1.0',
           note: '本地备份，不包含 GitHub Token'

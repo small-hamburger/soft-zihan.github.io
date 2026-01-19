@@ -28,6 +28,10 @@
           {{ isZh ? '选择文件查看源码' : 'Select a file to view source' }}
         </div>
         <div class="ml-auto flex items-center gap-2">
+          <label class="text-xs text-gray-400 flex items-center gap-1 cursor-pointer">
+            <input type="checkbox" v-model="wordWrap" class="accent-sakura-500" />
+            {{ isZh ? '换行' : 'Wrap' }}
+          </label>
           <button 
             @click="showNotes = !showNotes"
             class="text-xs px-2 py-1 rounded transition-colors flex items-center gap-1"
@@ -39,79 +43,81 @@
         </div>
       </div>
 
-      <!-- Code Content -->
-      <div class="flex-1 flex overflow-hidden">
-        <!-- Code Area -->
-        <div class="flex-1 overflow-auto bg-[#1e1e1e] custom-scrollbar relative" ref="codeContainer">
-          <div v-if="selectedFile && fileContent" class="flex min-w-max">
-            <!-- Line Numbers -->
-            <div class="flex-shrink-0 py-4 pl-4 pr-2 text-right select-none bg-[#1e1e1e] sticky left-0 z-10">
+      <!-- Code Content with Inline Notes -->
+      <div class="flex-1 overflow-auto bg-[#1e1e1e] custom-scrollbar relative" ref="codeContainer">
+        <div v-if="selectedFile && fileContent" class="py-4">
+          <!-- Render each line with possible inline note -->
+          <template v-for="(line, idx) in fileLines" :key="idx">
+            <!-- Code Line -->
+            <div 
+              class="flex hover:bg-[#2a2d2e]"
+              :class="{ 'bg-sakura-900/20': hasNoteAtLine(idx + 1) }"
+              @dragover.prevent="onDragOver($event, idx + 1)"
+              @drop.prevent="onDrop($event, idx + 1)"
+            >
+              <!-- Line Number -->
               <div 
-                v-for="(_, idx) in fileLines" 
-                :key="idx" 
-                class="font-mono text-xs leading-6 cursor-pointer transition-colors"
+                class="flex-shrink-0 w-12 pl-4 pr-2 text-right select-none font-mono text-xs leading-6 cursor-pointer transition-colors"
                 :class="hasNoteAtLine(idx + 1) ? 'text-sakura-400 font-bold' : 'text-gray-600 hover:text-gray-400'"
                 @click="toggleNoteAtLine(idx + 1)"
               >
                 {{ idx + 1 }}
               </div>
+              <!-- Code Content -->
+              <pre 
+                class="flex-1 pr-4 text-sm font-mono leading-6"
+                :class="wordWrap ? 'whitespace-pre-wrap break-all' : 'whitespace-pre'"
+              ><code v-html="highlightLine(line)" class="hljs"></code></pre>
             </div>
-            <!-- Code -->
-            <pre class="flex-1 py-4 pr-4 text-sm font-mono leading-6 overflow-visible"><code v-html="highlightedCode" class="hljs"></code></pre>
-          </div>
-          <div v-else class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
-            <div class="text-center">
-              <div class="text-4xl mb-4">📂</div>
-              <p>{{ isZh ? '从左侧选择文件开始阅读' : 'Select a file from the left to start reading' }}</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Notes Panel (Right Side) -->
-        <div 
-          v-if="showNotes && selectedFile" 
-          class="w-80 flex-shrink-0 border-l border-gray-700 bg-gray-50 dark:bg-gray-800 flex flex-col"
-        >
-          <div class="p-3 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
-            <h4 class="text-sm font-bold text-gray-700 dark:text-gray-300">
-              📝 {{ isZh ? '代码笔记' : 'Code Notes' }}
-            </h4>
-            <button @click="showNotes = false" class="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200">
-              ✕
-            </button>
-          </div>
-          <div class="flex-1 overflow-y-auto custom-scrollbar p-3 space-y-3">
-            <div v-if="currentFileNotes.length === 0" class="text-center text-gray-400 py-8 text-sm">
-              <p>{{ isZh ? '点击行号添加笔记' : 'Click line numbers to add notes' }}</p>
-            </div>
+            
+            <!-- Inline Note (below the line) -->
             <div 
-              v-for="note in currentFileNotes" 
-              :key="note.line"
-              class="bg-white dark:bg-gray-700 rounded-lg p-3 border border-gray-200 dark:border-gray-600 shadow-sm"
+              v-if="showNotes && hasNoteAtLine(idx + 1)"
+              class="flex mx-4 my-1"
+              draggable="true"
+              @dragstart="onDragStart($event, idx + 1)"
+              @dragend="onDragEnd"
             >
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-mono text-sakura-500 bg-sakura-50 dark:bg-sakura-900/30 px-2 py-0.5 rounded">
-                  L{{ note.line }}
-                </span>
-                <button 
-                  @click="deleteNote(note.line)"
-                  class="text-gray-400 hover:text-red-500 text-xs"
-                >
-                  🗑️
-                </button>
+              <div class="w-8"></div>
+              <div class="flex-1 bg-gradient-to-r from-sakura-50 to-amber-50 dark:from-sakura-900/30 dark:to-amber-900/20 rounded-lg p-3 border border-sakura-200 dark:border-sakura-700/50 shadow-sm group relative">
+                <!-- Drag Handle -->
+                <div class="absolute -left-6 top-1/2 -translate-y-1/2 cursor-grab opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-sakura-400">
+                  ⋮⋮
+                </div>
+                <div class="flex items-start justify-between gap-2 mb-1">
+                  <span class="text-[10px] font-mono text-sakura-600 dark:text-sakura-400 bg-sakura-100 dark:bg-sakura-900/50 px-1.5 py-0.5 rounded">
+                    L{{ idx + 1 }}
+                  </span>
+                  <button 
+                    @click="deleteNote(idx + 1)"
+                    class="text-gray-400 hover:text-red-500 text-xs opacity-0 group-hover:opacity-100 transition-opacity"
+                  >
+                    🗑️
+                  </button>
+                </div>
+                <textarea
+                  :value="getNoteContent(idx + 1)"
+                  @input="updateNoteContent(idx + 1, ($event.target as HTMLTextAreaElement).value)"
+                  class="w-full text-sm bg-transparent border-none outline-none resize-none text-gray-700 dark:text-gray-200 min-h-[40px] placeholder-gray-400"
+                  :placeholder="isZh ? '在此输入笔记...' : 'Type your note here...'"
+                  rows="2"
+                ></textarea>
               </div>
-              <textarea
-                v-model="note.content"
-                @input="saveNotes"
-                class="w-full text-sm bg-transparent border-none outline-none resize-none text-gray-700 dark:text-gray-300 min-h-[60px]"
-                :placeholder="isZh ? '在此输入笔记...' : 'Type your note here...'"
-              ></textarea>
             </div>
-          </div>
-          <div class="p-3 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400 text-center">
-            {{ isZh ? '笔记自动保存到本地' : 'Notes auto-saved locally' }}
+          </template>
+        </div>
+        <div v-else class="flex items-center justify-center h-full text-gray-500 dark:text-gray-400">
+          <div class="text-center">
+            <div class="text-4xl mb-4">📂</div>
+            <p>{{ isZh ? '从左侧选择文件开始阅读' : 'Select a file from the left to start reading' }}</p>
           </div>
         </div>
+      </div>
+      
+      <!-- Bottom hint -->
+      <div v-if="selectedFile && showNotes" class="px-4 py-2 bg-[#252526] border-t border-gray-700 text-xs text-gray-500 flex items-center justify-between">
+        <span>💡 {{ isZh ? '点击行号添加笔记，拖拽笔记可移动位置' : 'Click line numbers to add notes, drag notes to move' }}</span>
+        <span>{{ isZh ? '笔记自动保存' : 'Auto-saved' }}</span>
       </div>
     </div>
   </div>
@@ -265,7 +271,11 @@ const projectTree = ref<SourceFile[]>([
 const selectedFile = ref<SourceFile | null>(null)
 const fileContent = ref<string>('')
 const showNotes = ref(true)
+const wordWrap = ref(false)
 const codeContainer = ref<HTMLElement | null>(null)
+
+// Drag state
+const draggingNoteLine = ref<number | null>(null)
 
 // Notes stored in localStorage
 const NOTES_STORAGE_KEY = 'sakura_source_code_notes'
@@ -292,37 +302,45 @@ const currentFileNotes = computed(() => {
 // File lines
 const fileLines = computed(() => fileContent.value.split('\n'))
 
-// Syntax highlighted code
-const highlightedCode = computed(() => {
-  if (!fileContent.value || !selectedFile.value) return ''
-  
+// Get language for highlighting
+const getLanguage = () => {
+  if (!selectedFile.value) return 'plaintext'
   const ext = selectedFile.value.name.split('.').pop()?.toLowerCase()
-  let language = 'plaintext'
-  
   switch (ext) {
     case 'vue':
     case 'html':
-      language = 'xml'
-      break
+      return 'xml'
     case 'ts':
     case 'tsx':
-      language = 'typescript'
-      break
+      return 'typescript'
     case 'js':
     case 'jsx':
-      language = 'javascript'
-      break
+      return 'javascript'
     case 'css':
-      language = 'css'
-      break
+      return 'css'
     case 'json':
-      language = 'json'
-      break
+      return 'json'
     case 'sh':
-      language = 'bash'
-      break
+      return 'bash'
+    default:
+      return 'plaintext'
   }
-  
+}
+
+// Highlight a single line
+const highlightLine = (line: string) => {
+  const language = getLanguage()
+  try {
+    return hljs.highlight(line || ' ', { language }).value
+  } catch {
+    return line || ' '
+  }
+}
+
+// Syntax highlighted code (kept for compatibility)
+const highlightedCode = computed(() => {
+  if (!fileContent.value || !selectedFile.value) return ''
+  const language = getLanguage()
   try {
     return hljs.highlight(fileContent.value, { language }).value
   } catch {
@@ -367,6 +385,61 @@ const deleteNote = (line: number) => {
     allNotes.value[path] = allNotes.value[path].filter(n => n.line !== line)
     saveNotes()
   }
+}
+
+// Get note content
+const getNoteContent = (line: number): string => {
+  const note = currentFileNotes.value.find(n => n.line === line)
+  return note?.content || ''
+}
+
+// Update note content
+const updateNoteContent = (line: number, content: string) => {
+  if (!selectedFile.value) return
+  const path = selectedFile.value.path
+  if (!allNotes.value[path]) return
+  const note = allNotes.value[path].find(n => n.line === line)
+  if (note) {
+    note.content = content
+    saveNotes()
+  }
+}
+
+// Drag and drop handlers
+const onDragStart = (e: DragEvent, line: number) => {
+  draggingNoteLine.value = line
+  if (e.dataTransfer) {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', String(line))
+  }
+}
+
+const onDragEnd = () => {
+  draggingNoteLine.value = null
+}
+
+const onDragOver = (e: DragEvent, targetLine: number) => {
+  if (draggingNoteLine.value === null) return
+  e.preventDefault()
+}
+
+const onDrop = (e: DragEvent, targetLine: number) => {
+  if (!selectedFile.value || draggingNoteLine.value === null) return
+  const sourceLine = draggingNoteLine.value
+  if (sourceLine === targetLine) return
+  
+  const path = selectedFile.value.path
+  if (!allNotes.value[path]) return
+  
+  const noteIdx = allNotes.value[path].findIndex(n => n.line === sourceLine)
+  if (noteIdx < 0) return
+  
+  // Move note to new line
+  allNotes.value[path][noteIdx].line = targetLine
+  allNotes.value[path].sort((a, b) => a.line - b.line)
+  saveNotes()
+  
+  draggingNoteLine.value = null
 }
 
 // Save notes to localStorage
