@@ -47,6 +47,7 @@ export const LABS = [
   
   // Stage 6: Vue Core
   { id: 'LabReactivity', stageId: 'vue-core', name: 'Reactivity', nameZh: '响应式' },
+  { id: 'LabProjectTour', stageId: 'vue-core', name: 'Project Tour', nameZh: '项目导览' },
   { id: 'LabDirectives', stageId: 'vue-core', name: 'Directives', nameZh: '指令' },
   { id: 'LabClassStyle', stageId: 'vue-core', name: 'Class & Style', nameZh: '样式绑定' },
   { id: 'LabEventHandling', stageId: 'vue-core', name: 'Events', nameZh: '事件处理' },

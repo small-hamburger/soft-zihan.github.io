@@ -886,6 +886,76 @@ const resetToHome = () => {
 };
 
 // =====================
+// Global Code Open Helper
+// =====================
+const parseRangeToken = (raw?: string) => {
+  if (!raw) return { startLine: undefined, endLine: undefined };
+  const match = raw.match(/L?(\d+)(?:-L?(\d+))?/i);
+  if (!match) return { startLine: undefined, endLine: undefined };
+  const startLine = Number(match[1]);
+  const endLine = match[2] ? Number(match[2]) : undefined;
+  return {
+    startLine: Number.isFinite(startLine) ? startLine : undefined,
+    endLine: Number.isFinite(endLine || 0) ? endLine : undefined
+  };
+};
+
+const buildLineSnippet = (content: string, startLine?: number, endLine?: number) => {
+  if (!startLine) return content;
+  const lines = content.split(/\r?\n/);
+  const safeStart = Math.max(1, startLine);
+  const safeEnd = Math.min(lines.length, endLine && endLine >= safeStart ? endLine : safeStart);
+  const width = String(safeEnd).length;
+  const slice = lines.slice(safeStart - 1, safeEnd);
+  return slice.map((line, idx) => `${String(safeStart + idx).padStart(width, ' ')} | ${line}`).join('\n');
+};
+
+const openCodeByPath = async (path: string, range?: { startLine?: number; endLine?: number }) => {
+  const fileName = path.split('/').pop() || path;
+  const rangeLabel = range?.startLine
+    ? ` (L${range.startLine}${range.endLine && range.endLine !== range.startLine ? `-L${range.endLine}` : ''})`
+    : '';
+
+  await codeModal.openCodeModal(`${fileName}${rangeLabel}`, 'Loading...', path);
+
+  let node = findNodeByPath(fileSystem.value, path);
+  let content = '';
+
+  if (node && node.type === NodeType.FILE) {
+    if (!node.content) {
+      node.content = await fetchFileContent(node);
+    }
+    content = node.content;
+  } else {
+    content = await codeModal.fetchSourceCodeFile(path);
+  }
+
+  const finalContent = range?.startLine ? buildLineSnippet(content, range.startLine, range.endLine) : content;
+  codeModal.setCodeModalContent(finalContent);
+};
+
+const handleOpenCodeEvent = async (e: Event) => {
+  const detail = (e as CustomEvent).detail as {
+    path?: string;
+    startLine?: number;
+    endLine?: number;
+    range?: string;
+  };
+  if (!detail?.path) return;
+
+  let startLine = detail.startLine;
+  let endLine = detail.endLine;
+
+  if (!startLine && detail.range) {
+    const parsed = parseRangeToken(detail.range);
+    startLine = parsed.startLine;
+    endLine = parsed.endLine;
+  }
+
+  await openCodeByPath(detail.path, { startLine, endLine });
+};
+
+// =====================
 // Content Click Handler
 // =====================
 const { handleContentClick } = useContentClick(
@@ -1092,6 +1162,8 @@ onMounted(async () => {
   document.addEventListener('selectionchange', handleSelectionChange);
   // 捕获阶段拦截内部链接点击
   document.addEventListener('click', handleLinkCapture, { capture: true });
+  // 实验室/其他视图触发代码弹窗
+  window.addEventListener('sakura-open-code', handleOpenCodeEvent as EventListener);
 
   if (appStore.isDark) document.documentElement.classList.add('dark');
 
@@ -1116,22 +1188,7 @@ onMounted(async () => {
 
       // 处理代码文件弹窗路由
       if (sourcePath) {
-        const fileName = sourcePath.split('/').pop() || sourcePath;
-        await codeModal.openCodeModal(fileName, 'Loading...', sourcePath);
-
-        let node = findNodeByPath(fileSystem.value, sourcePath);
-        let content = '';
-
-        if (node && node.type === NodeType.FILE) {
-          if (!node.content) {
-            node.content = await fetchFileContent(node);
-          }
-          content = node.content;
-        } else {
-          content = await codeModal.fetchSourceCodeFile(sourcePath);
-        }
-
-        codeModal.setCodeModalContent(content);
+        await openCodeByPath(sourcePath);
       }
 
       if (lab === 'dashboard') {
@@ -1178,6 +1235,7 @@ onUnmounted(() => {
   document.removeEventListener('keydown', handleKeydown);
   document.removeEventListener('selectionchange', handleSelectionChange);
   document.removeEventListener('click', handleLinkCapture, { capture: true });
+  window.removeEventListener('sakura-open-code', handleOpenCodeEvent as EventListener);
   const scrollEl = document.getElementById('scroll-container');
   if (scrollEl) {
     scrollEl.removeEventListener('scroll', () => {});

@@ -17,7 +17,8 @@ export function useCodeModal() {
    * 根据文件扩展名获取语言
    */
   const getLanguageFromFileName = (fileName: string): string => {
-    const ext = fileName.split('.').pop()?.toLowerCase() || ''
+    const cleaned = fileName.split('?')[0].split('#')[0]
+    const ext = cleaned.split('.').pop()?.toLowerCase() || ''
     const langMap: Record<string, string> = {
       'vue': 'html',
       'ts': 'typescript',
@@ -44,7 +45,7 @@ export function useCodeModal() {
     if (!codeModalContent.value || codeModalContent.value === 'Loading...') {
       return codeModalContent.value
     }
-    const lang = getLanguageFromFileName(codeModalTitle.value)
+    const lang = getLanguageFromFileName(codeModalPath.value || codeModalTitle.value)
     try {
       if (hljs.getLanguage(lang)) {
         return hljs.highlight(codeModalContent.value, { language: lang }).value

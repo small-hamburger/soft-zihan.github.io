@@ -1,5 +1,12 @@
 ## 1. Vue工程化
 
+> 本项目联动：工程化配置可以直接对照源码阅读。
+
+- 构建配置：[vite.config.ts](code://vite.config.ts#L1-L120)
+- 依赖与脚本：[package.json](code://package.json#L1-L120)
+- TS 配置：[tsconfig.json](code://tsconfig.json#L1-L120)
+- 全局类型与常量：[types.ts](code://types.ts#L1-L120)、[constants.ts](code://constants.ts#L1-L120)
+
 前面我们在介绍Vue的时候，我们讲到Vue是一款用于构建用户界面的渐进式JavaScript框架 。（官方：https://cn.vuejs.org/）
 
 <img src="assets/image-20231215142214177.png" alt="image-20231215142214177" style="zoom:80%;" /> 

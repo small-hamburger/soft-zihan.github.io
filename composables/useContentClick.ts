@@ -32,6 +32,7 @@ export const stripHashQuery = (raw: string): string => {
  * 支持的内部链接文件扩展名
  */
 const SUPPORTED_EXTENSIONS = ['.md', '.pdf', '.vue', '.ts', '.tsx', '.js', '.jsx', '.json', '.html', '.css', '.scss']
+const CODE_PROTOCOL = 'code://'
 
 /**
  * 检查是否为支持的内部链接
@@ -45,6 +46,9 @@ export const isSupportedInternalLink = (raw?: string | null): boolean => {
 
   // 实验室深链接：lab:dashboard?tab=css-layout
   if (raw.startsWith('lab:')) return true
+
+  // 项目代码深链接：code://path/to/file#L10-L20
+  if (raw.startsWith(CODE_PROTOCOL)) return true
   
   const cleaned = stripHashQuery(raw)
   if (!cleaned || cleaned.startsWith('#')) return false
@@ -84,6 +88,49 @@ export function useContentClick(
   showToast: (msg: string) => void,
   openLabDashboard?: (tab?: string) => void
 ) {
+  type CodeLinkInfo = {
+    path: string
+    startLine?: number
+    endLine?: number
+  }
+
+  const parseLineRangeToken = (raw?: string | null) => {
+    if (!raw) return { startLine: undefined, endLine: undefined }
+    const match = raw.match(/L?(\d+)(?:-L?(\d+))?/i)
+    if (!match) return { startLine: undefined, endLine: undefined }
+    const startLine = Number(match[1])
+    const endLine = match[2] ? Number(match[2]) : undefined
+    return {
+      startLine: Number.isFinite(startLine) ? startLine : undefined,
+      endLine: Number.isFinite(endLine || 0) ? endLine : undefined
+    }
+  }
+
+  const parseCodeLink = (href: string): CodeLinkInfo | null => {
+    if (!href.startsWith(CODE_PROTOCOL)) return null
+    const raw = href.slice(CODE_PROTOCOL.length)
+    const [beforeHash, hash] = raw.split('#', 2)
+    const [pathPart, query] = beforeHash.split('?', 2)
+    const params = new URLSearchParams(query || '')
+    const rangeToken = params.get('lines') || params.get('line') || params.get('L') || hash
+    const { startLine, endLine } = parseLineRangeToken(rangeToken)
+    return {
+      path: decodeURIComponent(pathPart || ''),
+      startLine,
+      endLine
+    }
+  }
+
+  const buildLineSnippet = (content: string, startLine?: number, endLine?: number) => {
+    if (!startLine) return content
+    const lines = content.split(/\r?\n/)
+    const safeStart = Math.max(1, startLine)
+    const safeEnd = Math.min(lines.length, endLine && endLine >= safeStart ? endLine : safeStart)
+    const width = String(safeEnd).length
+    const slice = lines.slice(safeStart - 1, safeEnd)
+    return slice.map((line, idx) => `${String(safeStart + idx).padStart(width, ' ')} | ${line}`).join('\n')
+  }
+
   /**
    * 解析目标路径
    */
@@ -150,6 +197,39 @@ export function useContentClick(
           const params = new URLSearchParams(query || '')
           const tab = params.get('tab') || (cmd && cmd !== 'dashboard' ? cmd : undefined)
           openLabDashboard(tab || undefined)
+          hideSelectionMenu()
+          return
+        }
+
+        // 0.1 代码深链接：code://path/to/file#L10-L20
+        if (href && href.startsWith(CODE_PROTOCOL)) {
+          const info = parseCodeLink(href)
+          if (!info?.path) {
+            showToast('Invalid code link')
+            hideSelectionMenu()
+            return
+          }
+
+          const { path, startLine, endLine } = info
+          const fileName = path.split('/').pop() || path
+          const rangeLabel = startLine ? ` (L${startLine}${endLine && endLine !== startLine ? `-L${endLine}` : ''})` : ''
+
+          await openCodeModal(`${fileName}${rangeLabel}`, 'Loading...', path)
+
+          let node = findNodeByPath(fileSystem.value, path)
+          let content = ''
+
+          if (node && node.type === NodeType.FILE) {
+            if (!node.content) {
+              node.content = await fetchFileContent(node)
+            }
+            content = node.content
+          } else {
+            content = await fetchSourceCodeFile(path)
+          }
+
+          const finalContent = startLine ? buildLineSnippet(content, startLine, endLine) : content
+          setCodeModalContent(finalContent)
           hideSelectionMenu()
           return
         }

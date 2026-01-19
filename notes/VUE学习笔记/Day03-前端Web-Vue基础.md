@@ -1,5 +1,14 @@
 前面两天，我们已经学习了前端网页开发的三剑客：HTML、CSS、JS。那通过这三种技术呢，我们就可以开发出一个网页程序了，但是如果我们使用原生的JS来处理界面的交互行为，开发效率呢，是比较低的。而在现在的企业项目开发中，一般会借助于Vue这样的js框架来简化操作、提高开发效率。 那么我们今天呢，就来学习Vue这个框架。
 
+> 本项目联动：本文中的 code:// 链接可直接打开项目源码；建议同时打开实验室可视化入口：[项目实战导览](lab:dashboard?tab=vue-core)。
+
+**与本项目对应的真实入口与结构**
+
+- 入口与挂载：[index.tsx](code://index.tsx#L1-L80)
+- 根组件结构：[App.vue](code://App.vue#L1-L220)
+- 组件拆分示例：[components/AppHeader.vue](code://components/AppHeader.vue#L1-L120)、[components/AppSidebar.vue](code://components/AppSidebar.vue#L1-L140)
+- 组合式函数示例：[composables/useContentRenderer.ts](code://composables/useContentRenderer.ts#L1-L140)、[composables/useContentClick.ts](code://composables/useContentClick.ts#L1-L180)
+
 
 
 # 1. Vue概述
@@ -42,6 +51,11 @@ userList: [
 - 我们再学习了路由VueRouter，就可以使用Vue中的中的路由功能了。
 
 也就是说，并不需要全部学习完毕就可以直接使用Vue进行开发，简化操作、提高效率了。 Vue是一个框架，但其实也是一个生态。
+
+在本项目中，工程化与渐进式的真实体现：
+
+- Vite 构建与工程化入口：[vite.config.ts](code://vite.config.ts#L1-L120)
+- 依赖与脚本管理：[package.json](code://package.json#L1-L120)
 
 那由此呢，也就引出了Vue中两种常见的开发模式：
 

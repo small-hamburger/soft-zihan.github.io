@@ -1,10 +1,30 @@
 # Vue
 
+> 提示：本文中的 code:// 链接会打开本项目对应源码片段，建议边读边对照。
+
+## 本项目学习路径（强关联源码）
+
+- 实验室入口（可视化）：[项目实战导览](lab:dashboard?tab=vue-core)
+- 应用入口与挂载：[index.tsx](code://index.tsx#L1-L80)
+- 根组件与整体布局：[App.vue](code://App.vue#L1-L220)
+- Markdown 渲染链路：[useContentRenderer.ts](code://composables/useContentRenderer.ts#L1-L140)
+- 链接拦截与代码跳转：[useContentClick.ts](code://composables/useContentClick.ts#L1-L180)
+- 代码弹窗与高亮：[useCodeModal.ts](code://composables/useCodeModal.ts#L1-L120)
+- 全局状态（主题/语言/偏好）：[appStore.ts](code://stores/appStore.ts#L1-L120)
+- 文章状态（收藏/标签/阅读）：[articleStore.ts](code://stores/articleStore.ts#L1-L120)
+- 关键 UI 拆分：[AppHeader.vue](code://components/AppHeader.vue#L1-L120)、[AppSidebar.vue](code://components/AppSidebar.vue#L1-L140)
+
 ## Vue基础
 
 ### MVVM
 
 MVVM 是 Model-View-ViewModel 的缩写。MVVM 是一种设计思想。 Model 层代表数据模型，也可以在 Model 中定义数据修改和操作的业务逻辑; View 代表 UI 组件，它负责将数据模型转化成 UI 展现出来，View 是一个同步 View 和 Model 的对象 在 MVVM 架构下，View 和 Model 之间并没有直接的联系，而是通过 ViewModel 进行交互， Model 和 ViewModel 之间的交互是双向的， 因此 View 数据的变化会同步到 Model 中，而 Model 数据的变化也会立即反应到 View 上。 对 ViewModel 通过双向数据绑定把 View 层和 Model 层连接了起来，而 View 和 Model 之间的 同步工作完全是自动的，无需人为干涉，因此开发者只需关注业务逻辑，不需要手动操作 DOM，不需要关注数据状态的同步问题，复杂的数据状态维护完全由 MVVM 来统一管理。
+
+在本项目中：
+
+- View：App 的模板与组件树（[App.vue](code://App.vue#L1-L220)、[AppHeader.vue](code://components/AppHeader.vue#L1-L120)）
+- ViewModel：组合式函数与状态层（[useContentRenderer.ts](code://composables/useContentRenderer.ts#L1-L140)、[appStore.ts](code://stores/appStore.ts#L1-L120)）
+- Model：本地数据与笔记索引（[files.json](code://files.json) 由脚本生成）
 
 ### Vue的优点和特点
 
@@ -116,6 +136,11 @@ Vue3.x 放弃了 Object.defineProperty ，使用 ES6 原生的 Proxy，来解决
 **二、computed 和 watch 以及 methods 的区别**
 
 **1、性质上** methods ：定义函数，**手动调用** computed：计算属性，return 返回结果，**自动调用** watch： 观察，**监听，发生改变就调用**
+
+项目中的真实例子：
+
+- computed：代码弹窗语法高亮（[useCodeModal.ts](code://composables/useCodeModal.ts#L35-L80)）
+- watch：监听当前文件变化，更新渲染与目录（[App.vue](code://App.vue#L1010-L1065)）
 
 **2、使用场景** methods ：一般不处理数据的逻辑，用于获取数据，和改变状态等情况 computed：多用于一个数据受多个数据影响的情况，具有 缓存的特性，避免每次重新计算 watch： 多用于一个数据影响多个数据的情况，且类似异步等情况的时候建议使用
 

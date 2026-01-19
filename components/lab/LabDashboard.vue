@@ -300,6 +300,13 @@
       <!-- Stage 6: Vue Core -->
       <div v-else-if="activeTab === 'vue-core'" class="space-y-12 animate-fade-in">
         <section>
+          <h2 class="text-xl font-bold text-sakura-600 dark:text-sakura-400 mb-4 flex items-center gap-2">
+            <span class="text-2xl">🧭</span> {{ isZh ? '项目实战导览' : 'Project Tour' }}
+          </h2>
+          <LabProjectTour :lang="lang" />
+        </section>
+
+        <section>
            <h2 class="text-xl font-bold text-purple-600 dark:text-purple-400 mb-4 flex items-center gap-2">
              <span class="text-2xl">🧪</span> {{ t.lab_reactivity }}
            </h2>
@@ -465,6 +472,7 @@ import LabClassStyle from './stage6-vue-core/LabClassStyle.vue'
 import LabEventHandling from './stage6-vue-core/LabEventHandling.vue'
 import LabVueList from './stage6-vue-core/LabVueList.vue'
 import LabLifecycle from './stage6-vue-core/LabLifecycle.vue'
+import LabProjectTour from './LabProjectTour.vue'
 
 // Stage 7: Vue Advanced
 import LabPropsEmit from './stage7-vue-advanced/LabPropsEmit.vue'
