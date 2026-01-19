@@ -397,19 +397,37 @@ const selectFile = async (file: SourceFile) => {
   selectedFile.value = file
   
   try {
-    // Try to fetch from raw folder first
-    const rawPath = `./raw/${file.path.replace(/\//g, '_').replace(/\./g, '_')}.txt`
-    let res = await fetch(rawPath)
+    // Generate the raw file path: replace / with _ and append .txt
+    // e.g., "components/AppHeader.vue" -> "components_AppHeader.vue.txt"
+    // e.g., "App.vue" -> "App.vue.txt"
+    const rawFileName = file.path.replace(/\//g, '_') + '.txt'
+    
+    // Get base URL for production deployment (e.g., GitHub Pages)
+    // @ts-ignore - Vite injects this at build time
+    const baseUrl = (import.meta as any).env?.BASE_URL || '/'
+    
+    // Try to fetch from raw folder with base URL first (for deployed site)
+    let res = await fetch(`${baseUrl}raw/${rawFileName}`)
     
     if (!res.ok) {
-      // Fallback to direct file path
+      // Try relative path for local development
+      res = await fetch(`./raw/${rawFileName}`)
+    }
+    
+    if (!res.ok) {
+      // Fallback to direct file path with base URL
+      res = await fetch(`${baseUrl}${file.path}`)
+    }
+    
+    if (!res.ok) {
+      // Try relative direct file path
       res = await fetch(`./${file.path}`)
     }
     
     if (res.ok) {
       fileContent.value = await res.text()
     } else {
-      fileContent.value = `// Could not load file: ${file.path}`
+      fileContent.value = `// Could not load file: ${file.path}\n// Tried: ${baseUrl}raw/${rawFileName}`
     }
   } catch (e) {
     fileContent.value = `// Error loading file: ${e}`

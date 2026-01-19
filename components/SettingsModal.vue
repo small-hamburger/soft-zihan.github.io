@@ -60,10 +60,10 @@
           <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{{ t.petal_layer || '🌸 樱花层级' }}</label>
           <div class="flex gap-2">
             <button @click="settings.petalLayer = 'back'" class="flex-1 py-2 border rounded-xl text-sm transition-colors flex items-center justify-center gap-2" :class="settings.petalLayer === 'back' ? 'border-sakura-500 bg-sakura-50 dark:bg-sakura-900/20 text-sakura-600 dark:text-sakura-400' : 'border-gray-200 dark:border-gray-700 text-gray-500'">
-              <span>📄</span> {{ t.petal_back || '文章前' }}
+              <span>📄</span> {{ t.petal_back || '文章后' }}
             </button>
             <button @click="settings.petalLayer = 'front'" class="flex-1 py-2 border rounded-xl text-sm transition-colors flex items-center justify-center gap-2" :class="settings.petalLayer === 'front' ? 'border-sakura-500 bg-sakura-50 dark:bg-sakura-900/20 text-sakura-600 dark:text-sakura-400' : 'border-gray-200 dark:border-gray-700 text-gray-500'">
-              <span>🌸</span> {{ t.petal_front || '文章后' }}
+              <span>🌸</span> {{ t.petal_front || '文章前' }}
             </button>
           </div>
           <p class="text-[10px] text-gray-400 mt-1.5">{{ t.petal_layer_hint || '设置樱花显示在文章内容的前面还是后面' }}</p>
@@ -130,61 +130,109 @@
 
       <!-- Backup & Restore -->
       <div class="mb-6 border-t border-gray-200 dark:border-gray-700 pt-6">
-        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{{ t.backup_title || '云端备份' }}</label>
+        <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">{{ t.backup_title || '数据备份' }}</label>
+        
+        <!-- Backup Target Selection -->
+        <div class="flex gap-2 mb-3">
+          <button 
+            @click="backupTarget = 'local'" 
+            class="flex-1 py-2 border rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+            :class="backupTarget === 'local' ? 'border-sakura-500 bg-sakura-50 dark:bg-sakura-900/20 text-sakura-600 dark:text-sakura-400' : 'border-gray-200 dark:border-gray-700 text-gray-500'"
+          >
+            <span>💾</span> {{ t.backup_local || '本地' }}
+          </button>
+          <button 
+            @click="backupTarget = 'cloud'" 
+            class="flex-1 py-2 border rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
+            :class="backupTarget === 'cloud' ? 'border-sakura-500 bg-sakura-50 dark:bg-sakura-900/20 text-sakura-600 dark:text-sakura-400' : 'border-gray-200 dark:border-gray-700 text-gray-500'"
+          >
+            <span>☁️</span> {{ t.backup_cloud || '云端' }}
+          </button>
+        </div>
         
         <!-- Warning Notice -->
         <div class="mb-3 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-xs text-amber-600 dark:text-amber-400">
-          ⚠️ {{ t.backup_warning || '备份不包含 GitHub Token，恢复后需重新配置' }}
+          ⚠️ {{ backupTarget === 'local' 
+            ? (t.backup_warning_local || '本地备份存储在浏览器中，清除浏览器数据会丢失')
+            : (t.backup_warning || '备份不包含 GitHub Token，恢复后需重新配置') }}
         </div>
         
         <!-- Backup Button -->
         <button 
           @click="handleBackup"
-          :disabled="isBackingUp || !hasToken || !authorName.trim()"
+          :disabled="isBackingUp || (backupTarget === 'cloud' && !hasToken) || !authorName.trim()"
           class="w-full py-2 mb-2 border rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
-          :class="hasToken && authorName.trim() ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30' : 'border-gray-300 dark:border-gray-600 text-gray-400 cursor-not-allowed'"
+          :class="(backupTarget === 'local' || hasToken) && authorName.trim() ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30' : 'border-gray-300 dark:border-gray-600 text-gray-400 cursor-not-allowed'"
         >
           <span v-if="isBackingUp" class="animate-spin">⏳</span>
-          <span v-else>☁️</span>
+          <span v-else>{{ backupTarget === 'local' ? '💾' : '☁️' }}</span>
           {{ isBackingUp ? (t.backing_up || '备份中...') : (t.backup_now || '立即备份') }}
         </button>
         
-        <p v-if="!hasToken" class="text-xs text-amber-500 mb-2">
+        <p v-if="backupTarget === 'cloud' && !hasToken" class="text-xs text-amber-500 mb-2">
           {{ t.backup_need_token || '请先配置 GitHub Token' }}
         </p>
         <p v-else-if="!authorName.trim()" class="text-xs text-amber-500 mb-2">
           {{ t.backup_need_author || '请先填写作者名称' }}
         </p>
         
+        <!-- Import from file -->
+        <div class="flex gap-2 mb-2">
+          <button 
+            @click="triggerFileImport"
+            :disabled="isRestoring"
+            class="flex-1 py-2 border rounded-xl text-sm transition-colors flex items-center justify-center gap-2 border-purple-500 bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/30"
+          >
+            <span>📥</span> {{ t.import_backup || '导入备份文件' }}
+          </button>
+          <input 
+            ref="fileInputRef"
+            type="file" 
+            accept=".json" 
+            class="hidden" 
+            @change="handleFileImport"
+          />
+        </div>
+        
         <!-- Backup List Toggle -->
         <button 
           @click="toggleBackupList"
-          :disabled="!hasToken"
+          :disabled="backupTarget === 'cloud' && !hasToken"
           class="w-full py-2 border rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
-          :class="hasToken ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30' : 'border-gray-300 dark:border-gray-600 text-gray-400 cursor-not-allowed'"
+          :class="backupTarget === 'local' || hasToken ? 'border-green-500 bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30' : 'border-gray-300 dark:border-gray-600 text-gray-400 cursor-not-allowed'"
         >
           <span>📋</span>
           {{ showBackupList ? (t.hide_backups || '隐藏备份列表') : (t.show_backups || '查看备份列表') }}
         </button>
         
         <!-- Backup List -->
-        <div v-if="showBackupList && backupList.length > 0" class="mt-3 max-h-40 overflow-y-auto border rounded-xl border-gray-200 dark:border-gray-700">
+        <div v-if="showBackupList && currentBackupList.length > 0" class="mt-3 max-h-40 overflow-y-auto border rounded-xl border-gray-200 dark:border-gray-700">
           <div 
-            v-for="backup in backupList" 
+            v-for="backup in currentBackupList" 
             :key="backup.name"
             class="flex items-center justify-between p-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50"
           >
             <div class="flex-1 min-w-0">
               <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
                 {{ parseBackupFilename(backup.name).author }}
+                <span v-if="backup.isLocal" class="ml-1 text-[10px] text-purple-500">(本地)</span>
               </p>
               <p class="text-xs text-gray-400">
                 {{ parseBackupFilename(backup.name).date }}
               </p>
             </div>
             <div class="flex gap-1 ml-2">
+              <!-- Export button for local backups -->
               <button 
-                @click="handleRestore(backup.name)"
+                v-if="backup.isLocal"
+                @click="handleExport(backup.name)"
+                class="px-2 py-1 text-xs rounded-lg bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-200"
+                :title="t.export || '导出'"
+              >
+                📤
+              </button>
+              <button 
+                @click="handleRestore(backup)"
                 :disabled="isRestoring"
                 class="px-2 py-1 text-xs rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200"
               >
@@ -210,6 +258,55 @@
         </p>
       </div>
 
+      <!-- Data & Security Info -->
+      <div class="mb-6 border-t border-gray-200 dark:border-gray-700 pt-6">
+        <button 
+          @click="showDataInfo = !showDataInfo"
+          class="w-full flex items-center justify-between text-left"
+        >
+          <label class="block text-xs font-bold text-gray-400 uppercase tracking-wider">{{ t.data_info_title || '📋 数据与安全说明' }}</label>
+          <span class="text-gray-400 text-sm">{{ showDataInfo ? '▲' : '▼' }}</span>
+        </button>
+        
+        <div v-if="showDataInfo" class="mt-3 space-y-3 text-xs text-gray-500 dark:text-gray-400">
+          <!-- Publishing Mechanism -->
+          <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
+            <h4 class="font-bold text-blue-600 dark:text-blue-400 mb-1">🚀 {{ t.publish_mechanism || '发布修改原理' }}</h4>
+            <ul class="space-y-1 list-disc list-inside">
+              <li>{{ t.publish_info_1 || '仓库主可直接提交修改到 main 分支' }}</li>
+              <li>{{ t.publish_info_2 || '其他用户自动 Fork 仓库并提交 Pull Request' }}</li>
+              <li>{{ t.publish_info_3 || 'Fork 会自动同步到最新版本避免冲突' }}</li>
+              <li>{{ t.publish_info_4 || 'PR 需等待仓库管理员审核合并' }}</li>
+            </ul>
+          </div>
+          
+          <!-- Storage Policy -->
+          <div class="p-3 bg-green-50 dark:bg-green-900/20 rounded-xl">
+            <h4 class="font-bold text-green-600 dark:text-green-400 mb-1">💾 {{ t.storage_policy || '持久化存储策略' }}</h4>
+            <p class="mb-1">{{ t.storage_intro || '以下数据存储在浏览器 localStorage 中：' }}</p>
+            <ul class="space-y-1 list-disc list-inside">
+              <li>{{ t.storage_item_1 || '用户偏好设置（主题、字体、壁纸等）' }}</li>
+              <li>{{ t.storage_item_2 || '文章收藏和点赞记录' }}</li>
+              <li>{{ t.storage_item_3 || '作者信息和仓库配置' }}</li>
+              <li>{{ t.storage_item_4 || '本地备份数据（最多 10 份）' }}</li>
+            </ul>
+            <p class="mt-2 text-amber-600 dark:text-amber-400">⚠️ {{ t.storage_warning || '清除浏览器数据会丢失这些内容，建议定期备份！' }}</p>
+          </div>
+          
+          <!-- Token Security -->
+          <div class="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl">
+            <h4 class="font-bold text-purple-600 dark:text-purple-400 mb-1">🔐 {{ t.token_security || 'Token 安全策略' }}</h4>
+            <ul class="space-y-1 list-disc list-inside">
+              <li>{{ t.token_info_1 || 'Token 使用 AES-256-GCM 加密存储' }}</li>
+              <li>{{ t.token_info_2 || '加密密钥基于浏览器指纹派生，其他设备无法解密' }}</li>
+              <li>{{ t.token_info_3 || 'Token 不会被包含在任何备份中' }}</li>
+              <li>{{ t.token_info_4 || 'Token 仅用于 GitHub API 调用，不会发送到其他服务器' }}</li>
+              <li>{{ t.token_info_5 || '建议使用具有最小权限的 Fine-grained Token' }}</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
       <button @click="$emit('close')" class="w-full py-3 bg-sakura-500 hover:bg-sakura-600 text-white rounded-xl font-bold shadow-lg transition-colors">{{ t.done }}</button>
     </div>
   </div>
@@ -218,8 +315,9 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useWallpapers } from '../composables/useWallpapers'
-import { useBackup } from '../composables/useBackup'
+import { useBackup, type BackupFile } from '../composables/useBackup'
 import { useAppStore } from '../stores/appStore'
+import { useTokenSecurity } from '../composables/useTokenSecurity'
 
 defineProps<{
   t: any;
@@ -239,6 +337,7 @@ const emit = defineEmits<{
 
 const appStore = useAppStore()
 const { currentThemeWallpapers, setWallpaper } = useWallpapers()
+const { saveToken, hasToken: checkHasToken, getToken } = useTokenSecurity()
 
 // GitHub Configuration
 const tokenInput = ref('')
@@ -246,45 +345,77 @@ const repoOwner = ref('soft-zihan')
 const repoName = ref('soft-zihan.github.io')
 const authorName = ref('')
 const authorUrl = ref('')
+const isSavingConfig = ref(false)
 
-const hasToken = computed(() => !!localStorage.getItem('github_pat'))
+const hasToken = ref(false)
 
-const saveGitHubConfig = () => {
-  if (tokenInput.value) {
-    localStorage.setItem('github_pat', tokenInput.value)
+// 初始化检查 token 状态
+const updateTokenStatus = () => {
+  hasToken.value = checkHasToken()
+}
+
+const saveGitHubConfig = async () => {
+  isSavingConfig.value = true
+  try {
+    if (tokenInput.value) {
+      await saveToken(tokenInput.value)
+      tokenInput.value = '' // 清空输入框，不显示 token
+    }
+    if (repoOwner.value) {
+      localStorage.setItem('github_repo_owner', repoOwner.value)
+    }
+    if (repoName.value) {
+      localStorage.setItem('github_repo_name', repoName.value)
+    }
+    if (authorName.value) {
+      localStorage.setItem('author_name', authorName.value)
+    }
+    if (authorUrl.value) {
+      localStorage.setItem('author_url', authorUrl.value)
+    }
+    updateTokenStatus()
+    backupMessage.value = '配置已保存（Token 已加密存储）'
+    backupSuccess.value = true
+    setTimeout(() => { backupMessage.value = '' }, 3000)
+  } catch (e) {
+    backupMessage.value = '保存失败'
+    backupSuccess.value = false
+  } finally {
+    isSavingConfig.value = false
   }
-  if (repoOwner.value) {
-    localStorage.setItem('github_repo_owner', repoOwner.value)
-  }
-  if (repoName.value) {
-    localStorage.setItem('github_repo_name', repoName.value)
-  }
-  if (authorName.value) {
-    localStorage.setItem('author_name', authorName.value)
-  }
-  if (authorUrl.value) {
-    localStorage.setItem('author_url', authorUrl.value)
-  }
-  backupMessage.value = '配置已保存'
-  backupSuccess.value = true
-  setTimeout(() => { backupMessage.value = '' }, 2000)
 }
 
 // Backup functionality
 const { 
   isBackingUp, 
   isRestoring, 
-  backupList, 
+  backupList,
+  localBackupList,
   backupToGitHub, 
   listBackups, 
   restoreFromGitHub, 
   deleteBackup,
-  parseBackupFilename 
+  parseBackupFilename,
+  // 本地备份
+  backupToLocal,
+  getLocalBackups,
+  restoreFromLocal,
+  deleteLocalBackup,
+  exportBackupToFile,
+  importBackupFromFile
 } = useBackup()
 
 const showBackupList = ref(false)
 const backupMessage = ref('')
 const backupSuccess = ref(false)
+const backupTarget = ref<'local' | 'cloud'>('local')
+const fileInputRef = ref<HTMLInputElement | null>(null)
+const showDataInfo = ref(false)
+
+// 当前显示的备份列表（根据选择的目标）
+const currentBackupList = computed(() => {
+  return backupTarget.value === 'local' ? localBackupList.value : backupList.value
+})
 
 const handleBackup = async () => {
   if (!authorName.value.trim()) {
@@ -293,11 +424,17 @@ const handleBackup = async () => {
     return
   }
   
-  const result = await backupToGitHub(repoOwner.value, repoName.value, authorName.value)
+  let result
+  if (backupTarget.value === 'local') {
+    result = await backupToLocal(authorName.value)
+  } else {
+    result = await backupToGitHub(repoOwner.value, repoName.value, authorName.value)
+  }
+  
   backupMessage.value = result.message
   backupSuccess.value = result.success
   
-  if (result.success) {
+  if (result.success && backupTarget.value === 'cloud') {
     await listBackups(repoOwner.value, repoName.value)
   }
 }
@@ -305,16 +442,26 @@ const handleBackup = async () => {
 const toggleBackupList = async () => {
   showBackupList.value = !showBackupList.value
   if (showBackupList.value) {
-    await listBackups(repoOwner.value, repoName.value)
+    if (backupTarget.value === 'local') {
+      getLocalBackups()
+    } else {
+      await listBackups(repoOwner.value, repoName.value)
+    }
   }
 }
 
-const handleRestore = async (filename: string) => {
+const handleRestore = async (backup: BackupFile) => {
   if (!confirm('确定要恢复此备份吗？当前设置将被覆盖。恢复后需要刷新页面。')) {
     return
   }
   
-  const result = await restoreFromGitHub(repoOwner.value, repoName.value, filename)
+  let result
+  if (backup.isLocal) {
+    result = await restoreFromLocal(backup.name)
+  } else {
+    result = await restoreFromGitHub(repoOwner.value, repoName.value, backup.name)
+  }
+  
   backupMessage.value = result.message
   backupSuccess.value = result.success
   
@@ -325,29 +472,73 @@ const handleRestore = async (filename: string) => {
   }
 }
 
-const handleDelete = async (backup: any) => {
+const handleDelete = async (backup: BackupFile) => {
   if (!confirm(`确定要删除备份 "${parseBackupFilename(backup.name).author}" 吗？`)) {
     return
   }
   
-  const result = await deleteBackup(repoOwner.value, repoName.value, backup.name, backup.sha)
+  let result
+  if (backup.isLocal) {
+    result = deleteLocalBackup(backup.name)
+  } else {
+    result = await deleteBackup(repoOwner.value, repoName.value, backup.name, backup.sha)
+  }
+  
   backupMessage.value = result.message
   backupSuccess.value = result.success
   
   if (result.success) {
-    await listBackups(repoOwner.value, repoName.value)
+    if (backup.isLocal) {
+      getLocalBackups()
+    } else {
+      await listBackups(repoOwner.value, repoName.value)
+    }
+  }
+}
+
+const handleExport = (filename: string) => {
+  const result = exportBackupToFile(filename)
+  backupMessage.value = result.message
+  backupSuccess.value = result.success
+}
+
+const triggerFileImport = () => {
+  fileInputRef.value?.click()
+}
+
+const handleFileImport = async (event: Event) => {
+  const input = event.target as HTMLInputElement
+  const file = input.files?.[0]
+  if (!file) return
+  
+  const result = await importBackupFromFile(file)
+  backupMessage.value = result.message
+  backupSuccess.value = result.success
+  
+  // 重置 input
+  input.value = ''
+  
+  if (result.success) {
+    if (confirm('导入成功！是否立即刷新页面以应用更改？')) {
+      window.location.reload()
+    }
   }
 }
 
 onMounted(() => {
-  // Load saved config
-  tokenInput.value = localStorage.getItem('github_pat') || ''
+  // 检查 token 状态（不加载明文）
+  updateTokenStatus()
+  
+  // Load saved config (不加载 token 到输入框)
   repoOwner.value = localStorage.getItem('github_repo_owner') || 'soft-zihan'
   repoName.value = localStorage.getItem('github_repo_name') || 'soft-zihan.github.io'
   authorName.value = localStorage.getItem('author_name') || ''
   authorUrl.value = localStorage.getItem('author_url') || ''
   
-  // Preload backup list
+  // Preload local backups
+  getLocalBackups()
+  
+  // Preload cloud backup list if token exists
   if (hasToken.value) {
     listBackups(repoOwner.value, repoName.value)
   }

@@ -20,6 +20,7 @@ export function useRawEditor(
   const editedRawContent = ref('')
   const isSavingRaw = ref(false)
   const showSettings = ref(false) // 用于打开设置面板
+  const isPreviewMode = ref(false) // 编辑时是否显示预览
 
   /**
    * 开始编辑
@@ -37,6 +38,14 @@ export function useRawEditor(
   const cancelEditingRaw = () => {
     isEditingRaw.value = false
     editedRawContent.value = ''
+    isPreviewMode.value = false
+  }
+
+  /**
+   * 切换预览模式
+   */
+  const togglePreviewMode = () => {
+    isPreviewMode.value = !isPreviewMode.value
   }
 
   /**
@@ -95,7 +104,7 @@ export function useRawEditor(
    * 保存 Raw 内容到 GitHub
    */
   const saveRawContent = async () => {
-    const token = getToken()
+    const token = await getToken()
     if (!token) {
       alert(lang.value === 'zh' ? '请先在设置中配置 GitHub Token' : 'Please configure GitHub Token in Settings')
       showSettings.value = true
@@ -160,8 +169,10 @@ export function useRawEditor(
     editedRawContent,
     isSavingRaw,
     showSettings,
+    isPreviewMode,
     startEditingRaw,
     cancelEditingRaw,
-    saveRawContent
+    saveRawContent,
+    togglePreviewMode
   }
 }

@@ -6,8 +6,8 @@
         class="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8"
         @keydown.esc="emit('close')"
       >
-        <!-- Backdrop -->
-        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="confirmClose"></div>
+        <!-- Backdrop - 不模糊，保持背景可见 -->
+        <div class="absolute inset-0 bg-black/40" @click="confirmClose"></div>
         
         <!-- Editor Container -->
         <div class="relative w-full max-w-6xl h-[90vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden animate-fade-in">
@@ -143,20 +143,52 @@
             </div>
             
             <div class="flex items-center gap-3">
-              <!-- 目录选择 -->
-              <div class="flex items-center gap-2 px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg">
-                <span>📁</span>
-                <span class="text-xs text-gray-400">{{ getRootFolder() }}/</span>
-                <input
-                  v-model="pathSuffix"
-                  type="text"
-                  list="folder-suffix-options"
-                  :placeholder="lang === 'zh' ? '子目录 (可选)' : 'Subfolder (optional)'"
-                  class="w-48 text-sm bg-transparent border-0 outline-none text-gray-700 dark:text-gray-200 placeholder-gray-400"
-                />
-                <datalist id="folder-suffix-options">
-                  <option v-for="opt in folderSuffixOptions" :key="opt" :value="opt"></option>
-                </datalist>
+              <!-- 目录选择 - 带树状选择和新建功能 -->
+              <div class="relative">
+                <button 
+                  @click="showFolderPicker = !showFolderPicker"
+                  class="flex items-center gap-2 px-3 py-2 text-sm bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:border-sakura-400 dark:hover:border-sakura-500 transition-colors"
+                >
+                  <span>📁</span>
+                  <span class="text-gray-700 dark:text-gray-200 max-w-[200px] truncate">{{ targetFolder }}</span>
+                  <svg class="w-4 h-4 text-gray-400" :class="{ 'rotate-180': showFolderPicker }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </button>
+                
+                <!-- 树状文件夹选择器 -->
+                <div v-if="showFolderPicker" class="absolute bottom-full mb-2 left-0 w-80 max-h-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl overflow-hidden z-50">
+                  <div class="px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                    <div class="flex items-center gap-2">
+                      <input
+                        v-model="newFolderName"
+                        type="text"
+                        :placeholder="lang === 'zh' ? '新建子目录名...' : 'New folder name...'"
+                        class="flex-1 px-2 py-1 text-xs border border-gray-200 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 outline-none focus:border-sakura-400"
+                        @keydown.enter="createNewFolder"
+                      />
+                      <button 
+                        @click="createNewFolder"
+                        :disabled="!newFolderName.trim()"
+                        class="px-2 py-1 text-xs bg-sakura-500 text-white rounded hover:bg-sakura-600 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                      >
+                        {{ lang === 'zh' ? '创建' : 'Create' }}
+                      </button>
+                    </div>
+                  </div>
+                  <div class="overflow-y-auto max-h-60 custom-scrollbar">
+                    <div
+                      v-for="folder in availableFolders"
+                      :key="folder"
+                      @click="selectFolder(folder)"
+                      class="px-3 py-2 text-sm cursor-pointer hover:bg-sakura-50 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors"
+                      :class="{ 'bg-sakura-100 dark:bg-sakura-900/30': targetFolder === folder }"
+                    >
+                      <span class="text-gray-400">{{ getFolderIcon(folder) }}</span>
+                      <span class="text-gray-700 dark:text-gray-200">{{ folder }}</span>
+                    </div>
+                  </div>
+                </div>
               </div>
               
               <button 
@@ -225,7 +257,7 @@
 
         <!-- Import Preview Modal -->
         <div v-if="showImportModal" class="fixed inset-0 z-[110] flex items-center justify-center p-4 md:p-8">
-          <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="closeImportModal"></div>
+          <div class="absolute inset-0 bg-black/40" @click="closeImportModal"></div>
           <div class="relative w-full max-w-6xl h-[85vh] bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
             <div class="flex items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
               <div>
@@ -266,19 +298,37 @@
                     v-for="item in importMdFiles"
                     :key="item.relPath"
                     class="flex items-start gap-2 px-3 py-2 text-xs border-b border-gray-100 dark:border-gray-800 hover:bg-sakura-50/60 dark:hover:bg-gray-800/50"
+                    :class="{ 'bg-sakura-50/40 dark:bg-sakura-900/20': importPreviewPath === item.relPath }"
                   >
                     <input
                       type="checkbox"
-                      class="mt-0.5"
+                      class="mt-1.5 flex-shrink-0"
                       :value="item.relPath"
                       v-model="importSelected"
                     />
-                    <button
-                      class="text-left flex-1 truncate"
-                      @click="importPreviewPath = item.relPath"
-                    >
-                      <span class="font-medium text-gray-700 dark:text-gray-200">{{ item.relPath }}</span>
-                    </button>
+                    <div class="flex-1 min-w-0">
+                      <!-- 可编辑的文件名 -->
+                      <div class="flex items-center gap-1">
+                        <input
+                          :value="importFileRenames.get(item.relPath) || item.relPath"
+                          @input="setImportFileRename(item.relPath, ($event.target as HTMLInputElement).value)"
+                          @focus="importPreviewPath = item.relPath"
+                          class="flex-1 min-w-0 px-1.5 py-0.5 text-xs font-medium text-gray-700 dark:text-gray-200 bg-transparent hover:bg-white dark:hover:bg-gray-700 focus:bg-white dark:focus:bg-gray-700 border border-transparent hover:border-gray-200 dark:hover:border-gray-600 focus:border-sakura-300 dark:focus:border-sakura-600 rounded outline-none transition-colors"
+                          :title="lang === 'zh' ? '点击修改文件名' : 'Click to rename'"
+                        />
+                        <button
+                          v-if="importFileRenames.has(item.relPath)"
+                          @click="importFileRenames.delete(item.relPath)"
+                          class="p-0.5 text-gray-400 hover:text-red-500 flex-shrink-0"
+                          :title="lang === 'zh' ? '恢复原名' : 'Reset name'"
+                        >
+                          ↺
+                        </button>
+                      </div>
+                      <div v-if="importFileRenames.has(item.relPath)" class="text-[10px] text-gray-400 mt-0.5 truncate">
+                        {{ lang === 'zh' ? '原名：' : 'Original: ' }}{{ item.relPath }}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -397,6 +447,13 @@ const tagInput = ref('')
 const markdownFileInput = ref<HTMLInputElement | null>(null)
 const markdownFolderInput = ref<HTMLInputElement | null>(null)
 
+// 新增：文件夹选择器状态
+const showFolderPicker = ref(false)
+const newFolderName = ref('')
+
+// 新增：导入文件重命名映射
+const importFileRenames = ref(new Map<string, string>())
+
 const showImportModal = ref(false)
 const importMode = ref<'file' | 'folder'>('file')
 const importFiles = ref<File[]>([])
@@ -447,7 +504,7 @@ const availableFolders = computed(() => {
   const base = defaultFoldersByLang[langKey] || []
   const custom = customFoldersByLang.value[langKey] || []
   const merged = [...base, ...custom]
-  return Array.from(new Set(merged))
+  return Array.from(new Set(merged)).sort()
 })
 
 const folderSuffixOptions = computed(() => {
@@ -460,6 +517,60 @@ const folderSuffixOptions = computed(() => {
 
 // 根据语言获取根目录
 const getRootFolder = () => props.lang === 'zh' ? 'notes/zh' : 'notes/en'
+
+// 获取文件夹图标（根据深度）
+const getFolderIcon = (folder: string) => {
+  const depth = folder.split('/').length - 2 // notes/zh 是深度0
+  if (depth <= 0) return '📁'
+  return '  '.repeat(depth) + '📂'
+}
+
+// 选择文件夹
+const selectFolder = (folder: string) => {
+  targetFolder.value = folder
+  pathSuffix.value = folder.replace(getRootFolder(), '').replace(/^\/+/, '')
+  showFolderPicker.value = false
+}
+
+// 创建新文件夹
+const createNewFolder = () => {
+  const name = newFolderName.value.trim()
+  if (!name) return
+  
+  // 验证文件夹名
+  if (name.includes('..') || /[<>:"|?*\\]/.test(name)) {
+    alert(props.lang === 'zh' ? '文件夹名包含非法字符' : 'Folder name contains invalid characters')
+    return
+  }
+  
+  // 基于当前选择的文件夹创建子文件夹
+  const newPath = `${targetFolder.value}/${name}`.replace(/\/+/g, '/')
+  
+  // 添加到自定义文件夹列表
+  const langKey = props.lang as 'zh' | 'en'
+  if (!customFoldersByLang.value[langKey].includes(newPath)) {
+    customFoldersByLang.value[langKey].push(newPath)
+    localStorage.setItem(`custom_folders_${langKey}`, JSON.stringify(customFoldersByLang.value[langKey]))
+  }
+  
+  // 选择新创建的文件夹
+  selectFolder(newPath)
+  newFolderName.value = ''
+}
+
+// 设置导入文件重命名
+const setImportFileRename = (originalPath: string, newName: string) => {
+  if (newName === originalPath || !newName.trim()) {
+    importFileRenames.value.delete(originalPath)
+  } else {
+    importFileRenames.value.set(originalPath, newName.trim())
+  }
+}
+
+// 获取导入文件的最终路径（考虑重命名）
+const getImportFinalPath = (originalPath: string) => {
+  return importFileRenames.value.get(originalPath) || originalPath
+}
 
 const sanitizeSuffix = (suffix: string) => {
   let clean = suffix.trim().replace(/\\/g, '/')
@@ -480,7 +591,13 @@ const syncTargetFolder = () => {
   targetFolder.value = cleanSuffix ? `${rootFolder}/${cleanSuffix}` : rootFolder
 }
 
-const hasToken = computed(() => !!localStorage.getItem('github_pat'))
+// 使用安全 token 检查
+import { tokenSecurity } from '../composables/useTokenSecurity'
+const hasToken = ref(false)
+const updateTokenStatus = () => {
+  hasToken.value = tokenSecurity.hasToken()
+}
+// 在 onMounted 中调用 updateTokenStatus
 
 const wordCount = computed(() => {
   const chinese = (content.value.match(/[\u4e00-\u9fa5]/g) || []).length
@@ -727,7 +844,7 @@ const loadDraft = () => {
 }
 
 const publish = async () => {
-  const token = getToken()
+  const token = await getToken()
   if (!token) {
     alert(props.lang === 'zh' ? '请先在设置中配置 GitHub Token' : 'Please configure GitHub Token in Settings')
     return
@@ -945,7 +1062,7 @@ const prepareImportPreview = async (relPath: string) => {
   }
 
   const rawText = await item.file.text()
-  const token = getToken()
+  const token = await getToken()
   if (!token) {
     importPreviewContent.value = rawText
     importPreviewStatus.value = props.lang === 'zh' ? '未配置 Token，无法上传图片' : 'Token missing, image upload skipped'
@@ -1081,6 +1198,10 @@ const prepareImportPreview = async (relPath: string) => {
 const openImportModal = async (files: File[], mode: 'file' | 'folder') => {
   importFiles.value = files
   importMode.value = mode
+  
+  // 清除之前的重命名映射
+  importFileRenames.value.clear()
+  
   const mdList = importMdFiles.value
   if (!mdList.length) {
     alert(props.lang === 'zh' ? '未检测到 Markdown 文件' : 'No Markdown files found')
@@ -1289,7 +1410,7 @@ const buildTagsForImport = (text: string, baseTags: string[]) => {
 }
 
 const publishImportedFiles = async () => {
-  const token = getToken()
+  const token = await getToken()
   if (!token) {
     alert(props.lang === 'zh' ? '请先在设置中配置 GitHub Token' : 'Please configure GitHub Token in Settings')
     return
@@ -1433,18 +1554,23 @@ const publishImportedFiles = async () => {
       const tags = buildTagsForImport(finalContent, importTags.value)
       finalContent = applyMetaComment(finalContent, tags, importAuthorName.value, importAuthorUrl.value)
 
-      const path = `${cleanFolder}/${item.relPath}`
+      // 使用重命名后的文件名（如果有）
+      const finalFileName = getImportFinalPath(item.relPath)
+      const path = `${cleanFolder}/${finalFileName}`
       await uploadFile(
         { owner: repoOwner.value, repo: repoName.value, branch: 'main', token },
         path,
         finalContent,
-        `Import article: ${item.relPath}`
+        `Import article: ${finalFileName}`
       )
 
       step += 1
       importProgress.value = Math.round((step / totalSteps) * 100)
     }
 
+    // 清除重命名映射
+    importFileRenames.value.clear()
+    
     alert(props.lang === 'zh' ? '导入完成！' : 'Import completed!')
     showImportModal.value = false
   } catch (e: any) {
@@ -1457,7 +1583,7 @@ const publishImportedFiles = async () => {
 }
 
 const uploadMarkdownFiles = async (files: File[], mode: 'file' | 'folder' = 'file') => {
-  const token = getToken()
+  const token = await getToken()
   if (!token) {
     alert(props.lang === 'zh' ? '请先在设置中配置 GitHub Token' : 'Please configure GitHub Token in Settings')
     return
@@ -1526,6 +1652,7 @@ const confirmClose = () => {
 
 onMounted(() => {
   loadDraft()
+  updateTokenStatus() // 检查 token 状态
   repoOwner.value = localStorage.getItem('github_repo_owner') || 'soft-zihan'
   repoName.value = localStorage.getItem('github_repo_name') || 'soft-zihan.github.io'
 

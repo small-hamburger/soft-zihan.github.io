@@ -4,7 +4,7 @@
     <a href="README_zh.md">简体中文</a>
 </div>
 
-> **v1.0**
+> **v1.1**
 
 A pure static personal blog system built with **Vue 3** + **Tailwind CSS**, designed specifically for **GitHub Pages** deployment.
 
@@ -19,9 +19,37 @@ A pure static personal blog system built with **Vue 3** + **Tailwind CSS**, desi
 * **Internationalization Support** : Built-in Chinese/English bilingual switching (i18n). Switching retains the current tab and lab position (only notes are refreshed).
 * **Theme Modes** : Supports "Day Sakura" (light) and "Night Sakura" (dark) themes, with wallpaper switching in different themes and music playback.
 * **Interactive Petal Effects** : A draggable cherry blossom petal system with stable pointer events, grid stacking, and mobile touch optimization.
-* **Sakura Lab** : Built-in interactive lab with visual teaching components.
-* **Publishing Studio** : Import preview, selective upload, tags/author metadata injection, and automatic local image upload for Markdown.
+* **Sakura Lab** : Built-in interactive lab with visual teaching components and source code viewer.
+* **Publishing Studio** : Import preview with file renaming, tree-style folder selection, selective upload, tags/author metadata injection, and automatic local image upload for Markdown.
 * **Backend-Free Personalization** : Uses `localStorage` to store user preferences for font, font size, theme, petal speed, and more.
+* **Secure Token Storage** : GitHub Token encrypted with AES-256-GCM, key derived from browser fingerprint *(NEW)*
+* **Smart Fork & PR System** : Non-repo-owners auto-fork and submit PR with automatic sync *(NEW)*
+* **Flexible Backup System** : Local backup (browser) + Cloud backup (GitHub), with import/export support *(NEW)*
+* **Live Preview in Editor** : Real-time Markdown preview while editing articles *(NEW)*
+
+---
+
+## 🔐 Security & Data Policy
+
+### Token Security
+- **AES-256-GCM Encryption**: Your GitHub Token is encrypted before storage using industry-standard encryption
+- **Browser-Specific Key**: Encryption key is derived from browser fingerprint - tokens cannot be decrypted on other devices
+- **Never Backed Up**: Tokens are explicitly excluded from all backup operations
+- **API-Only Usage**: Tokens are only used for GitHub API calls, never sent to other servers
+
+### Data Storage
+The following data is stored in browser `localStorage`:
+- User preferences (theme, font, wallpaper settings)
+- Article favorites and likes
+- Author info and repo configuration
+- Local backups (up to 10)
+
+⚠️ **Warning**: Clearing browser data will lose these. Use backup feature regularly!
+
+### Publishing Mechanism
+- **Repo Owners**: Direct commit to main branch
+- **Contributors**: Auto-fork repository → Commit changes → Create Pull Request
+- **Auto-Sync**: Fork is automatically synced to latest before PR to avoid conflicts
 
 ---
 
@@ -50,14 +78,15 @@ The project follows Vue 3 best practices with modular composables for separation
 | [useCodeModal.ts](/composables/useCodeModal.ts) | Code modal management, syntax highlighting | ~150 | App.vue |
 | [useContentRenderer.ts](/composables/useContentRenderer.ts) | Markdown rendering, TOC generation | ~210 | App.vue |
 | [useContentClick.ts](/composables/useContentClick.ts) | Link interception, file visibility filtering | ~250 | App.vue |
-| [useRawEditor.ts](/composables/useRawEditor.ts) | Source editing, GitHub commit | ~170 | App.vue |
+| [useRawEditor.ts](/composables/useRawEditor.ts) | Source editing, GitHub commit, live preview | ~180 | App.vue |
 | [useSelectionMenu.ts](/composables/useSelectionMenu.ts) | Text selection menu, formatting | ~210 | App.vue |
 | [useLightbox.ts](/composables/useLightbox.ts) | Image lightbox | ~40 | App.vue |
 | [useSearch.ts](/composables/useSearch.ts) | Full-text search indexing | ~260 | App.vue, SearchModal |
 | [useFile.ts](/composables/useFile.ts) | File system operations | ~140 | (exported, not yet used) |
-| [useGitHubPublish.ts](/composables/useGitHubPublish.ts) | GitHub API integration | ~280 | useRawEditor, WriteEditor |
-| [useBackup.ts](/composables/useBackup.ts) | Data backup functionality | ~460 | SettingsModal |
+| [useGitHubPublish.ts](/composables/useGitHubPublish.ts) | GitHub API integration, Fork+PR system | ~650 | useRawEditor, WriteEditor |
+| [useBackup.ts](/composables/useBackup.ts) | Local & cloud backup functionality | ~600 | SettingsModal |
 | [useWallpapers.ts](/composables/useWallpapers.ts) | Wallpaper management | ~100 | SettingsModal, BannerSettings, WallpaperLayer |
+| [useTokenSecurity.ts](/composables/useTokenSecurity.ts) | AES-256-GCM token encryption *(NEW)* | ~230 | useGitHubPublish, useBackup, SettingsModal |
 
 > **Note**: The primary purpose of these composables is **separation of concerns** rather than multi-component reuse. They extract complex logic from App.vue (~1990→1150 lines) to improve maintainability and allow different developers to work on different features independently.
 

@@ -1,4 +1,6 @@
 import { ref } from 'vue'
+import { useGitHubPublish } from './useGitHubPublish'
+import { tokenSecurity } from './useTokenSecurity'
 
 export interface BackupFile {
   name: string
@@ -7,27 +9,41 @@ export interface BackupFile {
   size: number
   download_url: string
   created_at?: string
+  isLocal?: boolean  // 是否为本地备份
 }
 
 export interface BackupResult {
   success: boolean
   message: string
   filename?: string
+  isPR?: boolean  // 是否通过 PR 方式提交
 }
+
+export type BackupTarget = 'local' | 'cloud'
 
 // localStorage 中不需要备份的 key（敏感信息或临时数据）
 const EXCLUDED_KEYS = [
-  'github_pat',  // GitHub token 不备份
+  'github_pat',  // GitHub token 不备份（旧版）
+  'github_pat_encrypted',  // 加密的 token 不备份
+  'github_pat_iv',  // 加密 IV 不备份
+  'github_pat_salt',  // 加密盐值不备份
+  'local_backups',  // 本地备份列表不要循环备份
 ]
+
+// 本地备份的 localStorage key
+const LOCAL_BACKUPS_KEY = 'local_backups'
 
 export function useBackup() {
   const isBackingUp = ref(false)
   const isRestoring = ref(false)
   const backupError = ref('')
   const backupList = ref<BackupFile[]>([])
+  const localBackupList = ref<BackupFile[]>([])
   
-  const getToken = (): string | null => {
-    return localStorage.getItem('github_pat')
+  const { checkWriteAccess, getCurrentUser } = useGitHubPublish()
+  
+  const getToken = async (): Promise<string | null> => {
+    return tokenSecurity.getToken()
   }
   
   /**
@@ -180,7 +196,7 @@ export function useBackup() {
     repo: string,
     authorName: string
   ): Promise<BackupResult> => {
-    const token = getToken()
+    const token = await getToken()
     if (!token) {
       return { success: false, message: '请先设置 GitHub Token' }
     }
@@ -259,7 +275,7 @@ export function useBackup() {
     owner: string,
     repo: string
   ): Promise<BackupFile[]> => {
-    const token = getToken()
+    const token = await getToken()
     if (!token) {
       return []
     }
@@ -315,7 +331,7 @@ export function useBackup() {
     repo: string,
     filename: string
   ): Promise<BackupResult> => {
-    const token = getToken()
+    const token = await getToken()
     if (!token) {
       return { success: false, message: '请先设置 GitHub Token' }
     }
@@ -393,7 +409,7 @@ export function useBackup() {
     filename: string,
     sha: string
   ): Promise<BackupResult> => {
-    const token = getToken()
+    const token = await getToken()
     if (!token) {
       return { success: false, message: '请先设置 GitHub Token' }
     }
@@ -449,17 +465,267 @@ export function useBackup() {
       date: filename
     }
   }
+
+  // ==================== 本地备份功能 ====================
+  
+  /**
+   * 获取本地备份列表
+   */
+  const getLocalBackups = (): BackupFile[] => {
+    try {
+      const stored = localStorage.getItem(LOCAL_BACKUPS_KEY)
+      if (stored) {
+        const backups = JSON.parse(stored) as BackupFile[]
+        localBackupList.value = backups.sort((a, b) => b.name.localeCompare(a.name))
+        return localBackupList.value
+      }
+    } catch (e) {
+      console.warn('Failed to load local backups:', e)
+    }
+    localBackupList.value = []
+    return []
+  }
+
+  /**
+   * 备份到本地 (localStorage)
+   */
+  const backupToLocal = async (authorName: string): Promise<BackupResult> => {
+    isBackingUp.value = true
+    backupError.value = ''
+    
+    try {
+      const backupData = collectBackupData()
+      const filename = generateBackupFilename(authorName)
+      
+      const fullBackupData = {
+        _meta: {
+          author: authorName,
+          timestamp: new Date().toISOString(),
+          version: '1.0',
+          note: '本地备份，不包含 GitHub Token'
+        },
+        data: backupData
+      }
+      
+      const content = JSON.stringify(fullBackupData)
+      
+      // 获取现有本地备份
+      const existingBackups = getLocalBackups()
+      
+      // 添加新备份
+      const newBackup: BackupFile = {
+        name: filename,
+        path: `local/${filename}`,
+        sha: btoa(content).slice(0, 40), // 模拟 sha
+        size: content.length,
+        download_url: '',
+        isLocal: true
+      }
+      
+      // 保存备份内容
+      localStorage.setItem(`backup_content_${filename}`, content)
+      
+      // 更新备份列表（最多保留 10 个本地备份）
+      const updatedBackups = [newBackup, ...existingBackups].slice(0, 10)
+      localStorage.setItem(LOCAL_BACKUPS_KEY, JSON.stringify(updatedBackups))
+      localBackupList.value = updatedBackups
+      
+      return {
+        success: true,
+        message: '本地备份成功！',
+        filename
+      }
+    } catch (e: any) {
+      backupError.value = e.message
+      return {
+        success: false,
+        message: e.message || '本地备份失败'
+      }
+    } finally {
+      isBackingUp.value = false
+    }
+  }
+
+  /**
+   * 从本地备份恢复
+   */
+  const restoreFromLocal = async (filename: string): Promise<BackupResult> => {
+    isRestoring.value = true
+    backupError.value = ''
+    
+    try {
+      const content = localStorage.getItem(`backup_content_${filename}`)
+      if (!content) {
+        throw new Error('备份文件不存在')
+      }
+      
+      const backupData = JSON.parse(content)
+      
+      if (!backupData.data) {
+        throw new Error('备份文件格式不正确')
+      }
+      
+      // 恢复数据
+      const data = backupData.data
+      let restoredCount = 0
+      
+      for (const [key, value] of Object.entries(data)) {
+        if (!EXCLUDED_KEYS.includes(key)) {
+          try {
+            if (typeof value === 'string') {
+              localStorage.setItem(key, value)
+            } else {
+              localStorage.setItem(key, JSON.stringify(value))
+            }
+            restoredCount++
+          } catch (e) {
+            console.warn(`Failed to restore key: ${key}`, e)
+          }
+        }
+      }
+      
+      return {
+        success: true,
+        message: `恢复成功！已恢复 ${restoredCount} 项设置。刷新页面以应用更改。`,
+        filename
+      }
+    } catch (e: any) {
+      backupError.value = e.message
+      return {
+        success: false,
+        message: e.message || '恢复失败'
+      }
+    } finally {
+      isRestoring.value = false
+    }
+  }
+
+  /**
+   * 删除本地备份
+   */
+  const deleteLocalBackup = (filename: string): BackupResult => {
+    try {
+      // 删除备份内容
+      localStorage.removeItem(`backup_content_${filename}`)
+      
+      // 更新备份列表
+      const backups = getLocalBackups().filter(b => b.name !== filename)
+      localStorage.setItem(LOCAL_BACKUPS_KEY, JSON.stringify(backups))
+      localBackupList.value = backups
+      
+      return {
+        success: true,
+        message: '备份已删除'
+      }
+    } catch (e: any) {
+      return {
+        success: false,
+        message: e.message || '删除失败'
+      }
+    }
+  }
+
+  /**
+   * 导出本地备份为文件下载
+   */
+  const exportBackupToFile = (filename: string): BackupResult => {
+    try {
+      const content = localStorage.getItem(`backup_content_${filename}`)
+      if (!content) {
+        throw new Error('备份文件不存在')
+      }
+      
+      // 创建下载链接
+      const blob = new Blob([content], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+      
+      return {
+        success: true,
+        message: '导出成功',
+        filename
+      }
+    } catch (e: any) {
+      return {
+        success: false,
+        message: e.message || '导出失败'
+      }
+    }
+  }
+
+  /**
+   * 从文件导入备份
+   */
+  const importBackupFromFile = async (file: File): Promise<BackupResult> => {
+    isRestoring.value = true
+    backupError.value = ''
+    
+    try {
+      const content = await file.text()
+      const backupData = JSON.parse(content)
+      
+      if (!backupData.data) {
+        throw new Error('备份文件格式不正确')
+      }
+      
+      // 恢复数据
+      const data = backupData.data
+      let restoredCount = 0
+      
+      for (const [key, value] of Object.entries(data)) {
+        if (!EXCLUDED_KEYS.includes(key)) {
+          try {
+            if (typeof value === 'string') {
+              localStorage.setItem(key, value)
+            } else {
+              localStorage.setItem(key, JSON.stringify(value))
+            }
+            restoredCount++
+          } catch (e) {
+            console.warn(`Failed to restore key: ${key}`, e)
+          }
+        }
+      }
+      
+      return {
+        success: true,
+        message: `恢复成功！已恢复 ${restoredCount} 项设置。刷新页面以应用更改。`
+      }
+    } catch (e: any) {
+      backupError.value = e.message
+      return {
+        success: false,
+        message: e.message || '导入失败'
+      }
+    } finally {
+      isRestoring.value = false
+    }
+  }
   
   return {
     isBackingUp,
     isRestoring,
     backupError,
     backupList,
+    localBackupList,
     backupToGitHub,
     listBackups,
     restoreFromGitHub,
     deleteBackup,
     parseBackupFilename,
-    collectBackupData
+    collectBackupData,
+    // 本地备份
+    backupToLocal,
+    getLocalBackups,
+    restoreFromLocal,
+    deleteLocalBackup,
+    exportBackupToFile,
+    importBackupFromFile
   }
 }
