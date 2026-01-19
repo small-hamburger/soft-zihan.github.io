@@ -98,28 +98,18 @@
                 @dragleave="onDragLeave"
                 @drop.prevent="onDrop($event, idx + 1)"
               >
-                <!-- Indent Guide Lines -->
-                <div class="flex-shrink-0 relative" :style="{ width: getIndentWidth(line) + 'px', minWidth: '8px' }">
-                  <template v-for="level in getIndentLevels(line)" :key="'indent-' + level">
-                    <div 
-                      class="absolute top-0 bottom-0 w-px"
-                      :style="{ left: (level * indentSize) + 'px' }"
-                      :class="getIndentGuideClass(level)"
-                    ></div>
-                  </template>
-                </div>
-                <!-- Line Number - click to toggle notes (only user notes) -->
+                <!-- Line Number - always at the left, click to toggle user notes -->
                 <div 
-                  class="flex-shrink-0 w-10 pr-2 text-right select-none font-mono text-xs leading-6 cursor-pointer transition-colors"
+                  class="flex-shrink-0 w-12 pr-2 text-right select-none font-mono text-xs leading-6 cursor-pointer transition-colors"
                   :class="getLineNumberClass(idx + 1)"
                   @click="toggleUserNoteAtLine(idx + 1)"
                 >
                   {{ idx + 1 }}</div>
-                <!-- Code Content with enhanced syntax highlighting -->
+                <!-- Code Content with indent guides -->
                 <pre 
-                  class="flex-1 pr-4 text-sm font-mono leading-6 whitespace-pre-wrap break-all"
+                  class="flex-1 pr-4 text-sm font-mono leading-6 whitespace-pre relative"
                   :class="isDark ? 'text-gray-200' : 'text-gray-800'"
-                ><code v-html="highlightLine(line)" :class="isDark ? 'hljs-dark' : 'hljs-light'"></code></pre>
+                ><!-- Indent Guide Lines at the beginning of code --><span class="inline-block relative" :style="{ width: getIndentWidth(line) + 'px', minWidth: '0' }"><template v-for="level in getIndentLevels(line)" :key="'indent-' + level"><span class="absolute top-0 bottom-0 w-px" :style="{ left: (level * indentSize) + 'px' }" :class="getIndentGuideClass(level)"></span></template></span><code v-html="highlightLine(line.replace(/^\s+/, ''))" :class="isDark ? 'hljs-dark' : 'hljs-light'"></code></pre>
               </div>
               
               <!-- Preset Note (below the line) - Blue/Cyan theme - controlled by global toggle only -->

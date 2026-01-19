@@ -243,15 +243,20 @@ const toggleExpand = (path: string) => {
 }
 
 // Get filtered files based on current filter
+// Note: file.path in fileSystem does NOT include 'notes/' prefix
+// Actual fetch path should be `./notes/${file.path}`
 const filteredFiles = computed(() => {
   const result: any[] = []
-  const langPrefix = `notes/${props.lang}/`
   
-  const processFiles = (items: any[]) => {
+  // Get current language folder (zh or en)
+  const langFolder = props.fileSystem?.find(f => f.name === props.lang)
+  if (!langFolder?.children) return result
+  
+  const processFiles = (items: any[], basePath: string = '') => {
     for (const item of items) {
       if (item.children) {
-        processFiles(item.children)
-      } else if (item.path?.includes(langPrefix)) {
+        processFiles(item.children, item.path)
+      } else if (item.type === 'file' || item.name?.endsWith('.md')) {
         let include = false
         
         switch (downloadFilter.value) {
@@ -267,7 +272,6 @@ const filteredFiles = computed(() => {
             } else {
               const fileTags = item.tags || []
               const hasNoTags = !fileTags || fileTags.length === 0
-              // Check if 'notag' is selected and file has no tags, or if any selected tag matches
               include = selectedDownloadTags.value.some(tag => {
                 if (tag === 'notag') return hasNoTags
                 return fileTags.includes(tag)
@@ -280,16 +284,23 @@ const filteredFiles = computed(() => {
         }
         
         if (include) {
+          // Calculate relative path from lang folder
+          const langPrefix = `${props.lang}/`
+          const relativePath = item.path.startsWith(langPrefix) 
+            ? item.path.slice(langPrefix.length) 
+            : item.path
           result.push({
             ...item,
-            relativePath: item.path.replace(langPrefix, '')
+            relativePath,
+            // Fetch path: ./notes/ + original path
+            fetchPath: `./notes/${encodeURIComponent(item.path).replace(/%2F/g, '/')}`
           })
         }
       }
     }
   }
   
-  processFiles(props.fileSystem || [])
+  processFiles(langFolder.children, props.lang)
   return result
 })
 
@@ -306,32 +317,16 @@ const downloadNotes = async () => {
     
     for (const file of files) {
       try {
-        // Try multiple path formats to ensure we can fetch the file
-        const pathsToTry = [
-          file.path,
-          `./${file.path}`,
-          `/${file.path}`,
-          (import.meta as any).env?.BASE_URL ? `${(import.meta as any).env.BASE_URL}${file.path}` : null
-        ].filter(Boolean)
+        // Use fetchPath which has correct format: ./notes/path
+        const fetchUrl = file.fetchPath || `./notes/${encodeURIComponent(file.path).replace(/%2F/g, '/')}`
         
-        let content = null
-        for (const pathToTry of pathsToTry) {
-          try {
-            const res = await fetch(pathToTry as string)
-            if (res.ok) {
-              content = await res.text()
-              break
-            }
-          } catch {
-            // Try next path
-          }
-        }
-        
-        if (content) {
+        const res = await fetch(fetchUrl)
+        if (res.ok) {
+          const content = await res.text()
           zip.file(file.relativePath, content)
           successCount++
         } else {
-          console.warn('Failed to fetch file after trying all paths:', file.path)
+          console.warn('Failed to fetch file:', fetchUrl, res.status)
         }
       } catch (e) {
         console.error('Failed to fetch file:', file.path, e)
@@ -401,30 +396,16 @@ const downloadVueNotes = async () => {
     let successCount = 0
     for (const file of vueFiles) {
       try {
-        // Try multiple path formats
-        const pathsToTry = [
-          file.path,
-          `./${file.path}`,
-          `/${file.path}`,
-          (import.meta as any).env?.BASE_URL ? `${(import.meta as any).env.BASE_URL}${file.path}` : null
-        ].filter(Boolean)
+        // Correct fetch path: ./notes/ + file.path
+        const fetchUrl = `./notes/${encodeURIComponent(file.path).replace(/%2F/g, '/')}`
         
-        let content = null
-        for (const pathToTry of pathsToTry) {
-          try {
-            const res = await fetch(pathToTry as string)
-            if (res.ok) {
-              content = await res.text()
-              break
-            }
-          } catch {
-            // Try next path
-          }
-        }
-        
-        if (content) {
+        const res = await fetch(fetchUrl)
+        if (res.ok) {
+          const content = await res.text()
           zip.file(file.name, content)
           successCount++
+        } else {
+          console.warn('Failed to fetch VUE note:', fetchUrl, res.status)
         }
       } catch (e) {
         console.error('Failed to fetch VUE note:', file.path, e)
