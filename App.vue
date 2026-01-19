@@ -143,7 +143,7 @@
           
           <!-- Lab Tool View (Unified Dashboard) -->
           <div v-if="viewMode === 'lab' && currentTool === 'dashboard'" class="w-full max-w-6xl mx-auto animate-fade-in pb-20">
-             <LabDashboard :lang="lang" @select-lab="selectTool" />
+             <LabDashboard :lang="lang" :initial-tab="labDashboardTab" @tab-change="handleLabTabChange" @select-lab="selectTool" />
           </div>
 
           <!-- Lab: Event Handling -->
@@ -772,12 +772,27 @@ const updateUrl = (path: string | null) => {
     const url = new URL(window.location.href);
     if (path) {
       url.searchParams.set('path', path);
+      url.searchParams.delete('lab');
+      url.searchParams.delete('tab');
     } else {
       url.searchParams.delete('path');
     }
     window.history.pushState({}, '', url.toString());
   } catch (e) {
     console.error("Failed to update URL", e);
+  }
+};
+
+const updateLabUrl = (tab?: string) => {
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.set('lab', 'dashboard');
+    if (tab) url.searchParams.set('tab', tab);
+    else url.searchParams.delete('tab');
+    url.searchParams.delete('path');
+    window.history.pushState({}, '', url.toString());
+  } catch (e) {
+    console.error('Failed to update lab URL', e);
   }
 };
 
@@ -830,6 +845,24 @@ const selectTool = (tool: string) => {
   currentFolder.value = null;
 };
 
+const labDashboardTab = ref<string>('foundation');
+
+const handleLabTabChange = (tab: string) => {
+  labDashboardTab.value = tab;
+  if (viewMode.value === 'lab' && currentTool.value === 'dashboard') {
+    updateLabUrl(tab);
+  }
+};
+
+const openLabDashboard = (tab?: string) => {
+  viewMode.value = 'lab';
+  currentTool.value = 'dashboard';
+  currentFile.value = null;
+  currentFolder.value = null;
+  if (tab) labDashboardTab.value = tab;
+  updateLabUrl(tab);
+};
+
 const navigateToBreadcrumb = (path: string) => {
   const node = findNodeByPath(fileSystem.value, path);
   if (node) {
@@ -866,7 +899,8 @@ const { handleContentClick } = useContentClick(
   codeModal.fetchSourceCodeFile,
   handleImageClick,
   hideSelectionMenu,
-  showToast
+  showToast,
+  (tab?: string) => openLabDashboard(tab)
 );
 
 // 捕获阶段拦截内部链接点击（仅阻止默认跳转，不阻止传播，让冒泡阶段处理弹窗逻辑）
@@ -1077,6 +1111,8 @@ onMounted(async () => {
       const params = new URLSearchParams(window.location.search);
       const targetPath = params.get('path');
       const sourcePath = params.get('source');
+      const lab = params.get('lab');
+      const tab = params.get('tab');
 
       // 处理代码文件弹窗路由
       if (sourcePath) {
@@ -1098,13 +1134,16 @@ onMounted(async () => {
         codeModal.setCodeModalContent(content);
       }
 
+      if (lab === 'dashboard') {
+        openLabDashboard(tab || undefined);
+      }
+
       if (targetPath) {
         const decodedTargetPath = decodeURIComponent(targetPath);
         const node = findNodeByPath(fileSystem.value, decodedTargetPath) || findNodeByPath(fileSystem.value, targetPath);
 
         if (node) {
-          if (targetPath.includes('VUE学习笔记') || targetPath.includes('VUE Learning')) viewMode.value = 'lab';
-          else viewMode.value = 'files';
+          viewMode.value = 'files';
 
           if (node.type === NodeType.FILE) openFile(node);
           else openFolder(node);

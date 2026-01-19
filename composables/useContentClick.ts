@@ -42,6 +42,9 @@ export const isSupportedInternalLink = (raw?: string | null): boolean => {
   if (!raw) return false
   // 完整的外部链接不拦截
   if (raw.startsWith('http') || raw.startsWith('//')) return false
+
+  // 实验室深链接：lab:dashboard?tab=css-layout
+  if (raw.startsWith('lab:')) return true
   
   const cleaned = stripHashQuery(raw)
   if (!cleaned || cleaned.startsWith('#')) return false
@@ -78,7 +81,8 @@ export function useContentClick(
   fetchSourceCodeFile: (filePath: string) => Promise<string>,
   handleImageClick: (target: HTMLElement) => boolean,
   hideSelectionMenu: () => void,
-  showToast: (msg: string) => void
+  showToast: (msg: string) => void,
+  openLabDashboard?: (tab?: string) => void
 ) {
   /**
    * 解析目标路径
@@ -132,6 +136,23 @@ export function useContentClick(
       if (internalHref || (href && isSupportedInternalLink(href))) {
         e.preventDefault()
         e.stopPropagation()
+
+        // 0. 实验室深链接：lab:dashboard?tab=foundation
+        if (href && href.startsWith('lab:')) {
+          if (!openLabDashboard) {
+            showToast('Lab navigation not available')
+            hideSelectionMenu()
+            return
+          }
+
+          const rest = href.slice('lab:'.length)
+          const [cmd, query] = rest.split('?')
+          const params = new URLSearchParams(query || '')
+          const tab = params.get('tab') || (cmd && cmd !== 'dashboard' ? cmd : undefined)
+          openLabDashboard(tab || undefined)
+          hideSelectionMenu()
+          return
+        }
         
         const targetPath = resolveTargetPath(href!, currentFile.value?.path)
         const isPdf = isPdfFile(targetPath)

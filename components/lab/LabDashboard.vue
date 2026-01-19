@@ -159,6 +159,13 @@
           <LabHtmlBasics :lang="lang" />
         </section>
 
+        <section>
+          <h2 class="text-xl font-bold text-indigo-600 dark:text-indigo-400 mb-4 flex items-center gap-2">
+            <span class="text-2xl">🧠</span> {{ isZh ? '浏览器渲染流水线' : 'Rendering Pipeline' }}
+          </h2>
+          <LabBrowserPipeline :lang="lang" />
+        </section>
+
         <NextStageGuide 
           :is-zh="isZh" 
           :next-text="isZh ? '你已经理解了网页的基本结构！接下来学习 JavaScript 基础语法。' : 'You now understand web page structure! Next, learn JavaScript fundamentals.'"
@@ -195,6 +202,14 @@
             <span class="text-xs bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-300 px-2 py-0.5 rounded-full ml-2">{{ isZh ? '花瓣效果解析' : 'Petal Effect Analysis' }}</span>
           </h2>
           <LabCssAnimation :lang="lang" />
+        </section>
+
+        <section>
+          <h2 class="text-xl font-bold text-pink-600 dark:text-pink-400 mb-4 flex items-center gap-2">
+            <span class="text-2xl">🧩</span> {{ isZh ? 'CSS 性能与渲染成本' : 'CSS Performance' }}
+            <span class="text-xs bg-pink-100 dark:bg-pink-900/30 text-pink-600 dark:text-pink-300 px-2 py-0.5 rounded-full ml-2">{{ isZh ? '回流/重绘/合成' : 'reflow/paint/composite' }}</span>
+          </h2>
+          <LabCssPerformance :lang="lang" />
         </section>
 
         <NextStageGuide 
@@ -417,6 +432,7 @@ import { I18N } from '../../constants'
 import LabCodeEvolution from './stage1-foundation/LabCodeEvolution.vue'
 import LabHtml from './stage1-foundation/LabHtml.vue'
 import LabHtmlBasics from './stage1-foundation/LabHtmlBasics.vue'
+import LabBrowserPipeline from './stage1-foundation/LabBrowserPipeline.vue'
 
 // Stage 2: JS Basics
 import LabJsBasics from './stage2-js-basics/LabJsBasics.vue'
@@ -425,6 +441,7 @@ import LabJsBasics from './stage2-js-basics/LabJsBasics.vue'
 import LabCssBasics from './stage3-css/LabCssBasics.vue'
 import LabCssLayout from './stage3-css/LabCssLayout.vue'
 import LabCssAnimation from './stage3-css/LabCssAnimation.vue'
+import LabCssPerformance from './stage3-css/LabCssPerformance.vue'
 
 // Stage 4: JS Advanced
 import LabJs from './stage4-js-advanced/LabJs.vue'
@@ -488,6 +505,11 @@ const NextStageGuide = {
 
 const props = defineProps<{
   lang: 'en' | 'zh'
+  initialTab?: string
+}>()
+
+const emit = defineEmits<{
+  (e: 'tab-change', tab: string): void
 }>()
 
 const t = computed(() => I18N[props.lang as 'en' | 'zh'])
@@ -583,8 +605,19 @@ onMounted(() => {
   }
 })
 
+watch(
+  () => props.initialTab,
+  (val) => {
+    if (val && tabs.value.some((tab: LabTab) => tab.id === val)) {
+      activeTab.value = val
+    }
+  },
+  { immediate: true }
+)
+
 watch(activeTab, (val: string) => {
   localStorage.setItem(labTabStorageKey.value, val)
+  emit('tab-change', val)
 })
 
 watch(() => props.lang, () => {
