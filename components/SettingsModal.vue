@@ -273,10 +273,10 @@
           <div class="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-xl">
             <h4 class="font-bold text-blue-600 dark:text-blue-400 mb-1">🚀 {{ t.publish_mechanism || '发布修改原理' }}</h4>
             <ul class="space-y-1 list-disc list-inside">
-              <li>{{ t.publish_info_1 || '仓库主可直接提交修改到 main 分支' }}</li>
-              <li>{{ t.publish_info_2 || '其他用户自动 Fork 仓库并提交 Pull Request' }}</li>
+              <li>{{ t.publish_info_2 || '用户提交时，会自动 Fork 仓库并提交 Pull Request' }}</li>
               <li>{{ t.publish_info_3 || 'Fork 会自动同步到最新版本避免冲突' }}</li>
-              <li>{{ t.publish_info_4 || 'PR 需等待仓库管理员审核合并' }}</li>
+              <li>{{ t.publish_info_4 || 'PR 需等待仓库管理员审核合并后自动重新部署' }}</li>
+              <li>{{ t.publish_info_5 || '如果用户提交到自己的仓库，提交会直接合并到 main 分支并重新部署' }}</li>
             </ul>
           </div>
           
@@ -288,7 +288,7 @@
               <li>{{ t.storage_item_1 || '用户偏好设置（主题、字体、壁纸等）' }}</li>
               <li>{{ t.storage_item_2 || '文章收藏和点赞记录' }}</li>
               <li>{{ t.storage_item_3 || '作者信息和仓库配置' }}</li>
-              <li>{{ t.storage_item_4 || '本地备份数据（最多 10 份）' }}</li>
+              <li>{{ t.storage_item_4 || '本地备份数据' }}</li>
             </ul>
             <p class="mt-2 text-amber-600 dark:text-amber-400">⚠️ {{ t.storage_warning || '清除浏览器数据会丢失这些内容，建议定期备份！' }}</p>
           </div>
