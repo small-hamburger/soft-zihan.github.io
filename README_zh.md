@@ -132,10 +132,10 @@ npm run build
 sakura-notes/
 ├── 📄 index.html          # HTML 入口，包含 Tailwind 配置
 ├── 📄 index.tsx           # Vue 应用挂载入口
-├── 📄 App.vue             # 根组件 (~1350 行)，应用核心逻辑
+├── 📄 App.vue             # 根组件 (~1400 行)，应用核心逻辑
 ├── 📄 vite.config.ts      # Vite 构建配置
 ├── 📄 tsconfig.json       # TypeScript 配置
-├── 📄 constants.ts        # i18n 国际化常量
+├── 📄 constants.ts        # i18n 国际化常量 (~600 行)
 ├── 📄 types.ts            # 全局类型定义
 │
 ├── 📁 components/         # Vue 组件
@@ -144,22 +144,24 @@ sakura-notes/
 │   ├── ArticleCard.vue    # 文章卡片组件
 │   ├── FileTree.vue       # 递归文件树组件
 │   ├── FolderView.vue     # 文件夹网格视图
-│   ├── SettingsModal.vue  # 设置面板
+│   ├── SettingsModal.vue  # 设置面板（含备份功能）
 │   ├── WriteEditor.vue    # 发布工作台
 │   ├── SearchModal.vue    # 全文搜索模态框
-│   ├── DownloadModal.vue  # 批量下载模态框
+│   ├── DownloadModal.vue  # 批量下载（带筛选）
+│   ├── DownloadTreeNode.vue # 下载树节点组件
 │   ├── MusicPlayer.vue    # 带歌词的音乐播放器
 │   ├── GlobalAudio.vue    # 全局音频控制器
 │   ├── GiscusComments.vue # Giscus 评论集成
-│   ├── PetalBackground.vue# 樱花花瓣系统
+│   ├── PetalBackground.vue# 樱花花瓣系统（层级可调）
 │   ├── WallpaperLayer.vue # 动态壁纸图层
 │   ├── BannerSettings.vue # 横幅模式设置
 │   │
 │   ├── 📁 lab/            # 学习实验室系统
+│   │   ├── index.ts              # Lab 导出
 │   │   ├── LabDashboard.vue      # 实验室主面板
 │   │   ├── SourceCodeViewer.vue  # 带笔记的源码查看器
-│   │   ├── DualColumnView.vue    # 双栏阅读视图
-│   │   ├── PanelContent.vue      # 面板内容渲染器
+│   │   ├── DualColumnView.vue    # 双栏阅读视图（全屏）
+│   │   ├── PanelContent.vue      # 面板内容（含可折叠树）
 │   │   ├── SourceFileTree.vue    # 源码文件树
 │   │   ├── LabProjectTour.vue    # 项目导览
 │   │   ├── 📁 stage1-foundation/ # Web 基础组件
@@ -175,23 +177,28 @@ sakura-notes/
 │       └── usePetals.ts   # 花瓣物理引擎
 │
 ├── 📁 composables/        # Vue 3 组合式函数
+│   ├── index.ts           # Composable 导出
 │   ├── useArticleMeta.ts  # 文章元数据提取
 │   ├── useContentRenderer.ts # Markdown 渲染
+│   ├── useContentClick.ts # 内容点击处理
 │   ├── useGitHubPublish.ts# GitHub 发布 (Fork+PR)
-│   ├── useBackup.ts       # 本地/云端备份
-│   ├── useTokenSecurity.ts# Token AES 加密
+│   ├── useBackup.ts       # 本地/云端备份恢复
+│   ├── useTokenSecurity.ts# Token AES-256-GCM 加密
 │   ├── useSearch.ts       # MiniSearch 全文搜索
 │   ├── useWallpapers.ts   # 壁纸管理
 │   ├── useLightbox.ts     # 图片灯箱
 │   ├── useMarkdown.ts     # Markdown 工具
-│   └── ...
+│   ├── useCodeModal.ts    # 代码弹窗处理
+│   ├── useFile.ts         # 文件操作
+│   ├── useRawEditor.ts    # 原始内容编辑器
+│   └── useSelectionMenu.ts# 文本选择菜单
 │
 ├── 📁 stores/             # Pinia 状态管理
+│   ├── index.ts           # Store 导出
 │   ├── appStore.ts        # 全局应用设置
-│   ├── articleStore.ts    # 文章交互（收藏/点赞）
+│   ├── articleStore.ts    # 文章交互（收藏/点赞/标签筛选）
 │   ├── learningStore.ts   # 学习进度追踪
-│   ├── musicStore.ts      # 音乐播放状态
-│   └── index.ts           # Store 导出
+│   └── musicStore.ts      # 音乐播放状态
 │
 ├── 📁 notes/              # Markdown 笔记内容
 │   ├── 📁 zh/             # 中文笔记

@@ -132,10 +132,10 @@ Visit [Sakura Notes](https://soft-zihan.github.io/) directly and click the Setti
 sakura-notes/
 ├── 📄 index.html          # HTML entry, includes Tailwind config
 ├── 📄 index.tsx           # Vue app mount entry
-├── 📄 App.vue             # Root component (~1350 lines), core logic
+├── 📄 App.vue             # Root component (~1400 lines), core logic
 ├── 📄 vite.config.ts      # Vite build configuration
 ├── 📄 tsconfig.json       # TypeScript configuration
-├── 📄 constants.ts        # i18n constants
+├── 📄 constants.ts        # i18n constants (~600 lines)
 ├── 📄 types.ts            # Global type definitions
 │
 ├── 📁 components/         # Vue components
@@ -144,22 +144,24 @@ sakura-notes/
 │   ├── ArticleCard.vue    # Article card component
 │   ├── FileTree.vue       # Recursive file tree
 │   ├── FolderView.vue     # Folder grid view
-│   ├── SettingsModal.vue  # Settings panel
+│   ├── SettingsModal.vue  # Settings panel with backup
 │   ├── WriteEditor.vue    # Publishing workbench
 │   ├── SearchModal.vue    # Full-text search modal
-│   ├── DownloadModal.vue  # Batch download modal
+│   ├── DownloadModal.vue  # Batch download with filters
+│   ├── DownloadTreeNode.vue # Download tree node component
 │   ├── MusicPlayer.vue    # Music player with lyrics
 │   ├── GlobalAudio.vue    # Global audio controller
 │   ├── GiscusComments.vue # Giscus comments integration
-│   ├── PetalBackground.vue# Sakura petal system
+│   ├── PetalBackground.vue# Sakura petal system (z-index layers)
 │   ├── WallpaperLayer.vue # Dynamic wallpaper layer
 │   ├── BannerSettings.vue # Banner mode settings
 │   │
 │   ├── 📁 lab/            # Learning Lab system
+│   │   ├── index.ts              # Lab exports
 │   │   ├── LabDashboard.vue      # Lab main dashboard
 │   │   ├── SourceCodeViewer.vue  # Source code viewer with notes
-│   │   ├── DualColumnView.vue    # Dual-column reading view
-│   │   ├── PanelContent.vue      # Panel content renderer
+│   │   ├── DualColumnView.vue    # Dual-column reading view (fullscreen)
+│   │   ├── PanelContent.vue      # Panel content with collapsible tree
 │   │   ├── SourceFileTree.vue    # Source file tree
 │   │   ├── LabProjectTour.vue    # Project tour guide
 │   │   ├── 📁 stage1-foundation/ # Web Basics components
@@ -175,23 +177,28 @@ sakura-notes/
 │       └── usePetals.ts   # Petal physics engine
 │
 ├── 📁 composables/        # Vue 3 Composables
+│   ├── index.ts           # Composable exports
 │   ├── useArticleMeta.ts  # Metadata extraction
 │   ├── useContentRenderer.ts # Markdown rendering
+│   ├── useContentClick.ts # Content click handling
 │   ├── useGitHubPublish.ts# GitHub publishing (Fork+PR)
-│   ├── useBackup.ts       # Backup/restore logic
-│   ├── useTokenSecurity.ts# Token AES encryption
+│   ├── useBackup.ts       # Local & cloud backup/restore
+│   ├── useTokenSecurity.ts# Token AES-256-GCM encryption
 │   ├── useSearch.ts       # MiniSearch integration
 │   ├── useWallpapers.ts   # Wallpaper management
 │   ├── useLightbox.ts     # Image lightbox
 │   ├── useMarkdown.ts     # Markdown utilities
-│   └── ...
+│   ├── useCodeModal.ts    # Code modal handling
+│   ├── useFile.ts         # File operations
+│   ├── useRawEditor.ts    # Raw content editor
+│   └── useSelectionMenu.ts# Text selection menu
 │
 ├── 📁 stores/             # Pinia state management
+│   ├── index.ts           # Store exports
 │   ├── appStore.ts        # Global app settings
-│   ├── articleStore.ts    # Article interactions (favorites, likes)
+│   ├── articleStore.ts    # Article interactions (favorites, likes, tags)
 │   ├── learningStore.ts   # Learning progress tracking
-│   ├── musicStore.ts      # Music player state
-│   └── index.ts           # Store exports
+│   └── musicStore.ts      # Music player state
 │
 ├── 📁 notes/              # Markdown content
 │   ├── 📁 zh/             # Chinese notes

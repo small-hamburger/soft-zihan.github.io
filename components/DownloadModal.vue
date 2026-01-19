@@ -13,54 +13,59 @@
         </button>
       </div>
       
-      <!-- Filter Tabs -->
-      <div class="flex gap-2 mb-4">
-        <button 
-          @click="downloadFilter = 'all'" 
-          class="flex-1 py-2 border rounded-xl text-sm transition-colors flex items-center justify-center gap-1"
-          :class="downloadFilter === 'all' ? 'border-sakura-500 bg-sakura-50 dark:bg-sakura-900/20 text-sakura-600 dark:text-sakura-400' : 'border-gray-200 dark:border-gray-700 text-gray-500'"
-        >
-          📁 {{ lang === 'zh' ? '全部' : 'All' }}
-        </button>
-        <button 
-          @click="downloadFilter = 'favorites'" 
-          class="flex-1 py-2 border rounded-xl text-sm transition-colors flex items-center justify-center gap-1"
-          :class="downloadFilter === 'favorites' ? 'border-sakura-500 bg-sakura-50 dark:bg-sakura-900/20 text-sakura-600 dark:text-sakura-400' : 'border-gray-200 dark:border-gray-700 text-gray-500'"
-        >
-          ⭐ {{ lang === 'zh' ? '收藏' : 'Favorites' }} ({{ favoritesCount }})
-        </button>
-        <button 
-          @click="downloadFilter = 'tags'" 
-          class="flex-1 py-2 border rounded-xl text-sm transition-colors flex items-center justify-center gap-1"
-          :class="downloadFilter === 'tags' ? 'border-sakura-500 bg-sakura-50 dark:bg-sakura-900/20 text-sakura-600 dark:text-sakura-400' : 'border-gray-200 dark:border-gray-700 text-gray-500'"
-        >
-          🏷️ {{ lang === 'zh' ? '标签' : 'Tags' }}
-        </button>
-        <button 
-          @click="downloadFilter = 'custom'" 
-          class="flex-1 py-2 border rounded-xl text-sm transition-colors flex items-center justify-center gap-1"
-          :class="downloadFilter === 'custom' ? 'border-sakura-500 bg-sakura-50 dark:bg-sakura-900/20 text-sakura-600 dark:text-sakura-400' : 'border-gray-200 dark:border-gray-700 text-gray-500'"
-        >
-          ✅ {{ lang === 'zh' ? '自选' : 'Custom' }}
-        </button>
-      </div>
-      
-      <!-- Tag Selection (when filter is tags) -->
-      <div v-if="downloadFilter === 'tags'" class="mb-4">
-        <div class="flex flex-wrap gap-2 p-3 bg-gray-50 dark:bg-gray-900 rounded-xl max-h-24 overflow-y-auto">
-          <button
-            v-for="tag in availableTags"
-            :key="tag"
-            @click="toggleDownloadTag(tag)"
-            class="px-2 py-1 text-xs rounded-full transition-colors"
-            :class="selectedDownloadTags.includes(tag) ? 'bg-sakura-500 text-white' : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'"
+      <!-- Filter Section (参考边栏实现) -->
+      <div class="mb-4 p-3 bg-gray-50 dark:bg-gray-900 rounded-xl">
+        <!-- Favorites Filter -->
+        <div class="mb-3">
+          <button 
+            @click="showFavoritesOnly = !showFavoritesOnly"
+            class="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all"
+            :class="showFavoritesOnly 
+              ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 ring-1 ring-amber-200 dark:ring-amber-800' 
+              : 'bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'"
           >
-            {{ tag === 'notag' ? (lang === 'zh' ? '无标签' : 'No Tag') : tag }}
+            <span>{{ showFavoritesOnly ? '⭐' : '☆' }}</span>
+            <span class="font-medium">{{ lang === 'zh' ? '仅显示收藏' : 'Favorites Only' }}</span>
+            <span class="ml-auto text-xs opacity-70">({{ favoritesCount }})</span>
           </button>
+        </div>
+        
+        <!-- Tags Filter -->
+        <div>
+          <div class="flex items-center justify-between mb-2">
+            <span class="text-xs font-bold text-gray-400 dark:text-gray-500 uppercase">{{ lang === 'zh' ? '标签筛选' : 'Tags' }}</span>
+            <div class="flex gap-1">
+              <button 
+                @click="selectAllTags"
+                class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-sakura-100 hover:text-sakura-600"
+              >
+                {{ lang === 'zh' ? '全选' : 'All' }}
+              </button>
+              <button 
+                @click="deselectAllTags"
+                class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-sakura-100 hover:text-sakura-600"
+              >
+                {{ lang === 'zh' ? '清空' : 'None' }}
+              </button>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-1.5">
+            <button 
+              v-for="tag in availableTags"
+              :key="tag"
+              @click="toggleTag(tag)"
+              class="px-2 py-1 text-xs rounded-full transition-all"
+              :class="isTagSelected(tag)
+                ? 'bg-sakura-500 text-white shadow-sm'
+                : 'bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-400 hover:bg-sakura-100 dark:hover:bg-sakura-900/30'"
+            >
+              {{ tag === 'notag' ? (lang === 'zh' ? '无标签' : 'No Tag') : tag }}
+            </button>
+          </div>
         </div>
       </div>
       
-      <!-- File Tree (for custom selection) -->
+      <!-- File Tree (for manual selection) -->
       <div class="flex-1 overflow-y-auto mb-4 border border-gray-200 dark:border-gray-700 rounded-xl">
         <div class="p-3">
           <div class="text-xs text-gray-500 dark:text-gray-400 mb-3 flex items-center justify-between">
@@ -69,23 +74,26 @@
               <span class="font-bold text-sakura-500">notes/{{ lang }}/</span>
             </span>
             <span class="text-sakura-600 dark:text-sakura-400 font-medium">
-              {{ filteredFiles.length }} {{ lang === 'zh' ? '个文件已选' : 'files selected' }}
+              {{ filteredFiles.length }} {{ lang === 'zh' ? '个文件已筛选' : 'files filtered' }}
             </span>
           </div>
           
-          <!-- Tree View -->
-          <div class="space-y-1">
-            <template v-for="node in langFileTree" :key="node.path">
-              <DownloadTreeNode 
-                :node="node" 
-                :depth="0"
-                :selected-paths="selectedPaths"
-                :show-checkbox="downloadFilter === 'custom'"
-                @toggle="toggleNodeSelection"
-                @expand="toggleExpand"
-                :expanded-paths="expandedPaths"
-              />
-            </template>
+          <!-- Filtered File List -->
+          <div class="space-y-1 max-h-48 overflow-y-auto">
+            <div 
+              v-for="file in filteredFiles" 
+              :key="file.path"
+              class="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 text-sm"
+            >
+              <span class="text-gray-400">📄</span>
+              <span class="flex-1 truncate text-gray-700 dark:text-gray-300">{{ file.name.replace('.md', '') }}</span>
+              <span v-if="file.tags?.length" class="text-[10px] px-1.5 py-0.5 bg-sakura-100 dark:bg-sakura-900/30 text-sakura-600 dark:text-sakura-400 rounded">
+                {{ file.tags[0] }}
+              </span>
+            </div>
+            <div v-if="filteredFiles.length === 0" class="text-center text-gray-400 py-4 text-sm">
+              {{ lang === 'zh' ? '没有匹配的文件' : 'No matching files' }}
+            </div>
           </div>
         </div>
       </div>
@@ -144,10 +152,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useArticleStore } from '../stores/articleStore'
 import JSZip from 'jszip'
-import DownloadTreeNode from './DownloadTreeNode.vue'
 
 const props = defineProps<{
   lang: 'zh' | 'en'
@@ -161,25 +168,26 @@ const emit = defineEmits<{
 
 const articleStore = useArticleStore()
 
-// State
-const downloadFilter = ref<'all' | 'favorites' | 'tags' | 'custom'>('all')
-const selectedDownloadTags = ref<string[]>([])
-const selectedPaths = ref<Set<string>>(new Set())
-const expandedPaths = ref<Set<string>>(new Set(['']))
+// State - 独立的筛选状态（不影响边栏）
+const showFavoritesOnly = ref(false)
+const selectedTags = ref<string[]>([])
 const isDownloading = ref(false)
 const downloadMessage = ref('')
 const downloadSuccess = ref(false)
 
-// Get available tags (including 'notag' for files without tags)
+// Get available tags from current language files
 const availableTags = computed(() => {
   const tags = new Set<string>()
   let hasNoTagFiles = false
+  
+  const langFolder = props.fileSystem?.find(f => f.name === props.lang)
+  if (!langFolder?.children) return ['notag']
   
   const processFiles = (files: any[]) => {
     for (const file of files) {
       if (file.children) {
         processFiles(file.children)
-      } else {
+      } else if (file.name?.endsWith('.md')) {
         if (file.tags && Array.isArray(file.tags) && file.tags.length > 0) {
           file.tags.forEach((tag: string) => tags.add(tag))
         } else {
@@ -188,134 +196,88 @@ const availableTags = computed(() => {
       }
     }
   }
-  processFiles(props.fileSystem || [])
+  processFiles(langFolder.children)
   
   const sortedTags = Array.from(tags).sort()
-  // Add 'notag' at the beginning if there are files without tags
   if (hasNoTagFiles) {
     return ['notag', ...sortedTags]
   }
-  return sortedTags
+  return sortedTags.length > 0 ? sortedTags : ['notag']
+})
+
+// Initialize selected tags with all available tags
+onMounted(() => {
+  selectedTags.value = [...availableTags.value]
 })
 
 // Get favorites count
 const favoritesCount = computed(() => articleStore.favoritesCount)
 
-// Build tree for current language
-const langFileTree = computed(() => {
-  const langFolder = props.fileSystem?.find(f => f.name === props.lang)
-  if (!langFolder?.children) return []
-  return langFolder.children
-})
+// Tag selection methods
+const isTagSelected = (tag: string) => selectedTags.value.includes(tag)
 
-// Toggle tag selection
-const toggleDownloadTag = (tag: string) => {
-  const idx = selectedDownloadTags.value.indexOf(tag)
-  if (idx >= 0) {
-    selectedDownloadTags.value.splice(idx, 1)
+const toggleTag = (tag: string) => {
+  const idx = selectedTags.value.indexOf(tag)
+  if (idx > -1) {
+    selectedTags.value = selectedTags.value.filter(t => t !== tag)
   } else {
-    selectedDownloadTags.value.push(tag)
+    selectedTags.value = [...selectedTags.value, tag]
   }
 }
 
-// Toggle node selection (for custom mode)
-const toggleNodeSelection = (node: any) => {
-  if (node.children) {
-    // Folder: select/deselect all children
-    const allChildPaths = getAllFilePaths(node)
-    const allSelected = allChildPaths.every(p => selectedPaths.value.has(p))
-    
-    if (allSelected) {
-      allChildPaths.forEach(p => selectedPaths.value.delete(p))
-    } else {
-      allChildPaths.forEach(p => selectedPaths.value.add(p))
-    }
-  } else {
-    // File
-    if (selectedPaths.value.has(node.path)) {
-      selectedPaths.value.delete(node.path)
-    } else {
-      selectedPaths.value.add(node.path)
-    }
-  }
-  selectedPaths.value = new Set(selectedPaths.value) // Trigger reactivity
+const selectAllTags = () => {
+  selectedTags.value = [...availableTags.value]
 }
 
-// Get all file paths in a folder
-const getAllFilePaths = (node: any): string[] => {
-  if (!node.children) return node.path ? [node.path] : []
-  return node.children.flatMap((child: any) => getAllFilePaths(child))
+const deselectAllTags = () => {
+  selectedTags.value = []
 }
 
-// Toggle expand/collapse
-const toggleExpand = (path: string) => {
-  if (expandedPaths.value.has(path)) {
-    expandedPaths.value.delete(path)
-  } else {
-    expandedPaths.value.add(path)
-  }
-  expandedPaths.value = new Set(expandedPaths.value)
-}
-
-// Get filtered files based on current filter
-// Note: file.path in fileSystem does NOT include 'notes/' prefix
-// Actual fetch path should be `./notes/${file.path}`
+// Get filtered files based on current filter settings
 const filteredFiles = computed(() => {
   const result: any[] = []
   
-  // Get current language folder (zh or en)
   const langFolder = props.fileSystem?.find(f => f.name === props.lang)
   if (!langFolder?.children) return result
   
-  const processFiles = (items: any[], basePath: string = '') => {
+  const processFiles = (items: any[]) => {
     for (const item of items) {
       if (item.children) {
-        processFiles(item.children, item.path)
-      } else if (item.type === 'file' || item.name?.endsWith('.md')) {
-        let include = false
+        processFiles(item.children)
+      } else if (item.name?.endsWith('.md')) {
+        let include = true
         
-        switch (downloadFilter.value) {
-          case 'all':
-            include = true
-            break
-          case 'favorites':
-            include = articleStore.isFavorite(item.path)
-            break
-          case 'tags':
-            if (selectedDownloadTags.value.length === 0) {
-              include = true
-            } else {
-              const fileTags = item.tags || []
-              const hasNoTags = !fileTags || fileTags.length === 0
-              include = selectedDownloadTags.value.some(tag => {
-                if (tag === 'notag') return hasNoTags
-                return fileTags.includes(tag)
-              })
-            }
-            break
-          case 'custom':
-            include = selectedPaths.value.has(item.path)
-            break
+        // 收藏筛选
+        if (showFavoritesOnly.value && !articleStore.isFavorite(item.path)) {
+          include = false
+        }
+        
+        // 标签筛选
+        if (include && selectedTags.value.length > 0) {
+          const fileTags = item.tags || []
+          const hasNoTags = !fileTags || fileTags.length === 0
+          
+          const tagMatch = selectedTags.value.some(tag => {
+            if (tag === 'notag') return hasNoTags
+            return fileTags.includes(tag)
+          })
+          
+          if (!tagMatch) {
+            include = false
+          }
+        } else if (selectedTags.value.length === 0) {
+          // 没有选中任何标签时不显示任何文件
+          include = false
         }
         
         if (include) {
-          // Calculate relative path from lang folder
-          const langPrefix = `${props.lang}/`
-          const relativePath = item.path.startsWith(langPrefix) 
-            ? item.path.slice(langPrefix.length) 
-            : item.path
-          result.push({
-            ...item,
-            relativePath,
-            // Fetch path: ./notes/ + original path
-            fetchPath: `./notes/${encodeURIComponent(item.path).replace(/%2F/g, '/')}`
-          })
+          result.push(item)
         }
       }
     }
   }
   
-  processFiles(langFolder.children, props.lang)
+  processFiles(langFolder.children)
   return result
 })
 
@@ -332,13 +294,20 @@ const downloadNotes = async () => {
     
     for (const file of files) {
       try {
-        // Use fetchPath which has correct format: ./notes/path
-        const fetchUrl = file.fetchPath || `./notes/${encodeURIComponent(file.path).replace(/%2F/g, '/')}`
+        // 正确的路径格式: ./notes/ + file.path
+        // file.path 格式如 "zh/folder/file.md"
+        const encodedPath = file.path.split('/').map((p: string) => encodeURIComponent(p)).join('/')
+        const fetchUrl = `./notes/${encodedPath}`
         
         const res = await fetch(fetchUrl)
         if (res.ok) {
           const content = await res.text()
-          zip.file(file.relativePath, content)
+          // 保存时去掉语言前缀，保留相对路径
+          const langPrefix = `${props.lang}/`
+          const relativePath = file.path.startsWith(langPrefix) 
+            ? file.path.slice(langPrefix.length) 
+            : file.name
+          zip.file(relativePath, content)
           successCount++
         } else {
           console.warn('Failed to fetch file:', fetchUrl, res.status)
@@ -387,9 +356,11 @@ const downloadVueNotes = async () => {
     if (props.labFolder?.children) {
       vueFiles = props.labFolder.children.filter((f: any) => f.name.endsWith('.md'))
     } else {
+      // 根据语言查找 VUE 学习笔记文件夹
+      const vueFolderName = props.lang === 'zh' ? 'VUE学习笔记' : 'VUE Learning'
       const findVueFolder = (items: any[]): any[] => {
         for (const item of items) {
-          if (item.name.includes('VUE') && item.children) {
+          if (item.name === vueFolderName && item.children) {
             return item.children.filter((f: any) => f.name.endsWith('.md'))
           }
           if (item.children) {
@@ -411,8 +382,9 @@ const downloadVueNotes = async () => {
     let successCount = 0
     for (const file of vueFiles) {
       try {
-        // Correct fetch path: ./notes/ + file.path
-        const fetchUrl = `./notes/${encodeURIComponent(file.path).replace(/%2F/g, '/')}`
+        // 正确的路径格式
+        const encodedPath = file.path.split('/').map((p: string) => encodeURIComponent(p)).join('/')
+        const fetchUrl = `./notes/${encodedPath}`
         
         const res = await fetch(fetchUrl)
         if (res.ok) {

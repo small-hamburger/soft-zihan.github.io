@@ -1,22 +1,54 @@
 <template>
   <div class="h-full flex flex-col overflow-hidden">
-    <!-- Notes Panel - Simplified without left sidebar -->
+    <!-- Notes Panel - With collapsible folder tree -->
     <template v-if="type === 'notes'">
       <div class="p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex items-center justify-between">
         <h4 class="text-sm font-bold text-gray-700 dark:text-gray-300 flex items-center gap-2">
           <span>📚</span>
           {{ isZh ? 'VUE学习笔记' : 'VUE Learning Notes' }}
         </h4>
-        <span class="text-xs text-gray-400 dark:text-gray-500">
-          {{ selectedNote ? selectedNote.name.replace('.md', '') : (isZh ? '请从边栏选择' : 'Select from sidebar') }}
-        </span>
+        <!-- Toggle folder tree button -->
+        <button 
+          @click="showFolderTree = !showFolderTree"
+          class="text-xs px-2 py-1 rounded-lg transition-colors"
+          :class="showFolderTree 
+            ? 'bg-sakura-100 dark:bg-sakura-900/30 text-sakura-600 dark:text-sakura-400' 
+            : 'bg-gray-100 dark:bg-gray-700 text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600'"
+        >
+          {{ showFolderTree ? '📁 ▼' : '📁 ▶' }}
+        </button>
       </div>
-      <!-- Note Content Only - No left sidebar, no right TOC -->
-      <div class="flex-1 overflow-y-auto custom-scrollbar p-4">
-        <div v-if="selectedNote && noteContent" v-html="renderedContent" class="markdown-body dark:text-gray-300 prose prose-sm max-w-none"></div>
-        <div v-else class="flex items-center justify-center h-full text-gray-400 text-sm flex-col gap-4">
-          <span class="text-4xl">📚</span>
-          <span>{{ isZh ? '请从左侧边栏选择 VUE 学习笔记' : 'Select VUE note from sidebar' }}</span>
+      
+      <!-- Main content area with optional sidebar -->
+      <div class="flex-1 flex overflow-hidden">
+        <!-- Collapsible folder tree sidebar -->
+        <div 
+          v-if="showFolderTree"
+          class="w-48 flex-shrink-0 border-r border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-800/50 overflow-y-auto custom-scrollbar"
+        >
+          <div class="p-2 space-y-0.5">
+            <div 
+              v-for="note in notesList" 
+              :key="note.path"
+              @click="emit('select-note', note)"
+              class="p-2 rounded-lg cursor-pointer transition-all text-xs hover:bg-white dark:hover:bg-gray-700 flex items-center gap-1.5"
+              :class="selectedNote?.path === note.path 
+                ? 'bg-sakura-50 dark:bg-sakura-900/20 text-sakura-700 dark:text-sakura-300 border-l-2 border-sakura-500' 
+                : 'text-gray-600 dark:text-gray-400'"
+            >
+              <span class="text-[10px]">📝</span>
+              <span class="truncate">{{ note.name.replace('.md', '') }}</span>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Note Content -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-4">
+          <div v-if="selectedNote && noteContent" v-html="renderedContent" class="markdown-body dark:text-gray-300 prose prose-sm max-w-none"></div>
+          <div v-else class="flex items-center justify-center h-full text-gray-400 text-sm flex-col gap-4">
+            <span class="text-4xl">📚</span>
+            <span>{{ isZh ? '请点击左上角文件夹图标选择笔记' : 'Click folder icon to select note' }}</span>
+          </div>
         </div>
       </div>
     </template>
@@ -63,6 +95,9 @@ const emit = defineEmits<{
 }>()
 
 const isZh = computed(() => props.lang === 'zh')
+
+// Show/hide folder tree sidebar
+const showFolderTree = ref(true)
 
 // Notes list from labFolder
 const notesList = computed(() => {

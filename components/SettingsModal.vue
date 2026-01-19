@@ -190,53 +190,49 @@
           {{ t.view_backups || '查看云端备份' }}
         </button>
         
-        <!-- Local Backup List Toggle -->
+        <!-- Fetch and Show Backup List Button -->
         <button 
           v-if="backupTarget === 'cloud'"
-          @click="toggleBackupList"
-          :disabled="!hasToken || !authorName.trim()"
+          @click="fetchAndShowBackupList"
+          :disabled="!hasToken || !authorName.trim() || isFetchingBackups"
           class="w-full py-2 mt-2 border rounded-xl text-sm transition-colors flex items-center justify-center gap-2"
           :class="hasToken && authorName.trim() ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30' : 'border-gray-300 dark:border-gray-600 text-gray-400 cursor-not-allowed'"
         >
-          <span>📋</span>
-          {{ showBackupList ? (t.hide_backups || '隐藏备份列表') : (t.show_backups || '显示备份列表') }}
+          <span v-if="isFetchingBackups" class="animate-spin">⏳</span>
+          <span v-else>📋</span>
+          {{ isFetchingBackups ? (t.loading || '加载中...') : (showBackupList ? (t.refresh_backups || '刷新备份列表') : (t.show_backups || '获取云端备份列表')) }}
         </button>
         
         <!-- Backup List (cloud only) -->
-        <div v-if="showBackupList && backupTarget === 'cloud' && backupList.length > 0" class="mt-3 max-h-40 overflow-y-auto border rounded-xl border-gray-200 dark:border-gray-700">
-          <div 
-            v-for="backup in backupList" 
-            :key="backup.name"
-            class="flex items-center justify-between p-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50"
-          >
-            <div class="flex-1 min-w-0">
-              <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
-                {{ parseBackupFilename(backup.name).author }}
-              </p>
-              <p class="text-xs text-gray-400">
-                {{ parseBackupFilename(backup.name).date }}
-              </p>
-            </div>
-            <div class="flex gap-1 ml-2">
-              <button 
-                @click="handleRestore(backup)"
-                :disabled="isRestoring"
-                class="px-2 py-1 text-xs rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200"
-              >
-                {{ t.restore || '恢复' }}
-              </button>
-              <button 
-                @click="handleDelete(backup)"
-                class="px-2 py-1 text-xs rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-200"
-              >
-                ✕
-              </button>
+        <div v-if="showBackupList && backupTarget === 'cloud'" class="mt-3">
+          <div v-if="backupList.length > 0" class="max-h-40 overflow-y-auto border rounded-xl border-gray-200 dark:border-gray-700">
+            <div 
+              v-for="backup in backupList" 
+              :key="backup.name"
+              class="flex items-center justify-between p-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50"
+            >
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
+                  {{ parseBackupFilename(backup.name).author }}
+                </p>
+                <p class="text-xs text-gray-400">
+                  {{ parseBackupFilename(backup.name).date }}
+                </p>
+              </div>
+              <div class="flex gap-1 ml-2">
+                <button 
+                  @click="handleRestore(backup)"
+                  :disabled="isRestoring"
+                  class="px-2 py-1 text-xs rounded-lg bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 hover:bg-green-200 disabled:opacity-50"
+                >
+                  {{ isRestoring ? '...' : (t.restore || '恢复') }}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-        
-        <div v-else-if="showBackupList && backupTarget === 'cloud' && backupList.length === 0" class="mt-3 text-center text-sm text-gray-400 py-4">
-          {{ t.no_backups || '暂无云端备份' }}
+          <div v-else class="text-center text-sm text-gray-400 py-4 border rounded-xl border-gray-200 dark:border-gray-700">
+            {{ t.no_backups || '暂无云端备份' }}
+          </div>
         </div>
         
         <!-- Backup Message -->
@@ -406,6 +402,7 @@ const backupSuccess = ref(false)
 const backupTarget = ref<'local' | 'cloud'>('local')
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const showDataInfo = ref(false)
+const isFetchingBackups = ref(false)
 
 const handleBackup = async () => {
   let result
@@ -427,6 +424,29 @@ const handleBackup = async () => {
   
   if (result.success && backupTarget.value === 'cloud') {
     await listBackups(repoOwner.value, repoName.value, authorName.value)
+    showBackupList.value = true
+  }
+}
+
+// 获取并显示云端备份列表
+const fetchAndShowBackupList = async () => {
+  if (!authorName.value.trim()) return
+  
+  isFetchingBackups.value = true
+  backupMessage.value = ''
+  
+  try {
+    await listBackups(repoOwner.value, repoName.value, authorName.value)
+    showBackupList.value = true
+    if (backupList.value.length === 0) {
+      backupMessage.value = '未找到云端备份，请确认您的 Fork 仓库中存在 backup 分支和备份文件'
+      backupSuccess.value = false
+    }
+  } catch (e: any) {
+    backupMessage.value = e.message || '获取备份列表失败'
+    backupSuccess.value = false
+  } finally {
+    isFetchingBackups.value = false
   }
 }
 
@@ -450,6 +470,9 @@ const handleRestore = async (backup: BackupFile) => {
   if (!confirm('确定要恢复此备份吗？当前设置将被覆盖。恢复后需要刷新页面。')) {
     return
   }
+  
+  backupMessage.value = '正在恢复备份...'
+  backupSuccess.value = true
   
   const result = await restoreFromGitHub(authorName.value.trim(), repoName.value, backup.name)
   
